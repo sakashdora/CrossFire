@@ -42,19 +42,6 @@ export const Navbar: React.FC<NavbarProps> = ({
     setNotifications(prev => prev.map(n => ({ ...n, read_at: new Date().toISOString() })));
   };
 
-  const rolesConfig: { id: UserRole; label: string; viewId: string; icon: React.ReactNode; color: string }[] = [
-    { id: 'student', label: 'Student', viewId: 'dashboard', icon: <GraduationCap className="w-3.5 h-3.5" />, color: 'text-orange-400' },
-    { id: 'judge', label: 'Judge', viewId: 'judge', icon: <Gavel className="w-3.5 h-3.5" />, color: 'text-purple-400' },
-    { id: 'volunteer', label: 'Volunteer', viewId: 'volunteer', icon: <HeartHandshake className="w-3.5 h-3.5" />, color: 'text-emerald-400' },
-    { id: 'admin', label: 'Admin', viewId: 'admin', icon: <ShieldCheck className="w-3.5 h-3.5" />, color: 'text-blue-400' },
-  ];
-
-  const handleRoleClick = (targetRole: UserRole, targetView: string) => {
-    switchRoleForTesting(targetRole);
-    setCurrentView(targetView);
-    setMobileMenuOpen(false);
-  };
-
   return (
     <header className="sticky top-0 z-50 bg-[#001F3F] text-white shadow-xl border-b border-navy-light/40">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -146,31 +133,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             </button>
           </nav>
 
-          {/* Role Access Center (Student, Judge, Admin) */}
-          <div className="hidden xl:flex items-center gap-1 bg-navy-dark/90 p-1 rounded-2xl border border-white/10 shadow-inner">
-            <span className="text-[10px] uppercase font-bold text-gray-400 px-2 flex items-center gap-1">
-              <Sparkles className="w-3 h-3 text-orange-400" />
-              <span>Portals:</span>
-            </span>
-            {rolesConfig.map((r) => {
-              const isActive = role === r.id && (currentView === r.viewId || currentView === 'dashboard');
-              return (
-                <button
-                  key={r.id}
-                  onClick={() => handleRoleClick(r.id, r.viewId)}
-                  className={`flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
-                    isActive
-                      ? 'bg-orange-500 text-white shadow-md'
-                      : 'text-gray-300 hover:text-white hover:bg-white/10'
-                  }`}
-                  title={`Access ${r.label} Portal`}
-                >
-                  {r.icon}
-                  <span>{r.label}</span>
-                </button>
-              );
-            })}
-          </div>
+          {/* Role Access Center (Removed per role-aware requirement) */}
 
           {/* Right Action Bar */}
           <div className="flex items-center gap-2 sm:gap-3">
@@ -229,8 +192,9 @@ export const Navbar: React.FC<NavbarProps> = ({
                   <div className="w-7 h-7 rounded-full bg-gradient-to-tr from-orange-500 to-amber-400 flex items-center justify-center text-white font-black text-xs shadow-inner">
                     {user.first_name?.[0] || 'U'}
                   </div>
-                  <span className="max-w-[100px] truncate hidden sm:inline">
-                    {user.first_name}
+                  <span className="max-w-[150px] truncate hidden sm:flex items-center gap-1.5">
+                    <span className="text-[10px] uppercase text-orange-400 font-black">[{role}]</span>
+                    <span>{user.first_name}</span>
                   </span>
                   <ChevronDown className="w-3.5 h-3.5 text-gray-400" />
                 </button>
@@ -316,28 +280,7 @@ export const Navbar: React.FC<NavbarProps> = ({
       {mobileMenuOpen && (
         <div className="lg:hidden bg-navy-dark border-t border-navy-light/30 px-4 pt-3 pb-6 space-y-3 animate-fadeIn">
           
-          {/* Quick Role Access for Mobile */}
-          <div className="bg-black/30 p-2 rounded-2xl border border-white/5 space-y-1">
-            <span className="text-[10px] uppercase font-bold text-gray-400 block px-1">
-              Switch Portal Access:
-            </span>
-            <div className="grid grid-cols-4 gap-1">
-              {rolesConfig.map((r) => (
-                <button
-                  key={r.id}
-                  onClick={() => handleRoleClick(r.id, r.viewId)}
-                  className={`py-2 px-1 text-center rounded-xl text-[11px] font-bold flex flex-col items-center gap-1 transition-all ${
-                    role === r.id
-                      ? 'bg-orange-500 text-white shadow-sm'
-                      : 'bg-white/5 text-gray-300 hover:bg-white/10'
-                  }`}
-                >
-                  {r.icon}
-                  <span>{r.label}</span>
-                </button>
-              ))}
-            </div>
-          </div>
+          {/* Quick Role Access for Mobile (Removed per role-aware requirement) */}
 
           <button
             onClick={() => { setCurrentView('landing'); setMobileMenuOpen(false); }}

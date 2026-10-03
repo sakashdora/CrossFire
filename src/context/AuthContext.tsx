@@ -140,6 +140,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           targetUser = DEMO_USERS.judge;
         } else if (lowerEmail.includes('admin')) {
           targetUser = DEMO_USERS.admin;
+        } else if (lowerEmail.includes('volunteer')) {
+          targetUser = DEMO_USERS.volunteer;
         } else {
           // Check if previously stored student matches
           const stored = localStorage.getItem('crossfire_mock_user');

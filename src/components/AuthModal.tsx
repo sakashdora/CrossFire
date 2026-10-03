@@ -113,13 +113,16 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   };
 
   // Quick preset loader for test accounts
-  const fillQuickTestAccount = (testRole: 'student' | 'judge' | 'admin') => {
+  const fillQuickTestAccount = (testRole: 'student' | 'judge' | 'admin' | 'volunteer') => {
     if (testRole === 'student') {
       setEmail('student@srusti.edu.in');
       setPassword('Crossfire2026!');
     } else if (testRole === 'judge') {
       setEmail('judge@crossfire.org');
       setPassword('JudgePass123!');
+    } else if (testRole === 'volunteer') {
+      setEmail('volunteer@crossfire.org');
+      setPassword('VolPass123!');
     } else {
       setEmail('admin@crossfire.org');
       setPassword('AdminPass123!');
@@ -161,7 +164,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             <p className="text-[11px] font-bold text-navy-800 uppercase tracking-wider mb-1.5 flex items-center justify-between">
               <span>Quick Test Credentials ({isConfigured ? 'Supabase Live' : 'Demo Mode'}):</span>
             </p>
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-4 gap-2">
               <button
                 type="button"
                 onClick={() => fillQuickTestAccount('student')}
@@ -175,6 +178,13 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 className="text-[11px] py-1 px-2 rounded bg-white hover:bg-purple-50 text-navy font-semibold border border-navy-200 text-center hover:border-purple-400 transition-colors"
               >
                 ⚖️ Judge
+              </button>
+              <button
+                type="button"
+                onClick={() => fillQuickTestAccount('volunteer')}
+                className="text-[11px] py-1 px-2 rounded bg-white hover:bg-emerald-50 text-navy font-semibold border border-navy-200 text-center hover:border-emerald-400 transition-colors"
+              >
+                🤝 Volunteer
               </button>
               <button
                 type="button"
