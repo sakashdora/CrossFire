@@ -48,26 +48,51 @@ The student intake form strictly mirrors the Srusti Academy of Management & Tech
 
 ---
 
-## 🎨 3. Design System & Brand Identity
+## 🏛️ 3. Role Hierarchy & 4 Dedicated Dashboards Architecture
 
-The platform must maintain a **premium, world-class aesthetic** strictly adhering to the Srusti Crossfire identity:
+Following the design alignment, the platform features **4 distinct, dedicated dashboards** tailored for clean, friction-free interaction:
 
-- **Primary Colors:**
-  - **Navy Blue (Dark):** `#001F3F` (Primary headers, navbars, cards, structural anchors)
-  - **Navy Light:** `#003D7A` (Hover states, borders)
-  - **Navy Deep:** `#000A1A` (Background depth)
-- **Accent Colors:**
-  - **Orange (CTA):** `#FF6B35` (Primary action buttons, active tabs, live highlights)
-  - **Orange Light:** `#FFA500` (Hover states, secondary highlights)
-  - **Orange Pale:** `#FFE0CC` / `#FFEDD5` (Selected card backgrounds, highlight rows)
-  - **Gold / Yellow:** `#FFC107` (1st place medals, badges)
-- **Typography:**
-  - Font family: `Inter, -apple-system, BlinkMacSystemFont, sans-serif`
-  - High visual hierarchy: Bold headlines (900/700 weight), crisp labels, readable dark gray text (`#1F2937`)
-- **UI Components:**
-  - Min touch targets: 44px (touch friendly on all phones)
-  - Responsive breakpoints: Mobile (`320px - 640px`), Tablet (`768px - 1024px`), Desktop (`1024px+`)
-  - Subtle shadows, micro-animations, glassmorphism accents, live pulse badges.
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                            CROSSFIRE 2026 PLATFORM                          │
+├───────────────────┬───────────────────┬───────────────────┬─────────────────┤
+│ 🎓 STUDENT        │ ⚖️ JUDGE          │ 🤝 VOLUNTEER      │ 🛡️ ADMIN        │
+│ DASHBOARD         │ DASHBOARD         │ GROUND OPS HUB    │ COMMAND CENTER  │
+├───────────────────┼───────────────────┼───────────────────┼─────────────────┤
+│ • Digital QR Pass │ • Split-view list │ • Gate Check-in   │ • Real-time KPIs│
+│ • Room & Venue    │ • Rich candidate  │ • Food Token desk │ • Judge assign  │
+│   guide           │   profile cards   │   (Veg / Non-veg) │ • WhatsApp topic│
+│ • Event countdown │ • Rubric sliders  │ • Room stage      │   broadcaster   │
+│ • Food token badge│ • Lock submission │   reporting check │ • Dispute/unlock│
+│ • Live scores     │ • Audit trail     │ • Campus incident │   overrides     │
+│ • Media uploader  │   log             │   logger          │ • CSV exports   │
+└───────────────────┴───────────────────┴───────────────────┴─────────────────┘
+```
+
+### 1. Student Dashboard (Simplicity & Guidance):
+- **Digital Event Pass (QR Badge):** Unique student QR code with registration ID, school name, and food preference badge (`🥗 Veg` / `🍗 Non-veg`).
+- **Live Room & Venue Guide:** Shows the exact room/auditorium for each registered track (e.g. *Auditorium A, Management Seminar Hall B, Media Studio*).
+- **Status Timeline:** "Registered" ➔ "Report to Venue" ➔ "Under Scoring" ➔ "Result Announced".
+- **Media Upload Desk:** Quick link submit for Reels & Poster Making.
+
+### 2. Judge Dashboard (Clean & Organized Evaluation):
+- **Split-View Queue:** Candidate roster on the left with check-in status and search filter; active candidate card on the right.
+- **Rich Candidate Dossier:** Displays student name, school, board, stream, team roster, and media preview.
+- **Interactive Rubric Engine:** Custom sliders matching each competition's official criteria (Accuracy, Speed, Styling, Argumentation, etc.).
+- **Score Lock Mechanism:** Prevents accidental modification post-submission while recording timestamp for audit.
+
+### 3. Volunteer / Organizer Dashboard (Ground Operations Hub):
+- **Gate Check-In Scanner:** Rapid search & QR scan to mark attendance when students arrive on campus.
+- **Catering & Food Counter Desk:** Tracks lunch/refreshment token redemption based on the student's `Veg` / `Non-veg` preference to eliminate double-claims.
+- **Venue Room Stage Coordinator:** Marks whether a student/team has physically reported to their specific venue room so judges know they are ready.
+- **Incident Logger:** Quick escalation to Admin for missing members or audio/video issues.
+
+### 4. Admin Command Center (Master Control & Overrides):
+- **Executive Analytics:** Live count of registrations (245/300), campus check-ins, food tokens redeemed, and track scoring progress.
+- **Judge Assignment Matrix:** Assigns evaluators to the 6 tracks and tracks completion percentages.
+- **Instant WhatsApp Broadcast Desk:** Transmits morning debate topics, schedule changes, and general announcements.
+- **Dispute & Override Desk:** Capability to unlock a judge's score in case of error or resolve ties.
+- **Master Export:** 1-click export of complete student rosters with scores to CSV/Excel.
 
 ---
 
@@ -196,13 +221,12 @@ The platform must maintain a **premium, world-class aesthetic** strictly adherin
 
 ## 📊 7. Current Project Progress Tracker
 
-| Phase | Description | Status | Sign-off Date | Notes |
+| Phase / Component | Description | Status | Sign-off Date | Notes |
 |---|---|---|---|---|
-| **Phase 0** | Architecture, Setup & Agent Handoff | **COMPLETED (Awaiting Acceptance)** | Oct 3, 2026 | Project scaffolded, Tailwind tokens configured, Supabase schema ready, dev server running on :3000 |
-| **Phase 1** | Supabase Auth & Role-Based Routing | **READY TO TEST** | In Review | Full auth flows (Login, Register with 16-18 age check, Google OAuth, Profile sync) |
-| **Phase 2** | Event Discovery & Student Dashboard | Queued | - | Max 2 events quota enforcement & media upload ready |
-| **Phase 3** | Judge Scoring Panel & Rubrics | Queued | - | Rubric sliders & score locking ready |
-| **Phase 4** | Real-Time Leaderboard & Admin Command | Queued | - | Live leaderboard, KPI stats, & broadcast ready |
+| **Phase 0: Core Architecture & Setup** | Project scaffold, Tailwind tokens, Supabase schema, Git origin setup | **COMPLETED & PUSHED** | Oct 3, 2026 | Synchronized with `https://github.com/sakashdora/CrossFire.git` |
+| **Phase 1: Google Form Registration & Branding** | Authentic intake form (10+ fields), dual college & Crossfire logos | **COMPLETED** | Oct 3, 2026 | Srusti Academy logo & Crossfire emblem rendered, 2-event rule enforced |
+| **Phase 2: 4 Dedicated Role Dashboards** | Student, Judge, Volunteer Ground Ops, Admin Command Center | **COMPLETED & VERIFIED** | Oct 3, 2026 | 0 TS errors, production build passes, browser subagent verified all 4 portals |
+| **Phase 3: Real-Time Sync & Live Operations** | Supabase Live WebSockets, Twilio WhatsApp alerts, final polish | **NEXT IN QUEUE** | - | Awaiting user sign-off on Phase 2 dashboards |
 
 ---
 

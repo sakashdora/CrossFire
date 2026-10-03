@@ -1,4 +1,4 @@
-export type UserRole = 'student' | 'judge' | 'organizer' | 'admin';
+export type UserRole = 'student' | 'judge' | 'volunteer' | 'organizer' | 'admin';
 export type SchoolBoard = 'CBSE' | 'ICSE' | 'CHSE';
 export type CourseStream = '12th Science' | '12th Commerce' | '12th Arts';
 export type FoodPreference = 'Veg' | 'Non-veg';

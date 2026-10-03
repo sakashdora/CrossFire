@@ -142,6 +142,103 @@ export const AdminDashboard: React.FC = () => {
               </table>
             </div>
           </div>
+
+          {/* Stream Demographics Breakdown (Google Form Data) */}
+          <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 space-y-4">
+            <h3 className="text-base font-black text-navy flex items-center gap-2">
+              <span className="w-2.5 h-2.5 rounded-full bg-orange-500"></span>
+              <span>+2 Stream Demographics & Participation Ratios</span>
+            </h3>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className="p-4 bg-blue-50 border border-blue-200 rounded-2xl">
+                <div className="flex justify-between items-center mb-1">
+                  <span className="text-xs font-bold text-blue-900">12th Science</span>
+                  <span className="text-xs font-black text-blue-700 bg-blue-200/60 px-2 py-0.5 rounded-full">58.0%</span>
+                </div>
+                <div className="text-2xl font-black text-blue-950">142 Students</div>
+                <div className="w-full bg-blue-200 h-1.5 rounded-full mt-2 overflow-hidden">
+                  <div className="bg-blue-600 h-full rounded-full" style={{ width: '58%' }}></div>
+                </div>
+              </div>
+
+              <div className="p-4 bg-purple-50 border border-purple-200 rounded-2xl">
+                <div className="flex justify-between items-center mb-1">
+                  <span className="text-xs font-bold text-purple-900">12th Commerce</span>
+                  <span className="text-xs font-black text-purple-700 bg-purple-200/60 px-2 py-0.5 rounded-full">27.7%</span>
+                </div>
+                <div className="text-2xl font-black text-purple-950">68 Students</div>
+                <div className="w-full bg-purple-200 h-1.5 rounded-full mt-2 overflow-hidden">
+                  <div className="bg-purple-600 h-full rounded-full" style={{ width: '27.7%' }}></div>
+                </div>
+              </div>
+
+              <div className="p-4 bg-amber-50 border border-amber-200 rounded-2xl">
+                <div className="flex justify-between items-center mb-1">
+                  <span className="text-xs font-bold text-amber-900">12th Arts</span>
+                  <span className="text-xs font-black text-amber-700 bg-amber-200/60 px-2 py-0.5 rounded-full">14.3%</span>
+                </div>
+                <div className="text-2xl font-black text-amber-950">35 Students</div>
+                <div className="w-full bg-amber-200 h-1.5 rounded-full mt-2 overflow-hidden">
+                  <div className="bg-amber-600 h-full rounded-full" style={{ width: '14.3%' }}></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Super Admin Dispute & Judge Score Unlock Control */}
+          <div className="bg-white rounded-2xl border border-orange-200 shadow-sm p-6 space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-gray-100">
+              <div>
+                <h3 className="text-base font-black text-navy flex items-center gap-2">
+                  <span className="p-1 rounded-lg bg-orange-100 text-orange-600">
+                    <ShieldCheck className="w-4 h-4" />
+                  </span>
+                  <span>Judge Dispute Desk & Score Unlock Authority</span>
+                </h3>
+                <p className="text-xs text-gray-500 mt-0.5">
+                  Super Admin override power to unlock evaluated candidate scores if judging errors or appeals occur.
+                </p>
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <div className="p-3.5 bg-gray-50 rounded-xl border border-gray-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="font-bold text-navy">Rohan Mohanty & Ayush Dash</span>
+                    <span className="bg-blue-100 text-blue-800 text-[10px] font-bold px-1.5 py-0.5 rounded">BJB English Medium</span>
+                  </div>
+                  <p className="text-gray-500 text-[11px] mt-0.5">
+                    Track: Intelect Odyssey (Quiz) • Locked Score: <strong className="text-navy">92.0 Pts</strong> (Dr. M. Senapati)
+                  </p>
+                </div>
+                <button
+                  onClick={() => alert("Score for Rohan Mohanty & Ayush Dash unlocked. Judge Dr. M. Senapati may now revise the rubric.")}
+                  className="px-3 py-1.5 bg-white hover:bg-orange-50 text-orange-600 border border-orange-300 font-bold rounded-lg shadow-sm transition-all text-xs flex items-center justify-center gap-1.5"
+                >
+                  <span>Unlock for Revision</span>
+                </button>
+              </div>
+
+              <div className="p-3.5 bg-gray-50 rounded-xl border border-gray-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="font-bold text-navy">Ananya Dash</span>
+                    <span className="bg-purple-100 text-purple-800 text-[10px] font-bold px-1.5 py-0.5 rounded">Mothers Public School</span>
+                  </div>
+                  <p className="text-gray-500 text-[11px] mt-0.5">
+                    Track: Glam 'n' Dazzle (Ramp Walk) • Locked Score: <strong className="text-navy">94.5 Pts</strong> (Prof. A. Ray)
+                  </p>
+                </div>
+                <button
+                  onClick={() => alert("Score for Ananya Dash unlocked. Judge Prof. A. Ray may now revise the rubric.")}
+                  className="px-3 py-1.5 bg-white hover:bg-orange-50 text-orange-600 border border-orange-300 font-bold rounded-lg shadow-sm transition-all text-xs flex items-center justify-center gap-1.5"
+                >
+                  <span>Unlock for Revision</span>
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* Right Col: Instant Broadcast Console */}

@@ -8,11 +8,12 @@ import { EventsDiscoveryPage } from './pages/EventsDiscoveryPage';
 import { StudentDashboard } from './pages/StudentDashboard';
 import { JudgePanel } from './pages/JudgePanel';
 import { AdminDashboard } from './pages/AdminDashboard';
+import { VolunteerDashboard } from './pages/VolunteerDashboard';
 import { LeaderboardPage } from './pages/LeaderboardPage';
 import { RegistrationPage } from './pages/RegistrationPage';
 import { EventItem, Registration } from './types';
 import { INITIAL_EVENTS } from './data/mockData';
-import { Home, Calendar, Trophy, User, ShieldCheck, Gavel, UserPlus } from 'lucide-react';
+import { Home, Calendar, Trophy, User, ShieldCheck, Gavel, UserPlus, HeartHandshake } from 'lucide-react';
 
 const CrossFireApp: React.FC = () => {
   const { user, role } = useAuth();
@@ -157,6 +158,10 @@ const CrossFireApp: React.FC = () => {
           <JudgePanel />
         )}
 
+        {currentView === 'volunteer' && (
+          <VolunteerDashboard />
+        )}
+
         {currentView === 'admin' && (
           <AdminDashboard />
         )}
@@ -215,10 +220,15 @@ const CrossFireApp: React.FC = () => {
 
         <button
           onClick={() => {
-            setCurrentView(role === 'admin' ? 'admin' : role === 'judge' ? 'judge' : 'dashboard');
+            setCurrentView(
+              role === 'admin' ? 'admin' : 
+              role === 'judge' ? 'judge' : 
+              role === 'volunteer' ? 'volunteer' : 
+              'dashboard'
+            );
           }}
           className={`flex flex-col items-center gap-0.5 py-1 px-2 rounded-xl text-[10px] font-bold transition-colors ${
-            currentView === 'dashboard' || currentView === 'judge' || currentView === 'admin' 
+            currentView === 'dashboard' || currentView === 'judge' || currentView === 'volunteer' || currentView === 'admin' 
               ? 'text-orange-400 bg-white/10' 
               : 'text-gray-400'
           }`}
@@ -227,10 +237,17 @@ const CrossFireApp: React.FC = () => {
             <ShieldCheck className="w-4 h-4" />
           ) : role === 'judge' ? (
             <Gavel className="w-4 h-4" />
+          ) : role === 'volunteer' ? (
+            <HeartHandshake className="w-4 h-4" />
           ) : (
             <User className="w-4 h-4" />
           )}
-          <span>{role === 'admin' ? 'Admin' : role === 'judge' ? 'Judge' : 'Portal'}</span>
+          <span>
+            {role === 'admin' ? 'Admin' : 
+             role === 'judge' ? 'Judge' : 
+             role === 'volunteer' ? 'Volunteer' : 
+             'Portal'}
+          </span>
         </button>
       </div>
 

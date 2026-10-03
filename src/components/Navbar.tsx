@@ -12,6 +12,7 @@ import {
   ShieldCheck, 
   Gavel, 
   GraduationCap, 
+  HeartHandshake,
   Sparkles,
   ChevronDown,
   UserPlus
@@ -44,6 +45,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   const rolesConfig: { id: UserRole; label: string; viewId: string; icon: React.ReactNode; color: string }[] = [
     { id: 'student', label: 'Student', viewId: 'dashboard', icon: <GraduationCap className="w-3.5 h-3.5" />, color: 'text-orange-400' },
     { id: 'judge', label: 'Judge', viewId: 'judge', icon: <Gavel className="w-3.5 h-3.5" />, color: 'text-purple-400' },
+    { id: 'volunteer', label: 'Volunteer', viewId: 'volunteer', icon: <HeartHandshake className="w-3.5 h-3.5" />, color: 'text-emerald-400' },
     { id: 'admin', label: 'Admin', viewId: 'admin', icon: <ShieldCheck className="w-3.5 h-3.5" />, color: 'text-blue-400' },
   ];
 
@@ -319,12 +321,12 @@ export const Navbar: React.FC<NavbarProps> = ({
             <span className="text-[10px] uppercase font-bold text-gray-400 block px-1">
               Switch Portal Access:
             </span>
-            <div className="grid grid-cols-3 gap-1">
+            <div className="grid grid-cols-4 gap-1">
               {rolesConfig.map((r) => (
                 <button
                   key={r.id}
                   onClick={() => handleRoleClick(r.id, r.viewId)}
-                  className={`py-2 px-1 text-center rounded-xl text-xs font-bold flex flex-col items-center gap-1 transition-all ${
+                  className={`py-2 px-1 text-center rounded-xl text-[11px] font-bold flex flex-col items-center gap-1 transition-all ${
                     role === r.id
                       ? 'bg-orange-500 text-white shadow-sm'
                       : 'bg-white/5 text-gray-300 hover:bg-white/10'
@@ -381,13 +383,13 @@ export const Navbar: React.FC<NavbarProps> = ({
 
           <button
             onClick={() => {
-              setCurrentView(role === 'admin' ? 'admin' : role === 'judge' ? 'judge' : 'dashboard');
+              setCurrentView(role === 'admin' ? 'admin' : role === 'judge' ? 'judge' : role === 'volunteer' ? 'volunteer' : 'dashboard');
               setMobileMenuOpen(false);
             }}
             className="w-full flex items-center gap-2 px-3 py-2.5 rounded-xl text-xs font-bold text-gray-200 hover:bg-white/5"
           >
             <LayoutDashboard className="w-4 h-4 text-orange-500" />
-            <span>My {role === 'admin' ? 'Admin' : role === 'judge' ? 'Judge' : 'Student'} Portal</span>
+            <span>My {role === 'admin' ? 'Admin' : role === 'judge' ? 'Judge' : role === 'volunteer' ? 'Volunteer' : 'Student'} Portal</span>
           </button>
         </div>
       )}

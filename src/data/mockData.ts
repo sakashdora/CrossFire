@@ -221,6 +221,26 @@ export const DEMO_USERS: Record<string, UserProfile> = {
     parent_consent: true,
     terms_accepted: true,
     created_at: new Date().toISOString()
+  },
+  volunteer: {
+    id: 'user-volunteer-demo',
+    email: 'volunteer@srusti.edu.in',
+    first_name: 'Subhashree',
+    last_name: 'Mohapatra',
+    contact_number: '+91 9437198765',
+    whatsapp_number: '+91 9437198765',
+    mobile_number: '+91 9437198765',
+    date_of_birth: '2004-11-15',
+    institute_name: 'Srusti Academy of Management and Technology',
+    school_name: 'Srusti Academy of Management and Technology',
+    city_town: 'Bhubaneswar',
+    course_stream: '12th Science',
+    board: 'CHSE',
+    food_preference: 'Veg',
+    role: 'volunteer',
+    parent_consent: true,
+    terms_accepted: true,
+    created_at: new Date().toISOString()
   }
 };
 
