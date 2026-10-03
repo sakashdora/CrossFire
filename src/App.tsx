@@ -1,0 +1,256 @@
+import React, { useState } from 'react';
+import { AuthProvider, useAuth } from './context/AuthContext';
+import { Navbar } from './components/Navbar';
+import { Footer } from './components/Footer';
+import { AuthModal } from './components/AuthModal';
+import { LandingPage } from './pages/LandingPage';
+import { EventsDiscoveryPage } from './pages/EventsDiscoveryPage';
+import { StudentDashboard } from './pages/StudentDashboard';
+import { JudgePanel } from './pages/JudgePanel';
+import { AdminDashboard } from './pages/AdminDashboard';
+import { LeaderboardPage } from './pages/LeaderboardPage';
+import { RegistrationPage } from './pages/RegistrationPage';
+import { EventItem, Registration } from './types';
+import { INITIAL_EVENTS } from './data/mockData';
+import { Home, Calendar, Trophy, User, ShieldCheck, Gavel, UserPlus } from 'lucide-react';
+
+const CrossFireApp: React.FC = () => {
+  const { user, role } = useAuth();
+  const [currentView, setCurrentView] = useState<string>('landing');
+  const [authModalOpen, setAuthModalOpen] = useState(false);
+  const [authModalMode, setAuthModalMode] = useState<'login' | 'register'>('login');
+
+  // Initial user registrations (seeded with 2 demo events matching Google Form)
+  const [userRegistrations, setUserRegistrations] = useState<Registration[]>([
+    {
+      id: 'reg-demo-1',
+      user_id: 'user-student-demo',
+      event_id: 'ev-quiz',
+      event: INITIAL_EVENTS[0], // Intelect Odyssey (Quiz)
+      team_name: 'DAV Brainiacs',
+      team_members: [{ name: 'Priya Sahoo (Roll 14)' }],
+      status: 'confirmed',
+      score: 89.5,
+      score_locked: true,
+      created_at: new Date().toISOString()
+    },
+    {
+      id: 'reg-demo-2',
+      user_id: 'user-student-demo',
+      event_id: 'ev-ramp-walk',
+      event: INITIAL_EVENTS[4], // Glam 'n' Dazzle (Ramp Walk)
+      status: 'confirmed',
+      score: 90.0,
+      score_locked: true,
+      created_at: new Date().toISOString()
+    }
+  ]);
+
+  const handleRegisterEvent = async (eventId: string, teamName?: string, members?: any[]): Promise<boolean> => {
+    if (userRegistrations.length >= 2) {
+      alert('Maximum 2 events registration limit reached per student.');
+      return false;
+    }
+
+    const event = INITIAL_EVENTS.find(e => e.id === eventId);
+    if (!event) return false;
+
+    const newReg: Registration = {
+      id: `reg-${Date.now()}`,
+      user_id: user?.id || 'guest',
+      event_id: eventId,
+      event,
+      team_name: teamName,
+      team_members: members,
+      status: 'registered',
+      created_at: new Date().toISOString()
+    };
+
+    setUserRegistrations(prev => [...prev, newReg]);
+    return true;
+  };
+
+  const handleGoogleFormRegistrationSuccess = (events: EventItem[]) => {
+    const newRegs: Registration[] = events.map(ev => ({
+      id: `reg-${Date.now()}-${ev.id}`,
+      user_id: user?.id || 'registered-student',
+      event_id: ev.id,
+      event: ev,
+      team_name: `${user?.first_name || 'Student'}'s Team`,
+      status: 'registered',
+      created_at: new Date().toISOString()
+    }));
+
+    setUserRegistrations(newRegs);
+  };
+
+  const handleWithdrawEvent = (registrationId: string) => {
+    setUserRegistrations(prev => prev.filter(r => r.id !== registrationId));
+  };
+
+  const handleSubmitMedia = (registrationId: string, url: string) => {
+    setUserRegistrations(prev => prev.map(r => {
+      if (r.id === registrationId) {
+        return {
+          ...r,
+          media_url: url,
+          media_submitted_at: new Date().toISOString()
+        };
+      }
+      return r;
+    }));
+  };
+
+  const openAuth = (mode: 'login' | 'register') => {
+    setAuthModalMode(mode);
+    setAuthModalOpen(true);
+  };
+
+  const handleSelectEvent = (_event: EventItem) => {
+    setCurrentView('events');
+  };
+
+  return (
+    <div className="min-h-screen flex flex-col bg-[#F8FAFC] text-gray-900 pb-20 lg:pb-0">
+      
+      {/* Top Navbar */}
+      <Navbar 
+        currentView={currentView}
+        setCurrentView={setCurrentView}
+        openAuthModal={openAuth}
+      />
+
+      {/* Main View Router */}
+      <main className="flex-grow">
+        {currentView === 'landing' && (
+          <LandingPage
+            onSelectEvent={handleSelectEvent}
+            setCurrentView={setCurrentView}
+          />
+        )}
+
+        {currentView === 'register' && (
+          <RegistrationPage
+            onSuccess={handleGoogleFormRegistrationSuccess}
+            setCurrentView={setCurrentView}
+          />
+        )}
+
+        {currentView === 'events' && (
+          <EventsDiscoveryPage
+            userRegistrations={userRegistrations}
+            onRegisterEvent={handleRegisterEvent}
+            openAuthModal={openAuth}
+          />
+        )}
+
+        {currentView === 'dashboard' && (
+          <StudentDashboard
+            userRegistrations={userRegistrations}
+            onWithdrawEvent={handleWithdrawEvent}
+            onSubmitMedia={handleSubmitMedia}
+            setCurrentView={setCurrentView}
+          />
+        )}
+
+        {currentView === 'judge' && (
+          <JudgePanel />
+        )}
+
+        {currentView === 'admin' && (
+          <AdminDashboard />
+        )}
+
+        {currentView === 'leaderboard' && (
+          <LeaderboardPage />
+        )}
+      </main>
+
+      {/* Footer */}
+      <Footer />
+
+      {/* Bottom Mobile App Bar (Fixed 5-Key Navigation) */}
+      <div className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-navy text-white border-t border-navy-light/40 px-2 py-1.5 flex items-center justify-around shadow-2xl backdrop-blur-lg">
+        <button
+          onClick={() => setCurrentView('landing')}
+          className={`flex flex-col items-center gap-0.5 py-1 px-2 rounded-xl text-[10px] font-bold transition-colors ${
+            currentView === 'landing' ? 'text-orange-400 bg-white/10' : 'text-gray-400'
+          }`}
+        >
+          <Home className="w-4 h-4" />
+          <span>Home</span>
+        </button>
+
+        <button
+          onClick={() => setCurrentView('events')}
+          className={`flex flex-col items-center gap-0.5 py-1 px-2 rounded-xl text-[10px] font-bold transition-colors ${
+            currentView === 'events' ? 'text-orange-400 bg-white/10' : 'text-gray-400'
+          }`}
+        >
+          <Calendar className="w-4 h-4" />
+          <span>Events</span>
+        </button>
+
+        <button
+          onClick={() => setCurrentView('register')}
+          className={`flex flex-col items-center gap-0.5 py-1 px-2.5 rounded-xl text-[10px] font-black transition-all ${
+            currentView === 'register' 
+              ? 'text-white bg-orange-500 shadow-md scale-105' 
+              : 'text-orange-400 bg-orange-500/10'
+          }`}
+        >
+          <UserPlus className="w-4 h-4" />
+          <span>Register</span>
+        </button>
+
+        <button
+          onClick={() => setCurrentView('leaderboard')}
+          className={`flex flex-col items-center gap-0.5 py-1 px-2 rounded-xl text-[10px] font-bold transition-colors ${
+            currentView === 'leaderboard' ? 'text-orange-400 bg-white/10' : 'text-gray-400'
+          }`}
+        >
+          <Trophy className="w-4 h-4" />
+          <span>Board</span>
+        </button>
+
+        <button
+          onClick={() => {
+            setCurrentView(role === 'admin' ? 'admin' : role === 'judge' ? 'judge' : 'dashboard');
+          }}
+          className={`flex flex-col items-center gap-0.5 py-1 px-2 rounded-xl text-[10px] font-bold transition-colors ${
+            currentView === 'dashboard' || currentView === 'judge' || currentView === 'admin' 
+              ? 'text-orange-400 bg-white/10' 
+              : 'text-gray-400'
+          }`}
+        >
+          {role === 'admin' ? (
+            <ShieldCheck className="w-4 h-4" />
+          ) : role === 'judge' ? (
+            <Gavel className="w-4 h-4" />
+          ) : (
+            <User className="w-4 h-4" />
+          )}
+          <span>{role === 'admin' ? 'Admin' : role === 'judge' ? 'Judge' : 'Portal'}</span>
+        </button>
+      </div>
+
+      {/* Supabase Authentication & Registration Modal */}
+      <AuthModal
+        isOpen={authModalOpen}
+        onClose={() => setAuthModalOpen(false)}
+        initialMode={authModalMode}
+      />
+
+    </div>
+  );
+};
+
+export const App: React.FC = () => {
+  return (
+    <AuthProvider>
+      <CrossFireApp />
+    </AuthProvider>
+  );
+};
+
+export default App;
