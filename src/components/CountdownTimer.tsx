@@ -42,16 +42,16 @@ export const CountdownTimer: React.FC<CountdownTimerProps> = ({
   ];
 
   return (
-    <div className="flex items-center justify-center gap-2 sm:gap-4 select-none">
+    <div className="flex items-center justify-center gap-2 sm:gap-3.5 md:gap-4 select-none">
       {units.map((unit, idx) => (
         <div key={idx} className="flex flex-col items-center">
-          <div className="w-14 h-14 sm:w-20 sm:h-20 bg-navy-dark text-white rounded-xl sm:rounded-2xl border border-white/10 flex items-center justify-center shadow-lg shadow-black/20 relative overflow-hidden group">
-            <span className="text-xl sm:text-3xl font-black text-orange-400 font-mono tracking-tight">
+          <div className="w-[62px] h-[62px] sm:w-[76px] sm:h-[76px] md:w-20 md:h-20 bg-navy-dark/90 text-white rounded-2xl border border-white/15 flex items-center justify-center shadow-lg shadow-black/40 relative overflow-hidden backdrop-blur-sm group">
+            <span className="text-2xl sm:text-3xl md:text-4xl font-black text-orange-400 font-mono tracking-tight">
               {String(unit.value).padStart(2, '0')}
             </span>
-            <div className="absolute inset-0 bg-gradient-to-t from-orange-500/10 to-transparent pointer-events-none"></div>
+            <div className="absolute inset-0 bg-gradient-to-t from-orange-500/15 via-transparent to-white/5 pointer-events-none" />
           </div>
-          <span className="text-[10px] sm:text-xs font-bold text-gray-500 uppercase tracking-widest mt-1.5">
+          <span className="text-[10px] sm:text-[11px] font-bold text-white/50 uppercase tracking-widest mt-1.5">
             {unit.label}
           </span>
         </div>

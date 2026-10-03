@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { Navbar } from './components/Navbar';
 import { Footer } from './components/Footer';
@@ -20,6 +20,11 @@ const CrossFireApp: React.FC = () => {
   const [currentView, setCurrentView] = useState<string>('landing');
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [authModalMode, setAuthModalMode] = useState<'login' | 'register'>('login');
+
+  // Auto scroll to top on any page view transition
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'instant' });
+  }, [currentView]);
 
   // Initial user registrations (seeded with 2 demo events matching Google Form)
   const [userRegistrations, setUserRegistrations] = useState<Registration[]>([

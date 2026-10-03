@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { UserRole } from '../types';
 import { 
   Trophy, 
   Calendar, 
@@ -9,13 +8,8 @@ import {
   LogOut, 
   Menu, 
   X, 
-  ShieldCheck, 
-  Gavel, 
-  GraduationCap, 
-  HeartHandshake,
-  Sparkles,
-  ChevronDown,
-  UserPlus
+  ChevronDown, 
+  UserPlus 
 } from 'lucide-react';
 import { INITIAL_NOTIFICATIONS } from '../data/mockData';
 
@@ -30,7 +24,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   setCurrentView,
   openAuthModal
 }) => {
-  const { user, role, switchRoleForTesting, logout } = useAuth();
+  const { user, role, logout } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
@@ -50,10 +44,10 @@ export const Navbar: React.FC<NavbarProps> = ({
           {/* Brand Logo with Crossfire + Srusti College Emblem */}
           <div 
             onClick={() => setCurrentView('landing')} 
-            className="flex items-center gap-2.5 sm:gap-3 cursor-pointer group select-none"
+            className="flex items-center gap-2 sm:gap-3 cursor-pointer group select-none shrink-0"
           >
             {/* Srusti College Official Logo */}
-            <div className="h-10 sm:h-12 px-1.5 py-0.5 rounded-xl bg-white shadow-md flex items-center justify-center border border-white/20">
+            <div className="h-9 sm:h-11 px-1.5 py-0.5 rounded-xl bg-white shadow-sm flex items-center justify-center border border-white/20 shrink-0">
               <img 
                 src="/collegeLogo.jpeg" 
                 alt="Srusti College Logo" 
@@ -61,24 +55,24 @@ export const Navbar: React.FC<NavbarProps> = ({
               />
             </div>
 
-            <div className="relative">
+            <div className="relative shrink-0">
               {/* CrossFire Event Logo with glowing pulse */}
-              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-white p-1 shadow-lg ring-2 ring-orange-500/50 group-hover:ring-orange-500 group-hover:scale-105 transition-all flex items-center justify-center">
+              <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl sm:rounded-2xl bg-white p-1 shadow-md ring-2 ring-orange-500/50 group-hover:ring-orange-500 group-hover:scale-105 transition-all flex items-center justify-center">
                 <img 
                   src="/Logo.png" 
                   alt="CrossFire Logo" 
                   className="w-full h-full object-contain" 
                 />
               </div>
-              <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-orange-500 rounded-full border-2 border-navy animate-pulse"></span>
+              <span className="absolute -top-1 -right-1 w-2.5 h-2.5 sm:w-3 sm:h-3 bg-orange-500 rounded-full border-2 border-navy animate-pulse"></span>
             </div>
 
             <div>
-              <div className="flex items-center gap-2">
-                <span className="text-xl sm:text-2xl font-black tracking-wider text-white">
+              <div className="flex items-center gap-1.5 sm:gap-2">
+                <span className="text-lg sm:text-2xl font-black tracking-wider text-white">
                   CROSS<span className="text-orange-500">FIRE</span>
                 </span>
-                <span className="bg-orange-500/20 text-orange-400 border border-orange-500/30 text-[10px] font-black px-1.5 py-0.5 rounded">
+                <span className="bg-orange-500/20 text-orange-400 border border-orange-500/30 text-[9px] sm:text-[10px] font-black px-1.5 py-0.5 rounded">
                   2026
                 </span>
               </div>

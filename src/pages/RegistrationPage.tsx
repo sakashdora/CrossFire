@@ -166,56 +166,56 @@ export const RegistrationPage: React.FC<RegistrationPageProps> = ({
   };
 
   return (
-    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
+    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10 pb-28 lg:pb-16">
       
       {/* Srusti Official Branding Header */}
-      <div className="bg-white rounded-3xl border border-gray-200 shadow-xl overflow-hidden mb-8">
-        <div className="bg-navy p-6 sm:p-8 text-white relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-80 h-80 bg-orange-500/10 rounded-full blur-3xl pointer-events-none"></div>
+      <div className="bg-white rounded-3xl border border-gray-200 shadow-xl overflow-hidden mb-6 sm:mb-8">
+        <div className="bg-navy p-5 sm:p-7 md:p-8 text-white relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-80 h-80 bg-orange-500/10 rounded-full blur-3xl pointer-events-none" />
 
-          <div className="flex flex-col sm:flex-row items-center sm:items-start gap-5 relative z-10 text-center sm:text-left">
-            <div className="flex items-center gap-3">
+          <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 sm:gap-5 relative z-10 text-center sm:text-left">
+            <div className="flex items-center gap-3 shrink-0">
               {/* Srusti College Emblem */}
-              <div className="h-20 sm:h-24 px-2 py-1 rounded-2xl bg-white shadow-2xl flex items-center justify-center border-2 border-white/30">
+              <div className="h-16 w-16 sm:h-20 sm:w-20 md:h-24 md:w-24 p-1.5 rounded-2xl bg-white shadow-2xl flex items-center justify-center border-2 border-white/30 shrink-0">
                 <img 
                   src="/collegeLogo.jpeg" 
                   alt="Srusti Academy Official Logo" 
-                  className="h-full object-contain"
+                  className="w-full h-full object-contain"
                 />
               </div>
 
               {/* CrossFire Event Emblem */}
-              <div className="relative group">
-                <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl bg-white p-1.5 shadow-2xl flex items-center justify-center border-2 border-orange-500">
+              <div className="relative group shrink-0">
+                <div className="w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 rounded-2xl bg-white p-1.5 shadow-2xl flex items-center justify-center border-2 border-orange-500">
                   <img 
                     src="/Logo.png" 
                     alt="CrossFire 2026 Logo" 
                     className="w-full h-full object-contain"
                   />
                 </div>
-                <span className="absolute -bottom-2 -right-2 px-2 py-0.5 bg-orange-500 text-white text-[9px] font-black uppercase rounded-full shadow">
+                <span className="absolute -bottom-1 -right-1 px-2 py-0.5 bg-orange-500 text-white text-[9px] font-black uppercase rounded-full shadow">
                   2026
                 </span>
               </div>
             </div>
 
-            <div className="space-y-1.5 flex-1">
+            <div className="space-y-1.5 flex-1 min-w-0">
               <span className="px-3 py-1 rounded-full bg-white/10 text-orange-400 text-[10px] font-black uppercase tracking-widest border border-white/10 inline-block">
                 Official Student Registration Form
               </span>
-              <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
+              <h1 className="text-lg sm:text-2xl md:text-3xl font-black text-white tracking-tight leading-tight">
                 SRUSTI ACADEMY OF MANAGEMENT AND TECHNOLOGY
               </h1>
               <p className="text-xs sm:text-sm text-gray-300 font-medium">
-                CROSSFIRE 2026 • State-Level Talent Hunt for +2 Final Year Students
+                CROSSFIRE 2026 &bull; State-Level Talent Hunt for +2 Final Year Students
               </p>
-              <div className="pt-2 flex flex-wrap items-center justify-center sm:justify-start gap-4 text-xs text-gray-300">
+              <div className="pt-1.5 flex flex-wrap items-center justify-center sm:justify-start gap-2.5 sm:gap-4 text-xs text-gray-300">
                 <span className="flex items-center gap-1.5">
-                  <MapPin className="w-3.5 h-3.5 text-orange-400" /> Srusti Campus, Bhubaneswar
+                  <MapPin className="w-3.5 h-3.5 text-orange-400 shrink-0" /> Srusti Campus, Bhubaneswar
                 </span>
-                <span>•</span>
+                <span className="hidden sm:inline">&bull;</span>
                 <span className="text-orange-400 font-bold">Nov 15, 2026</span>
-                <span>•</span>
+                <span className="hidden sm:inline">&bull;</span>
                 <span className="text-emerald-400 font-bold">₹81,000+ Cash Prizes</span>
               </div>
             </div>
@@ -223,12 +223,12 @@ export const RegistrationPage: React.FC<RegistrationPageProps> = ({
         </div>
 
         {/* Notice Banner */}
-        <div className="bg-amber-50 border-t border-b border-amber-200 px-6 py-3 flex items-center justify-between text-xs text-amber-900 font-medium">
+        <div className="bg-amber-50 border-t border-b border-amber-200 px-4 sm:px-6 py-2.5 sm:py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs text-amber-900 font-medium">
           <div className="flex items-center gap-2">
-            <AlertCircle className="w-4 h-4 text-amber-600 flex-shrink-0" />
+            <AlertCircle className="w-4 h-4 text-amber-600 shrink-0" />
             <span>* Indicates required question. Exclusively for +2 2nd Year (Class 12) students.</span>
           </div>
-          <span className="text-[11px] font-bold text-amber-800 bg-amber-200/60 px-2 py-0.5 rounded-full hidden sm:inline">
+          <span className="text-[10px] sm:text-[11px] font-bold text-amber-800 bg-amber-200/60 px-2.5 py-0.5 rounded-full self-start sm:self-auto shrink-0">
             Max 2 Competitions
           </span>
         </div>
