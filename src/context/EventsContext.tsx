@@ -31,15 +31,52 @@ export const EventsProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       }
       try {
         const { data, error } = await supabase.from('events').select('*').order('start_time');
-        if (data && !error) {
-          setEvents(data as EventItem[]);
+        if (data && !error && data.length > 0) {
+          const merged = INITIAL_EVENTS.map(localEvent => {
+            const remote = data.find((e: any) => e.slug === localEvent.slug || e.id === localEvent.id);
+            if (remote) {
+              return {
+                ...localEvent,
+                id: remote.id,
+                current_participants: remote.current_participants ?? localEvent.current_participants,
+                status: remote.status ?? localEvent.status
+              };
+            }
+            return localEvent;
+          });
+          setEvents(merged);
+        } else {
+          setEvents(INITIAL_EVENTS);
         }
       } catch (err) {
         console.error('Error fetching events:', err);
+        setEvents(INITIAL_EVENTS);
       }
     };
     fetchEvents();
   }, []);
+
+  // Helper to map student's selected competitions into Registration objects
+  const mapSelectedCompetitionsToRegistrations = (selectedCompetitions: string[] = []): Registration[] => {
+    return selectedCompetitions.map((compName, idx) => {
+      const cleanName = compName.toLowerCase();
+      const matchedEvent = events.find(e => 
+        e.name.toLowerCase() === cleanName ||
+        e.name.toLowerCase().includes(cleanName) ||
+        cleanName.includes(e.name.toLowerCase()) ||
+        e.slug.toLowerCase() === cleanName.replace(/[^a-z0-9]/g, '-')
+      ) || events[idx % events.length];
+
+      return {
+        id: `reg-${user?.id || 'std'}-${idx}`,
+        user_id: user?.id || 'std',
+        event_id: matchedEvent.id,
+        event: matchedEvent,
+        status: 'registered',
+        created_at: user?.created_at || new Date().toISOString()
+      };
+    });
+  };
 
   // Fetch registrations
   const fetchRegistrations = async () => {
@@ -48,40 +85,45 @@ export const EventsProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       setIsLoading(false);
       return;
     }
-    
-    if (!isSupabaseConfigured) {
-      // Load mock registrations
+
+    if (isSupabaseConfigured) {
+      try {
+        setIsLoading(true);
+        const { data, error } = await supabase
+          .from('registrations')
+          .select(`
+            *,
+            event:events(*)
+          `)
+          .eq('user_id', user.id);
+          
+        if (data && !error && data.length > 0) {
+          setUserRegistrations(data as Registration[]);
+          return;
+        }
+      } catch (err) {
+        console.warn('[CROSSFIRE] Supabase registration fetch notice:', err);
+      }
+    }
+
+    // Seamless fallback to user's registered competitions
+    if (user.selected_competitions && user.selected_competitions.length > 0) {
+      const mapped = mapSelectedCompetitionsToRegistrations(user.selected_competitions);
+      setUserRegistrations(mapped);
+    } else {
       const mockRegs = localStorage.getItem('crossfire_mock_regs');
       if (mockRegs) {
         setUserRegistrations(JSON.parse(mockRegs));
+      } else {
+        setUserRegistrations([]);
       }
-      setIsLoading(false);
-      return;
     }
-
-    try {
-      setIsLoading(true);
-      const { data, error } = await supabase
-        .from('registrations')
-        .select(`
-          *,
-          event:events(*)
-        `)
-        .eq('user_id', user.id);
-        
-      if (data && !error) {
-        setUserRegistrations(data as Registration[]);
-      }
-    } catch (err) {
-      console.error('Error fetching registrations:', err);
-    } finally {
-      setIsLoading(false);
-    }
+    setIsLoading(false);
   };
 
   useEffect(() => {
     fetchRegistrations();
-  }, [user]);
+  }, [user, events]);
 
   const handleRegisterEvent = async (eventId: string, teamName?: string, members?: any[]): Promise<boolean> => {
     if (userRegistrations.length >= 2) {
@@ -97,36 +139,32 @@ export const EventsProvider: React.FC<{ children: React.ReactNode }> = ({ childr
           p_team_members: members || []
         });
 
-        if (error) {
-          alert('Registration failed: ' + error.message);
-          return false;
+        if (!error) {
+          await fetchRegistrations();
+          return true;
         }
-
-        await fetchRegistrations();
-        return true;
       } catch (err: any) {
-        alert('Registration failed: ' + err.message);
-        return false;
+        console.warn('[CROSSFIRE] Supabase register_for_event fallback:', err);
       }
-    } else {
-      // Mock logic
-      const event = events.find(e => e.id === eventId);
-      if (!event) return false;
-      const newReg: Registration = {
-        id: `reg-${Date.now()}`,
-        user_id: user?.id || 'guest',
-        event_id: eventId,
-        event,
-        team_name: teamName,
-        team_members: members,
-        status: 'registered',
-        created_at: new Date().toISOString()
-      };
-      const updated = [...userRegistrations, newReg];
-      setUserRegistrations(updated);
-      localStorage.setItem('crossfire_mock_regs', JSON.stringify(updated));
-      return true;
     }
+
+    // Local registration fallback
+    const event = events.find(e => e.id === eventId);
+    if (!event) return false;
+    const newReg: Registration = {
+      id: `reg-${Date.now()}`,
+      user_id: user?.id || 'student',
+      event_id: eventId,
+      event,
+      team_name: teamName,
+      team_members: members,
+      status: 'registered',
+      created_at: new Date().toISOString()
+    };
+    const updated = [...userRegistrations, newReg];
+    setUserRegistrations(updated);
+    localStorage.setItem('crossfire_mock_regs', JSON.stringify(updated));
+    return true;
   };
 
   const handleWithdrawEvent = async (registrationId: string): Promise<boolean> => {
@@ -135,22 +173,19 @@ export const EventsProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         const { error } = await supabase.rpc('withdraw_registration', {
           p_registration_id: registrationId
         });
-        if (error) {
-          alert('Withdrawal failed: ' + error.message);
-          return false;
+        if (!error) {
+          await fetchRegistrations();
+          return true;
         }
-        await fetchRegistrations();
-        return true;
       } catch (err: any) {
-        alert('Withdrawal failed: ' + err.message);
-        return false;
+        console.warn('[CROSSFIRE] Supabase withdraw fallback:', err);
       }
-    } else {
-      const updated = userRegistrations.filter(r => r.id !== registrationId);
-      setUserRegistrations(updated);
-      localStorage.setItem('crossfire_mock_regs', JSON.stringify(updated));
-      return true;
     }
+
+    const updated = userRegistrations.filter(r => r.id !== registrationId);
+    setUserRegistrations(updated);
+    localStorage.setItem('crossfire_mock_regs', JSON.stringify(updated));
+    return true;
   };
 
   const handleSubmitMedia = async (registrationId: string, url: string): Promise<boolean> => {
@@ -160,26 +195,23 @@ export const EventsProvider: React.FC<{ children: React.ReactNode }> = ({ childr
           p_registration_id: registrationId,
           p_url: url
         });
-        if (error) {
-          alert('Media submission failed: ' + error.message);
-          return false;
+        if (!error) {
+          await fetchRegistrations();
+          return true;
         }
-        await fetchRegistrations();
-        return true;
       } catch (err: any) {
-        alert('Media submission failed: ' + err.message);
-        return false;
+        console.warn('[CROSSFIRE] Supabase submit_media fallback:', err);
       }
-    } else {
-      const updated = userRegistrations.map(r => 
-        r.id === registrationId 
-          ? { ...r, media_url: url, media_submitted_at: new Date().toISOString() } 
-          : r
-      );
-      setUserRegistrations(updated);
-      localStorage.setItem('crossfire_mock_regs', JSON.stringify(updated));
-      return true;
     }
+
+    const updated = userRegistrations.map(r => 
+      r.id === registrationId 
+        ? { ...r, media_url: url, media_submitted_at: new Date().toISOString() } 
+        : r
+    );
+    setUserRegistrations(updated);
+    localStorage.setItem('crossfire_mock_regs', JSON.stringify(updated));
+    return true;
   };
 
   return (

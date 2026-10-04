@@ -56,7 +56,7 @@ export const VolunteerDashboard: React.FC = () => {
       institute: 'DAV Public School, Chandrasekharpur',
       city: 'Bhubaneswar',
       course: '12th Science',
-      events: ['Intelect Odyssey (Quiz)', "Glam 'n' Dazzle (Ramp Walk)"],
+      events: ['Quiz', 'Ramp Walk'],
       contact: '+91 9876543210',
       foodPreference: 'Veg',
       checkedIn: true,
@@ -71,7 +71,7 @@ export const VolunteerDashboard: React.FC = () => {
       institute: 'Buxi Jagabandhu English Medium School',
       city: 'Bhubaneswar',
       course: '12th Science',
-      events: ['Intelect Odyssey (Quiz)'],
+      events: ['Quiz'],
       contact: '+91 9876543211',
       foodPreference: 'Non-veg',
       checkedIn: true,
@@ -87,7 +87,7 @@ export const VolunteerDashboard: React.FC = () => {
       institute: 'Mothers Public School',
       city: 'Bhubaneswar',
       course: '12th Commerce',
-      events: ["Glam 'n' Dazzle (Ramp Walk)"],
+      events: ['Ramp Walk'],
       contact: '+91 9876543212',
       foodPreference: 'Veg',
       checkedIn: true,
@@ -103,7 +103,7 @@ export const VolunteerDashboard: React.FC = () => {
       institute: 'Stewart School, Cuttack',
       city: 'Cuttack',
       course: '12th Arts',
-      events: ['Spontanity Erena (Extempore/Debate)'],
+      events: ['Debate'],
       contact: '+91 9876543213',
       foodPreference: 'Non-veg',
       checkedIn: false,
@@ -117,13 +117,13 @@ export const VolunteerDashboard: React.FC = () => {
       institute: 'SAI International School',
       city: 'Bhubaneswar',
       course: '12th Commerce',
-      events: ['Spectrum on Canvas (Poster Making)'],
+      events: ['Poster Making'],
       contact: '+91 9876543214',
       foodPreference: 'Veg',
       checkedIn: false,
       foodRedeemed: false,
       roomReported: false,
-      assignedRoom: 'Design Studio Block C'
+      assignedRoom: 'Creative Art Studio Block C'
     },
     {
       id: 'CF-106',
@@ -131,14 +131,14 @@ export const VolunteerDashboard: React.FC = () => {
       institute: 'BJB Higher Secondary School',
       city: 'Bhubaneswar',
       course: '12th Science',
-      events: ['Hidden Horizon (Treasure Hunt)'],
+      events: ['Treasure Hunt'],
       contact: '+91 9876543215',
       foodPreference: 'Non-veg',
       checkedIn: true,
       checkInTime: '09:12 AM',
       foodRedeemed: false,
       roomReported: true,
-      assignedRoom: 'Campus Quadrangle'
+      assignedRoom: 'Central Campus Quadrangle'
     }
   ]);
 

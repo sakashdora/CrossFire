@@ -1,13 +1,17 @@
-import { useState, useEffect } from 'react';
-import { supabase } from '../lib/supabase';
+import { useState, useEffect, useCallback } from 'react';
+import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
+import { studentDataService, StudentRegistrationRecord, REGISTRATION_EVENT_KEY } from '../services/studentDataService';
 
 export interface AdminStats {
   totalUsers: number;
   totalRegistrations: number;
   todayRegistrations: number;
-  eventsStats: { id: string, name: string, capacity: number, registered: number }[];
-  recentRegistrations: any[];
+  checkedInCount: number;
+  streamCounts: Record<string, number>;
+  eventsStats: { id: string; name: string; capacity: number; registered: number; group?: string }[];
+  recentRegistrations: StudentRegistrationRecord[];
+  allStudents: StudentRegistrationRecord[];
 }
 
 export function useAdminData() {
@@ -16,74 +20,74 @@ export function useAdminData() {
   const [error, setError] = useState<string | null>(null);
   const { role } = useAuth();
 
+  const loadData = useCallback(async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      // 1. Get base metrics & student list from studentDataService
+      const localMetrics = studentDataService.getMetrics();
+      const allStudents = studentDataService.getAllStudents();
+
+      let finalStats: AdminStats = {
+        totalUsers: localMetrics.totalUsers,
+        totalRegistrations: localMetrics.totalRegistrations,
+        todayRegistrations: localMetrics.todayRegistrations,
+        checkedInCount: localMetrics.checkedInCount,
+        streamCounts: localMetrics.streamCounts,
+        eventsStats: localMetrics.eventsStats,
+        recentRegistrations: localMetrics.recentRegistrations,
+        allStudents: allStudents,
+      };
+
+      // 2. If Supabase is configured and caller has admin role, attempt to supplement from Supabase
+      if (isSupabaseConfigured) {
+        try {
+          const { data: overview, error: ovErr } = await supabase.rpc('admin_overview');
+          if (!ovErr && overview) {
+            finalStats.totalUsers = Math.max(finalStats.totalUsers, overview.total_students || 0);
+            finalStats.totalRegistrations = Math.max(finalStats.totalRegistrations, overview.total_registrations || 0);
+          }
+        } catch {
+          // Gracefully fallback to local synchronized store
+        }
+      }
+
+      setStats(finalStats);
+    } catch (err: any) {
+      console.error('[CROSSFIRE] Error loading admin data:', err);
+      // Fallback to local metrics so admin dashboard never breaks
+      const metrics = studentDataService.getMetrics();
+      const allStudents = studentDataService.getAllStudents();
+      setStats({
+        totalUsers: metrics.totalUsers,
+        totalRegistrations: metrics.totalRegistrations,
+        todayRegistrations: metrics.todayRegistrations,
+        checkedInCount: metrics.checkedInCount,
+        streamCounts: metrics.streamCounts,
+        eventsStats: metrics.eventsStats,
+        recentRegistrations: metrics.recentRegistrations,
+        allStudents,
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
     if (role !== 'admin') return;
 
-    async function fetchStats() {
-      setIsLoading(true);
-      try {
-        // 1. Total users
-        const { count: totalUsers, error: uErr } = await supabase
-          .from('users')
-          .select('*', { count: 'exact', head: true });
-        
-        // 2. Total registrations
-        const { count: totalRegistrations, error: rErr } = await supabase
-          .from('registrations')
-          .select('*', { count: 'exact', head: true });
-          
-        // 3. Today's registrations
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        const { count: todayRegistrations, error: _trErr } = await supabase
-          .from('registrations')
-          .select('*', { count: 'exact', head: true })
-          .gte('created_at', today.toISOString());
-          
-        // 4. Events stats
-        const { data: events, error: eErr } = await supabase
-          .from('events')
-          .select('id, name, max_participants, current_participants');
+    loadData();
 
-        // 5. Recent registrations
-        const { data: recent, error: _recErr } = await supabase
-          .from('registrations')
-          .select(`
-            id,
-            created_at,
-            status,
-            users ( id, first_name, last_name, email ),
-            events ( id, name )
-          `)
-          .order('created_at', { ascending: false })
-          .limit(10);
-          
-        if (uErr || rErr || eErr) {
-          throw new Error('Failed to fetch admin stats');
-        }
+    // Listen to real-time registration events dispatched when students register
+    const handleUpdate = () => {
+      loadData();
+    };
 
-        setStats({
-          totalUsers: totalUsers || 0,
-          totalRegistrations: totalRegistrations || 0,
-          todayRegistrations: todayRegistrations || 0,
-          eventsStats: (events || []).map(e => ({
-            id: e.id,
-            name: e.name,
-            capacity: e.max_participants,
-            registered: e.current_participants
-          })),
-          recentRegistrations: recent || []
-        });
+    window.addEventListener(REGISTRATION_EVENT_KEY, handleUpdate);
+    return () => {
+      window.removeEventListener(REGISTRATION_EVENT_KEY, handleUpdate);
+    };
+  }, [role, loadData]);
 
-      } catch (err: any) {
-        setError(err.message);
-      } finally {
-        setIsLoading(false);
-      }
-    }
-
-    fetchStats();
-  }, [role]);
-
-  return { stats, isLoading, error };
+  return { stats, isLoading, error, refreshStats: loadData };
 }

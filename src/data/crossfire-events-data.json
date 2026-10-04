@@ -1,0 +1,584 @@
+{
+  "event": {
+    "name": "CROSSFIRE",
+    "tagline": "State Level Competition",
+    "year": 2026,
+    "date": "2026-11-15",
+    "eventDate": "November 15, 2026",
+    "targetAudience": "+2 Final Year Students (12th Grade)",
+    "boards": ["CBSE", "ICSE", "CHSE"],
+    "ageGroup": "16-18 years",
+    "venue": "Srusti Campus, Bhubaneswar",
+    "institution": {
+      "name": "Srusti Academy of Graduate Studies",
+      "abbreviation": "SAGS",
+      "affiliation": "Utkal University",
+      "website": "www.sags.ac.in",
+      "courses": [
+        {
+          "name": "BBA",
+          "type": "Honours"
+        },
+        {
+          "name": "BCA",
+          "type": "Honours"
+        },
+        {
+          "name": "B.Com",
+          "type": "Honours"
+        }
+      ]
+    },
+    "organizers": [
+      {
+        "name": "Mr. N.R. Swain",
+        "phone": "7008671339",
+        "role": "Co-organizer"
+      },
+      {
+        "name": "Mr. A. Meher",
+        "phone": "8455090984",
+        "role": "Co-organizer"
+      }
+    ],
+    "totalPrizePool": 50000,
+    "currency": "INR",
+    "entryFee": 0,
+    "rules": [
+      {
+        "id": 1,
+        "rule": "A Student can participate in two competitions",
+        "priority": "high"
+      },
+      {
+        "id": 2,
+        "rule": "Trophy & Cash Awards for Champion & Runners-ups",
+        "details": [
+          "For Quiz, participation in a team of two",
+          "For Treasure Hunt in a team by 03 students",
+          "For other events, individual participation of student"
+        ],
+        "priority": "high"
+      },
+      {
+        "id": 3,
+        "rule": "Six Teams shall be selected for final round of quiz event through written round",
+        "priority": "medium"
+      },
+      {
+        "id": 4,
+        "rule": "Reels to be shot in Srusti Campus on the same day",
+        "priority": "medium"
+      },
+      {
+        "id": 5,
+        "rule": "Debate Topic shall be communicated through mobile whatsapp no. / SMS",
+        "priority": "medium"
+      },
+      {
+        "id": 6,
+        "rule": "No Entry Fee for any event",
+        "priority": "high"
+      },
+      {
+        "id": 7,
+        "rule": "The decision of the Judges will be final & binding",
+        "priority": "high"
+      }
+    ]
+  },
+
+  "events": [
+    {
+      "id": "quiz",
+      "name": "Quiz",
+      "emoji": "🎯",
+      "registrationType": "team",
+      "teamSize": 2,
+      "teamSizeRange": {
+        "min": 2,
+        "max": 2
+      },
+      "description": "Written test followed by final round",
+      "format": "Multiple rounds - Written selection + Campus final",
+      "rounds": [
+        {
+          "name": "Written Round",
+          "description": "6 teams selected from written test",
+          "location": "Online/Offline"
+        },
+        {
+          "name": "Final Round",
+          "description": "Top 6 teams compete at Srusti Campus",
+          "location": "Srusti Campus"
+        }
+      ],
+      "scoring": {
+        "criteria": [
+          "Accuracy",
+          "Speed",
+          "Final answers"
+        ],
+        "maxScore": 100,
+        "judge": "Faculty members"
+      },
+      "prizes": {
+        "totalAllocation": 24500,
+        "breakdown": [
+          {
+            "position": 1,
+            "title": "Champion",
+            "amount": 6000,
+            "prizeType": "cash"
+          },
+          {
+            "position": 2,
+            "title": "1st Runner-up",
+            "amount": 4000,
+            "prizeType": "cash"
+          },
+          {
+            "position": 3,
+            "title": "2nd Runner-up",
+            "amount": 3500,
+            "prizeType": "cash"
+          },
+          {
+            "position": 4,
+            "title": "3rd Runner-up",
+            "amount": 1500,
+            "prizeType": "cash"
+          },
+          {
+            "position": 5,
+            "title": "4th Runner-up",
+            "amount": 1500,
+            "prizeType": "cash"
+          },
+          {
+            "position": 6,
+            "title": "5th Runner-up",
+            "amount": 1500,
+            "prizeType": "cash"
+          },
+          {
+            "position": "all",
+            "title": "Trophy",
+            "prizeType": "trophy"
+          }
+        ]
+      },
+      "mediaPartner": ["Prameya", "News 7"]
+    },
+
+    {
+      "id": "ramp-walk",
+      "name": "Ramp Walk",
+      "emoji": "👗",
+      "registrationType": "individual",
+      "teamSize": 1,
+      "description": "Fashion & personality showcase",
+      "format": "Live performance on stage",
+      "duration": "2 minutes per participant",
+      "location": "Srusti Campus",
+      "scoring": {
+        "criteria": [
+          "Appearance & Confidence (30 points)",
+          "Stage Presence (30 points)",
+          "Personality & Expression (40 points)"
+        ],
+        "maxScore": 100,
+        "judge": "Fashion experts / Celebrity judges"
+      },
+      "prizes": {
+        "totalAllocation": 9000,
+        "breakdown": [
+          {
+            "position": 1,
+            "title": "Champion",
+            "amount": 3000,
+            "prizeType": "cash"
+          },
+          {
+            "position": 2,
+            "title": "1st Runner-up",
+            "amount": 2000,
+            "prizeType": "cash"
+          },
+          {
+            "position": 3,
+            "title": "2nd Runner-up",
+            "amount": 1000,
+            "prizeType": "cash"
+          },
+          {
+            "position": "all",
+            "title": "Trophy",
+            "prizeType": "trophy"
+          }
+        ]
+      }
+    },
+
+    {
+      "id": "reels",
+      "name": "Reels",
+      "emoji": "📹",
+      "registrationType": "individual",
+      "teamSize": 1,
+      "description": "Short video content creation",
+      "format": "Pre-recorded video submission",
+      "duration": "30-60 seconds",
+      "submissionDeadline": "2026-11-14",
+      "fileFormat": ["MP4", "MOV"],
+      "maxFileSize": "50MB",
+      "location": "Video submission + screening at campus",
+      "scoring": {
+        "criteria": [
+          "Creativity (35 points)",
+          "Content Quality (35 points)",
+          "Execution (30 points)"
+        ],
+        "maxScore": 100,
+        "judge": "Media professionals"
+      },
+      "prizes": {
+        "totalAllocation": 9000,
+        "breakdown": [
+          {
+            "position": 1,
+            "title": "Champion",
+            "amount": 3000,
+            "prizeType": "cash"
+          },
+          {
+            "position": 2,
+            "title": "1st Runner-up",
+            "amount": 2000,
+            "prizeType": "cash"
+          },
+          {
+            "position": 3,
+            "title": "2nd Runner-up",
+            "amount": 1000,
+            "prizeType": "cash"
+          },
+          {
+            "position": "all",
+            "title": "Trophy",
+            "prizeType": "trophy"
+          }
+        ]
+      }
+    },
+
+    {
+      "id": "debate",
+      "name": "Debate",
+      "emoji": "🎤",
+      "registrationType": "individual",
+      "teamSize": 1,
+      "description": "Argumentation & public speaking",
+      "format": "Live debate with prepared topics",
+      "topicDelivery": "Via WhatsApp/SMS on event morning",
+      "prepTime": "15 minutes",
+      "performanceTime": "Opening: 2 minutes, Rebuttal: 1 minute",
+      "location": "Srusti Campus - Debate Hall",
+      "scoring": {
+        "criteria": [
+          "Argumentation & Logic (40 points)",
+          "Clarity & Expression (30 points)",
+          "Rebuttal Strength (30 points)"
+        ],
+        "maxScore": 100,
+        "judge": "Debate coaches / Professors"
+      },
+      "prizes": {
+        "totalAllocation": 7000,
+        "breakdown": [
+          {
+            "position": 1,
+            "title": "Champion",
+            "amount": 4000,
+            "prizeType": "cash"
+          },
+          {
+            "position": 2,
+            "title": "1st Runner-up",
+            "amount": 2000,
+            "prizeType": "cash"
+          },
+          {
+            "position": 3,
+            "title": "2nd Runner-up",
+            "amount": 1000,
+            "prizeType": "cash"
+          },
+          {
+            "position": "all",
+            "title": "Trophy",
+            "prizeType": "trophy"
+          }
+        ]
+      }
+    },
+
+    {
+      "id": "poster-making",
+      "name": "Poster Making",
+      "emoji": "🎨",
+      "registrationType": "individual",
+      "teamSize": 1,
+      "description": "Artistic design & creative expression",
+      "format": "Physical or digital artwork",
+      "theme": "Announced at event start",
+      "duration": "On-campus creation",
+      "location": "Srusti Campus - Art Studio",
+      "submissionType": "Physical poster or digital file",
+      "scoring": {
+        "criteria": [
+          "Design & Aesthetics (35 points)",
+          "Message Clarity (35 points)",
+          "Creativity & Innovation (30 points)"
+        ],
+        "maxScore": 100,
+        "judge": "Art professors / Graphic designers"
+      },
+      "prizes": {
+        "totalAllocation": 7000,
+        "breakdown": [
+          {
+            "position": 1,
+            "title": "Champion",
+            "amount": 4000,
+            "prizeType": "cash"
+          },
+          {
+            "position": 2,
+            "title": "1st Runner-up",
+            "amount": 2000,
+            "prizeType": "cash"
+          },
+          {
+            "position": 3,
+            "title": "2nd Runner-up",
+            "amount": 1000,
+            "prizeType": "cash"
+          },
+          {
+            "position": "all",
+            "title": "Trophy",
+            "prizeType": "trophy"
+          }
+        ]
+      }
+    },
+
+    {
+      "id": "treasure-hunt",
+      "name": "Treasure Hunt",
+      "emoji": "🗺️",
+      "registrationType": "team",
+      "teamSize": 3,
+      "teamSizeRange": {
+        "min": 3,
+        "max": 3
+      },
+      "description": "Physical puzzle solving across campus",
+      "format": "Multi-station treasure hunt game",
+      "location": "Srusti Campus - Multiple venues",
+      "scoring": {
+        "criteria": [
+          "Speed (Time to complete: 50 points)",
+          "Accuracy (Correct answers: 50 points)",
+          "Bonus (First 3 teams: 10 points each)"
+        ],
+        "maxScore": 110,
+        "judge": "Event coordinators + safety staff"
+      },
+      "prizes": {
+        "totalAllocation": 8000,
+        "breakdown": [
+          {
+            "position": 1,
+            "title": "Champion",
+            "amount": 3000,
+            "prizeType": "cash"
+          },
+          {
+            "position": 2,
+            "title": "1st Runner-up",
+            "amount": 2000,
+            "prizeType": "cash"
+          },
+          {
+            "position": 3,
+            "title": "2nd Runner-up",
+            "amount": 1000,
+            "prizeType": "cash"
+          },
+          {
+            "position": "all",
+            "title": "Trophy",
+            "prizeType": "trophy"
+          }
+        ]
+      }
+    }
+  ],
+
+  "registration": {
+    "maxEventsPerStudent": 2,
+    "maxEventsDescription": "Each student can participate in maximum 2 events",
+    "registrationDeadline": "2026-11-14",
+    "registrationMethod": "Online via QR code",
+    "studentDocuments": [
+      "Valid ID proof",
+      "School/College certificate",
+      "Contact number",
+      "Email address"
+    ],
+    "registrationFee": 0,
+    "registrationTypes": {
+      "individual": {
+        "events": ["Ramp Walk", "Reels", "Debate", "Poster Making"],
+        "participantsPerEvent": 1,
+        "estimatedStudents": "~200"
+      },
+      "team": {
+        "events": [
+          {
+            "name": "Quiz",
+            "teamSize": 2,
+            "estimatedTeams": "~45"
+          },
+          {
+            "name": "Treasure Hunt",
+            "teamSize": 3,
+            "estimatedTeams": "~35"
+          }
+        ],
+        "totalTeamEstimate": "~80 teams (240-280 students in teams)"
+      }
+    },
+    "expectedParticipants": {
+      "individual": 200,
+      "teamBased": 280,
+      "total": "~480-500 students (approximate)"
+    }
+  },
+
+  "prizes": {
+    "totalPrizePool": 50000,
+    "currency": "INR",
+    "breakdown": {
+      "Quiz": {
+        "allocation": 24500,
+        "topPosition": 6000,
+        "participants": "6 teams (12 students)"
+      },
+      "Ramp Walk": {
+        "allocation": 9000,
+        "topPosition": 3000,
+        "participants": "~50 students"
+      },
+      "Reels": {
+        "allocation": 9000,
+        "topPosition": 3000,
+        "participants": "~50 students"
+      },
+      "Debate": {
+        "allocation": 7000,
+        "topPosition": 4000,
+        "participants": "~50 students"
+      },
+      "Poster Making": {
+        "allocation": 7000,
+        "topPosition": 4000,
+        "participants": "~50 students"
+      },
+      "Treasure Hunt": {
+        "allocation": 8000,
+        "topPosition": 3000,
+        "participants": "9 teams (27 students)"
+      }
+    },
+    "trophies": {
+      "types": "Gold, Silver, Bronze medals/trophies",
+      "distribution": "All events have trophies for top 3 positions"
+    },
+    "mediaPartners": [
+      "Prameya News",
+      "News 7"
+    ]
+  },
+
+  "timeline": {
+    "registrationStart": "2026-10-25",
+    "registrationDeadline": "2026-11-14",
+    "eventDate": "2026-11-15",
+    "eventStartTime": "10:00 AM",
+    "eventEndTime": "04:00 PM",
+    "schedule": [
+      {
+        "time": "09:30 AM",
+        "activity": "Registration & Check-in"
+      },
+      {
+        "time": "10:00 AM",
+        "activity": "Opening ceremony"
+      },
+      {
+        "time": "10:30 AM",
+        "activity": "Quiz event starts"
+      },
+      {
+        "time": "11:30 AM",
+        "activity": "Ramp Walk event"
+      },
+      {
+        "time": "12:30 PM",
+        "activity": "Lunch break"
+      },
+      {
+        "time": "01:30 PM",
+        "activity": "Debate event"
+      },
+      {
+        "time": "02:30 PM",
+        "activity": "Reels screening + Poster Making judging"
+      },
+      {
+        "time": "03:00 PM",
+        "activity": "Treasure Hunt event"
+      },
+      {
+        "time": "04:00 PM",
+        "activity": "Results announcement + Awards ceremony"
+      }
+    ]
+  },
+
+  "contacts": {
+    "primaryContact": {
+      "name": "Mr. N.R. Swain",
+      "phone": "+91-7008671339",
+      "role": "Event Coordinator"
+    },
+    "secondaryContact": {
+      "name": "Mr. A. Meher",
+      "phone": "+91-8455090984",
+      "role": "Co-coordinator"
+    },
+    "email": "mail@srustiacademy.ac.in",
+    "website": "www.sags.ac.in"
+  },
+
+  "metadata": {
+    "dataVersion": "1.0",
+    "lastUpdated": "2026-10-04",
+    "dataSource": "Official CROSSFIRE 2026 Event Documentation",
+    "eventStatus": "Confirmed",
+    "registrationStatus": "Open"
+  }
+}

@@ -53,9 +53,9 @@ const CAMPUS_VENUES: CampusVenue[] = [
     name: 'Auditorium A',
     block: 'Main Academic Block',
     floor: 'Ground Floor',
-    events: ['Intelect Odyssey (Quiz)'],
-    coordinator: 'Prof. S. K. Mishra',
-    phone: '+91 94370 12345',
+    events: ['Quiz (Written Selection & Finals)'],
+    coordinator: 'Mr. N.R. Swain',
+    phone: '+91 7008671339',
     status: 'Check-in Live',
     capacity: '400 Seats (Full AC)'
   },
@@ -64,42 +64,53 @@ const CAMPUS_VENUES: CampusVenue[] = [
     name: 'Srusti Open Amphitheatre',
     block: 'Central Courtyard East',
     floor: 'Ground Level',
-    events: ["Glam 'n' Dazzle (Ramp Walk)"],
-    coordinator: 'Prof. R. Mohapatra',
-    phone: '+91 98610 54321',
+    events: ['Ramp Walk'],
+    coordinator: 'Mr. A. Meher',
+    phone: '+91 8455090984',
     status: 'Open',
     capacity: '800 Standing / Seated'
   },
   {
     id: 'seminar-hall',
-    name: 'Management Seminar Hall 1',
+    name: 'Management Seminar Hall B',
     block: 'Management Wing',
     floor: '1st Floor',
-    events: ['Spontanity Erena (Extempore/Debate)'],
-    coordinator: 'Dr. P. R. Das',
-    phone: '+91 94371 98765',
+    events: ['Debate'],
+    coordinator: 'Mr. N.R. Swain',
+    phone: '+91 7008671339',
     status: 'Open',
     capacity: '150 Seats'
   },
   {
-    id: 'comp-lab-2',
-    name: 'Advanced Computing Lab 2',
-    block: 'IT & Tech Wing',
+    id: 'media-lab',
+    name: 'Media Lab & Studio Block',
+    block: 'Media Wing Block C',
     floor: '2nd Floor',
-    events: ['Shorts / Reels Screening', 'Spectrum on Canvas Digital Review'],
-    coordinator: 'Er. A. Mohanty',
-    phone: '+91 99380 67890',
+    events: ['Reels Screening', 'Poster Making'],
+    coordinator: 'Mr. A. Meher',
+    phone: '+91 8455090984',
     status: 'Evaluating',
-    capacity: '90 High-End Terminals'
+    capacity: 'Studio Screening Hall'
+  },
+  {
+    id: 'central-quad',
+    name: 'Central Campus Quadrangle',
+    block: 'Outdoor Campus Grounds',
+    floor: 'Ground Level',
+    events: ['Treasure Hunt'],
+    coordinator: 'Mr. N.R. Swain',
+    phone: '+91 7008671339',
+    status: 'Open',
+    capacity: 'Outdoor Campus Area'
   },
   {
     id: 'dining-courtyard',
     name: 'Dining Courtyard & Cafeteria',
     block: 'Student Recreation Wing',
     floor: 'Ground Floor',
-    events: ['Complimentary Student & Teacher Lunch (01:00 PM - 02:00 PM)'],
-    coordinator: 'Mr. B. Nayak (Catering Lead)',
-    phone: '+91 93370 11223',
+    events: ['Complimentary Student & Teacher Lunch (12:30 PM - 01:30 PM)'],
+    coordinator: 'SAGS Catering Services',
+    phone: '+91 8455090984',
     status: 'Open',
     capacity: '6 Food Counters (Veg & Non-Veg)'
   },
@@ -110,7 +121,7 @@ const CAMPUS_VENUES: CampusVenue[] = [
     floor: 'Ground Level',
     events: ['Entry QR Badge Verification, Kit Collection & Teacher Escorts'],
     coordinator: 'Student Volunteer Helpdesk',
-    phone: '+91 94370 00000',
+    phone: '+91 7008671339',
     status: 'Open',
     capacity: 'All Registered Delegates'
   }
@@ -312,7 +323,7 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
           </div>
           <div className="min-w-0">
             <span className="text-lg sm:text-xl font-black text-navy block leading-none">
-              08:30 AM
+              09:30 AM
             </span>
             <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mt-1 block truncate">
               Reporting at Gate 1
@@ -326,7 +337,7 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
           </div>
           <div className="min-w-0">
             <span className="text-lg sm:text-xl font-black text-navy block leading-none">
-              ₹81,000+
+              ₹50,000
             </span>
             <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mt-1 block truncate">
               Total Cash Prize Pool
@@ -577,31 +588,39 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
             <div className="py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-1">
               <div className="flex items-center gap-2">
                 <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 shrink-0"></span>
-                <strong className="text-gray-900 text-sm">08:30 AM - 09:30 AM</strong>
+                <strong className="text-gray-900 text-sm">09:30 AM - 10:00 AM</strong>
               </div>
-              <span className="text-gray-600 sm:text-right">Campus Entry, Security QR Badge Scanning & Welcome Kit at Gate 1</span>
+              <span className="text-gray-600 sm:text-right">Campus Entry, Security QR Badge Scanning & Welcome Desk at Gate 1</span>
+            </div>
+
+            <div className="py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+              <div className="flex items-center gap-2">
+                <span className="w-2.5 h-2.5 rounded-full bg-blue-500 shrink-0"></span>
+                <strong className="text-navy text-sm">10:00 AM - 10:30 AM</strong>
+              </div>
+              <span className="text-navy font-bold sm:text-right">Opening Ceremony & Dignitary Addresses</span>
             </div>
 
             <div className="py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-1">
               <div className="flex items-center gap-2">
                 <span className="w-2.5 h-2.5 rounded-full bg-orange-500 shrink-0"></span>
-                <strong className="text-orange-600 text-sm">09:30 AM - 11:30 AM</strong>
+                <strong className="text-orange-600 text-sm">10:30 AM - 12:00 PM</strong>
               </div>
-              <span className="text-navy font-bold sm:text-right">Intelect Odyssey (Quiz Preliminary & Buzzer Finals) — Auditorium A</span>
+              <span className="text-navy font-bold sm:text-right">Quiz (Written Preliminary & Final Buzzer Round) — Auditorium A</span>
             </div>
 
             <div className="py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-1">
               <div className="flex items-center gap-2">
                 <span className="w-2.5 h-2.5 rounded-full bg-purple-500 shrink-0"></span>
-                <strong className="text-navy text-sm">11:30 AM - 01:00 PM</strong>
+                <strong className="text-navy text-sm">11:30 AM - 12:30 PM</strong>
               </div>
-              <span className="text-navy font-bold sm:text-right">Glam 'n' Dazzle (Ramp Walk & Traditional Attire) — Open Amphitheatre</span>
+              <span className="text-navy font-bold sm:text-right">Ramp Walk (Fashion & Personality Runway) — Open Amphitheatre</span>
             </div>
 
             <div className="py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-1 bg-emerald-50/60 p-3 rounded-2xl">
               <div className="flex items-center gap-2">
                 <Utensils className="w-4 h-4 text-emerald-600 shrink-0" />
-                <strong className="text-emerald-800 text-sm">01:00 PM - 02:00 PM</strong>
+                <strong className="text-emerald-800 text-sm">12:30 PM - 01:30 PM</strong>
               </div>
               <span className="text-emerald-800 font-black sm:text-right">Complimentary Hot Buffet Lunch for Students & Escorting Teachers (Dining Courtyard)</span>
             </div>
@@ -609,17 +628,33 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
             <div className="py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-1">
               <div className="flex items-center gap-2">
                 <span className="w-2.5 h-2.5 rounded-full bg-blue-500 shrink-0"></span>
-                <strong className="text-navy text-sm">02:00 PM - 03:30 PM</strong>
+                <strong className="text-navy text-sm">01:30 PM - 02:30 PM</strong>
               </div>
-              <span className="text-navy font-bold sm:text-right">Spontanity Erena (Debate) & Spectrum on Canvas (Poster Making)</span>
+              <span className="text-navy font-bold sm:text-right">Debate (Topic Released via WhatsApp/SMS) — Seminar Hall B</span>
+            </div>
+
+            <div className="py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+              <div className="flex items-center gap-2">
+                <span className="w-2.5 h-2.5 rounded-full bg-pink-500 shrink-0"></span>
+                <strong className="text-navy text-sm">02:30 PM - 03:00 PM</strong>
+              </div>
+              <span className="text-navy font-bold sm:text-right">Reels Screening & Poster Making Judging — Media Lab Block</span>
+            </div>
+
+            <div className="py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+              <div className="flex items-center gap-2">
+                <span className="w-2.5 h-2.5 rounded-full bg-amber-500 shrink-0"></span>
+                <strong className="text-navy text-sm">03:00 PM - 04:00 PM</strong>
+              </div>
+              <span className="text-navy font-bold sm:text-right">Treasure Hunt (Campus Clue Solving) — Central Quad</span>
             </div>
 
             <div className="py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-1 bg-orange-50/80 p-3 rounded-2xl">
               <div className="flex items-center gap-2">
                 <Trophy className="w-4 h-4 text-orange-500 shrink-0" />
-                <strong className="text-orange-600 text-sm">03:30 PM - 04:30 PM</strong>
+                <strong className="text-orange-600 text-sm">04:00 PM - 05:00 PM</strong>
               </div>
-              <span className="text-orange-700 font-black sm:text-right">Grand Valedictory, ₹81,000+ Cash Handover & College Champions Trophy</span>
+              <span className="text-orange-700 font-black sm:text-right">Grand Valedictory, ₹50,000 Cash Handover & College Champions Trophy</span>
             </div>
           </div>
         </div>

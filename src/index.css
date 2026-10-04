@@ -12,6 +12,10 @@
     --color-gold: #FFC107;
   }
 
+  html {
+    scroll-padding-top: 5rem;
+  }
+
   body {
     @apply bg-[#F8FAFC] text-gray-800 font-sans;
     -webkit-tap-highlight-color: transparent;

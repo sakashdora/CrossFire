@@ -40,7 +40,7 @@ interface CandidateEvaluation {
 export const JudgePanel: React.FC = () => {
   const { user } = useAuth();
   const { events } = useEvents();
-  const [selectedEventId, setSelectedEventId] = useState<string>('ev-quiz');
+  const [selectedEventId, setSelectedEventId] = useState<string>('quiz');
   const [selectedCandidateId, setSelectedCandidateId] = useState<string>('c-1');
   const [candidateSearch, setCandidateSearch] = useState('');
   
@@ -181,8 +181,13 @@ export const JudgePanel: React.FC = () => {
     ]
   });
 
-  const selectedEvent = events.find(e => e.id === selectedEventId) || events[0];
-  const candidates = trackCandidates[selectedEventId] || [];
+  const selectedEvent = events.find(e => e.id === selectedEventId || e.slug === selectedEventId) || events[0];
+  const candidates = 
+    trackCandidates[selectedEvent?.slug || ''] || 
+    trackCandidates[selectedEvent?.id || ''] || 
+    trackCandidates['ev-' + (selectedEvent?.slug || '')] || 
+    trackCandidates[selectedEventId] || 
+    trackCandidates['ev-' + selectedEventId] || [];
   const currentCandidate = candidates.find(c => c.id === selectedCandidateId) || candidates[0];
   const currentIndex = candidates.findIndex(c => c.id === currentCandidate?.id);
 

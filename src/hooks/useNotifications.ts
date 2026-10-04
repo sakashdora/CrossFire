@@ -6,8 +6,8 @@ import { useAuth } from '../context/AuthContext';
 
 export const useNotifications = () => {
   const { user } = useAuth();
-  const [notifications, setNotifications] = useState<NotificationItem[]>([]);
-  const [unreadCount, setUnreadCount] = useState(0);
+  const [notifications, setNotifications] = useState<NotificationItem[]>(INITIAL_NOTIFICATIONS);
+  const [unreadCount, setUnreadCount] = useState(INITIAL_NOTIFICATIONS.filter(n => !n.read_at).length);
 
   const fetchNotifications = async () => {
     if (!isSupabaseConfigured || !user) {
@@ -23,13 +23,17 @@ export const useNotifications = () => {
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
-      
-      const notifs = data as NotificationItem[];
-      setNotifications(notifs);
-      setUnreadCount(notifs.filter(n => !n.read_at).length);
-    } catch (err) {
-      console.error('Error fetching notifications:', err);
+      if (!error && data && data.length > 0) {
+        const notifs = data as NotificationItem[];
+        setNotifications(notifs);
+        setUnreadCount(notifs.filter(n => !n.read_at).length);
+      } else {
+        setNotifications(INITIAL_NOTIFICATIONS);
+        setUnreadCount(INITIAL_NOTIFICATIONS.filter(n => !n.read_at).length);
+      }
+    } catch {
+      setNotifications(INITIAL_NOTIFICATIONS);
+      setUnreadCount(INITIAL_NOTIFICATIONS.filter(n => !n.read_at).length);
     }
   };
 
@@ -37,56 +41,64 @@ export const useNotifications = () => {
     fetchNotifications();
 
     if (isSupabaseConfigured && user) {
-      // Subscribe to new notifications
-      const channel = supabase
-        .channel('public:notifications')
-        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'notifications', filter: `user_id=eq.${user.id}` }, () => {
-          fetchNotifications();
-        })
-        .subscribe();
+      try {
+        // Use a unique channel name per user to prevent collision
+        const channelName = `notifications-${user.id}-${Math.random().toString(36).substring(2, 7)}`;
+        const channel = supabase
+          .channel(channelName)
+          .on(
+            'postgres_changes',
+            { event: 'INSERT', schema: 'public', table: 'notifications', filter: `user_id=eq.${user.id}` },
+            () => {
+              fetchNotifications();
+            }
+          );
 
-      return () => {
-        supabase.removeChannel(channel);
-      };
+        channel.subscribe();
+
+        return () => {
+          try {
+            supabase.removeChannel(channel);
+          } catch {
+            // Ignore channel removal error
+          }
+        };
+      } catch (err) {
+        console.warn('[CROSSFIRE] Realtime notification subscription notice:', err);
+      }
     }
   }, [user]);
 
   const markAsRead = async (notificationId: string) => {
-    if (!isSupabaseConfigured) {
-      setNotifications(prev => prev.map(n => n.id === notificationId ? { ...n, read_at: new Date().toISOString() } : n));
-      setUnreadCount(prev => Math.max(0, prev - 1));
-      return;
-    }
+    setNotifications(prev => prev.map(n => n.id === notificationId ? { ...n, read_at: new Date().toISOString() } : n));
+    setUnreadCount(prev => Math.max(0, prev - 1));
 
-    try {
-      await supabase
-        .from('notifications')
-        .update({ read_at: new Date().toISOString() })
-        .eq('id', notificationId);
-      
-      await fetchNotifications();
-    } catch (err) {
-      console.error('Error marking notification as read:', err);
+    if (isSupabaseConfigured && user) {
+      try {
+        await supabase
+          .from('notifications')
+          .update({ read_at: new Date().toISOString() })
+          .eq('id', notificationId);
+      } catch {
+        // Ignore error
+      }
     }
   };
 
   const markAllAsRead = async () => {
-    if (!isSupabaseConfigured || !user) {
-      setNotifications(prev => prev.map(n => ({ ...n, read_at: new Date().toISOString() })));
-      setUnreadCount(0);
-      return;
-    }
+    setNotifications(prev => prev.map(n => ({ ...n, read_at: new Date().toISOString() })));
+    setUnreadCount(0);
 
-    try {
-      await supabase
-        .from('notifications')
-        .update({ read_at: new Date().toISOString() })
-        .eq('user_id', user.id)
-        .is('read_at', null);
-      
-      await fetchNotifications();
-    } catch (err) {
-      console.error('Error marking all notifications as read:', err);
+    if (isSupabaseConfigured && user) {
+      try {
+        await supabase
+          .from('notifications')
+          .update({ read_at: new Date().toISOString() })
+          .eq('user_id', user.id)
+          .is('read_at', null);
+      } catch {
+        // Ignore error
+      }
     }
   };
 

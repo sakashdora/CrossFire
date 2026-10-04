@@ -1,15 +1,15 @@
 import React, { useEffect, useRef } from 'react';
-import { ParticlesSwarm, ParticlesSwarmOptions } from './ParticlesSwarm';
+import { ParticlesSwarm } from './ParticlesSwarm';
 
-interface HeroParticlesBackgroundProps extends ParticlesSwarmOptions {
+interface HeroParticlesBackgroundProps {
+  count?: number;
+  speedMult?: number;
   className?: string;
 }
 
 export const HeroParticlesBackground: React.FC<HeroParticlesBackgroundProps> = ({
   count,
   speedMult = 1,
-  cameraZ,
-  interactive = true,
   className = '',
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -19,18 +19,13 @@ export const HeroParticlesBackground: React.FC<HeroParticlesBackgroundProps> = (
     const container = containerRef.current;
     if (!container) return;
 
-    // Adapt particle count for mobile screens to maintain 60 FPS
+    // Calibrated particle count for refined, premium aesthetics & silky 60 FPS
     const isMobile = window.innerWidth < 768;
-    const effectiveCount = count ?? (isMobile ? 9000 : 18000);
-    const effectiveCameraZ = cameraZ ?? (isMobile ? 145 : 125);
+    const effectiveCount = count ?? (isMobile ? 2200 : 4500);
 
     try {
-      const swarm = new ParticlesSwarm(container, {
-        count: effectiveCount,
-        speedMult,
-        cameraZ: effectiveCameraZ,
-        interactive,
-      });
+      const swarm = new ParticlesSwarm(container, effectiveCount);
+      swarm.speedMult = speedMult;
       swarmRef.current = swarm;
     } catch (err) {
       console.error('Failed to initialize ParticlesSwarm WebGL background:', err);
@@ -42,7 +37,7 @@ export const HeroParticlesBackground: React.FC<HeroParticlesBackgroundProps> = (
         swarmRef.current = null;
       }
     };
-  }, [count, speedMult, cameraZ, interactive]);
+  }, [count, speedMult]);
 
   return (
     <div

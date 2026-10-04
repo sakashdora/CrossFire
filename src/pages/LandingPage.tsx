@@ -1,6 +1,7 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CountdownTimer } from '../components/CountdownTimer';
+import { HeroParticlesBackground } from '../components/HeroParticlesBackground';
 import { EventItem } from '../types';
 import { useEvents } from '../context/EventsContext';
 import {
@@ -18,7 +19,6 @@ import {
   Palette,
   Compass,
   CalendarDays,
-  Megaphone,
   Clock,
   Download,
   ChevronDown,
@@ -80,58 +80,71 @@ const StaggeredText = ({ text, className }: { text: string, className?: string }
 interface LandingPageProps {
   onSelectEvent: (event: EventItem) => void;
   setCurrentView: (view: string) => void;
+  onOpenNoticeModal?: () => void;
 }
 
-const TICKER_ITEMS = [
-  '🏆 Registration is now OPEN for CrossFire 2026 — Zero entry fee for all +2 students',
-  '💰 Grand Prize Pool of ₹81,000+ with ₹13,500 cash per track + trophies & merit certificates',
-  '🎯 Maximum 2 events per student — Choose across Academic, Cultural, Media & Arts arenas',
-  '📍 Venue: Srusti Academy of Graduate Studies, Chandaka Industrial Estate, Patia, Bhubaneswar',
-  '✅ Exclusively for Class 12 / +2 2nd Year students from CBSE, ICSE & CHSE councils',
-  '⚡ Free welcome breakfast & refreshments provided for all registered participants',
-  '📊 Live real-time scoring and leaderboard broadcast on campus arena screens',
-];
 
 const SCHEDULE_ITEMS = [
   {
-    time: '08:30 AM – 09:30 AM',
-    title: 'Contingent Reporting & Welcome Breakfast',
-    description: 'Registration verification, badge collection, team kit distribution, and complimentary campus breakfast.',
+    time: '09:30 AM – 10:00 AM',
+    title: 'Registration & Check-in',
+    description: 'Registration verification, badge collection, team kit distribution, and campus reception at Gate 1.',
     icon: Coffee,
     tag: 'Check-In'
   },
   {
-    time: '09:30 AM – 10:15 AM',
-    title: 'Grand Inauguration & Opening Ceremony',
-    description: 'Dignitary addresses, lighting of the Crossfire flame, and briefing on fair play & judging standards.',
+    time: '10:00 AM – 10:30 AM',
+    title: 'Opening Ceremony',
+    description: 'Dignitary addresses, lighting of the CrossFire ceremonial lamp, and briefing on fair play & judging standards.',
     icon: Zap,
     tag: 'Main Stage'
   },
   {
-    time: '10:30 AM – 01:30 PM',
-    title: 'Track Battles & Preliminary Rounds',
-    description: 'Brain Buzz (Quiz), War of Words (Debate), Canvas Craft, Shorts/Reels & Campus Quest preliminary heats.',
+    time: '10:30 AM – 12:00 PM',
+    title: 'Quiz (Written Selection & Finals)',
+    description: 'Written preliminary test selecting top 6 teams of two, followed by high-voltage campus buzzer finals.',
     icon: Sparkles,
-    tag: 'Multi-Arena'
+    tag: 'Auditorium A'
   },
   {
-    time: '01:30 PM – 02:30 PM',
-    title: 'Networking Lunch & Media Showcase',
-    description: 'Complimentary buffet lunch for all participants with student DJ sets and finalist reel screenings.',
-    icon: Users,
-    tag: 'Campus Arena'
-  },
-  {
-    time: '02:30 PM – 04:00 PM',
-    title: 'Glam Walk & Grand Stage Finals',
-    description: 'High-octane Ramp Walk finals, final debate face-off, and live countdown scoring reveal.',
+    time: '11:30 AM – 12:30 PM',
+    title: 'Ramp Walk Event',
+    description: 'Solo 2-minute stage showcase celebrating confidence, poise, styling, and charismatic stage presence.',
     icon: Trophy,
     tag: 'Amphitheatre'
   },
   {
+    time: '12:30 PM – 01:30 PM',
+    title: 'Lunch Break & Refreshments',
+    description: 'Complimentary hot buffet lunch for all participants, escorting teachers, and coordinators at Dining Courtyard.',
+    icon: Users,
+    tag: 'Dining Courtyard'
+  },
+  {
+    time: '01:30 PM – 02:30 PM',
+    title: 'Debate Event',
+    description: 'Solo live debate on contemporary topics communicated on event morning via WhatsApp / SMS.',
+    icon: Sparkles,
+    tag: 'Seminar Hall B'
+  },
+  {
+    time: '02:30 PM – 03:00 PM',
+    title: 'Reels Screening & Poster Making Judging',
+    description: 'Campus-shot reels screening alongside evaluation of physical poster making artworks.',
+    icon: Trophy,
+    tag: 'Media Lab Block'
+  },
+  {
+    time: '03:00 PM – 04:00 PM',
+    title: 'Treasure Hunt Event',
+    description: 'Multi-station clue decoding challenge across campus grounds in teams of 3 students.',
+    icon: Sparkles,
+    tag: 'Central Quad'
+  },
+  {
     time: '04:00 PM – 05:00 PM',
-    title: 'Valedictory & ₹81,000+ Prize Distribution',
-    description: 'Awarding cash prizes, championship trophies, medals, and institutional merit certificates.',
+    title: 'Valedictory & ₹50,000 Prize Distribution',
+    description: 'Awarding cash prizes, championship trophies, medals, and merit certificates with media coverage.',
     icon: Award,
     tag: 'Awards Gala'
   },
@@ -167,11 +180,11 @@ const FAQS = [
   },
   {
     q: 'What is the cash prize structure for each track?',
-    a: 'Each of the 6 competitive tracks features a total prize pool of ₹13,500: 1st Place wins ₹7,000 Cash + Trophy + Certificate; 2nd Place wins ₹4,000 Cash + Medal + Certificate; 3rd Place wins ₹2,500 Cash + Medal + Certificate.'
+    a: 'The total cash prize pool is ₹50,000 distributed across 6 events: Quiz has a ₹24,500 prize pool (1st: ₹6,000, 2nd: ₹4,000, 3rd: ₹3,500, plus ₹1,500 each for 4th, 5th, and 6th positions). Ramp Walk and Reels feature ₹9,000 each (1st: ₹3,000, 2nd: ₹2,000, 3rd: ₹1,000). Debate and Poster Making feature ₹7,000 each (1st: ₹4,000, 2nd: ₹2,000, 3rd: ₹1,000), and Treasure Hunt features ₹8,000 (1st: ₹3,000, 2nd: ₹2,000, 3rd: ₹1,000). Winners also receive championship trophies and state certificates.'
   },
   {
     q: 'Can students from the same college form a team?',
-    a: 'Yes! For team events (like Brain Buzz Quiz and Campus Quest), all team members should belong to the same institution. You can designate your team name during the registration process.'
+    a: 'Yes! For team events (Quiz with a team of 2, and Treasure Hunt with a team of 3), team members should belong to the same institution. You can register your team members during registration or report together at the campus.'
   },
   {
     q: 'Will all participants receive official certificates?',
@@ -179,67 +192,11 @@ const FAQS = [
   }
 ];
 
-const StarField: React.FC = () => {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    let animationId: number;
-    const stars: { x: number; y: number; r: number; alpha: number; speed: number }[] = [];
-
-    const resize = () => {
-      canvas.width = canvas.offsetWidth;
-      canvas.height = canvas.offsetHeight;
-    };
-    resize();
-    window.addEventListener('resize', resize);
-
-    for (let i = 0; i < 160; i++) {
-      stars.push({
-        x: Math.random() * canvas.width,
-        y: Math.random() * canvas.height,
-        r: Math.random() * 1.5 + 0.3,
-        alpha: Math.random() * 0.8 + 0.2,
-        speed: Math.random() * 0.005 + 0.002,
-      });
-    }
-
-    const draw = () => {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      stars.forEach(star => {
-        star.alpha += star.speed;
-        if (star.alpha > 1 || star.alpha < 0.1) star.speed = -star.speed;
-        ctx.beginPath();
-        ctx.arc(star.x, star.y, star.r, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(180, 220, 255, ${Math.min(1, Math.max(0, star.alpha))})`;
-        ctx.fill();
-      });
-      animationId = requestAnimationFrame(draw);
-    };
-    draw();
-
-    return () => {
-      cancelAnimationFrame(animationId);
-      window.removeEventListener('resize', resize);
-    };
-  }, []);
-
-  return (
-    <canvas
-      ref={canvasRef}
-      className="absolute inset-0 w-full h-full pointer-events-none"
-      style={{ opacity: 0.65 }}
-    />
-  );
-};
 
 export const LandingPage: React.FC<LandingPageProps> = ({
   onSelectEvent,
   setCurrentView,
+  onOpenNoticeModal,
 }) => {
   const { events } = useEvents();
   const [openFaq, setOpenFaq] = useState<number | null>(0);
@@ -262,13 +219,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({
       {/* ─── 1. HERO ARENA SECTION (Deep Srusti Navy + Pure White + Cyan Shimmer) ─── */}
       <section className="relative min-h-[90vh] lg:min-h-screen flex flex-col justify-between overflow-hidden bg-[#000d1a] group">
         
-        {/* Ambient Cyan / Royal Blue Radial Shaders - Mouse Reactive Simulation */}
-        <div className="absolute top-[-100px] left-1/2 -translate-x-1/2 w-[600px] sm:w-[900px] h-[450px] bg-blue-500/20 rounded-full blur-[140px] pointer-events-none transition-transform duration-1000 group-hover:scale-110" />
-        <div className="absolute top-1/3 -left-32 w-[350px] h-[350px] bg-sky-500/15 rounded-full blur-[120px] pointer-events-none animate-pulse" />
-        <div className="absolute top-1/2 -right-32 w-[350px] h-[350px] bg-orange-500/10 rounded-full blur-[120px] pointer-events-none transition-all duration-1000 group-hover:bg-cyan-400/20" />
-
-        {/* Dynamic Starfield Canvas */}
-        <StarField />
+        {/* Exclusive Dynamic Blue Fire Particles Background */}
+        <HeroParticlesBackground className="opacity-100" />
 
         {/* Central Content */}
         <div className="relative z-10 flex-1 flex flex-col items-center justify-center text-center px-4 sm:px-6 pt-16 sm:pt-20 md:pt-24 pb-12 max-w-5xl mx-auto w-full">
@@ -439,38 +391,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({
         </div>
       </section>
 
-        {/* Live News Broadcast Ticker */}
-        <div className="relative z-10 w-full border-t border-white/15 bg-[#00142A]/95 backdrop-blur-md overflow-hidden">
-          <div className="flex items-stretch h-11 sm:h-12">
-            <div className="shrink-0 flex items-center gap-2 px-4 sm:px-5 bg-[#0062FF] text-white font-black text-[10px] sm:text-xs uppercase tracking-widest shadow-md">
-              <Megaphone className="w-3.5 h-3.5 shrink-0 animate-pulse" />
-              <span>LATEST UPDATES</span>
-            </div>
-            <div className="overflow-hidden flex-1 flex items-center">
-              <div
-                className="flex whitespace-nowrap"
-                style={{ animation: 'ticker 50s linear infinite' }}
-              >
-                {[...TICKER_ITEMS, ...TICKER_ITEMS].map((item, i) => (
-                  <span
-                    key={i}
-                    className="inline-block text-slate-200 text-xs font-semibold py-2 px-6 sm:px-8 border-r border-white/15 last:border-0 hover:text-white transition-colors cursor-default"
-                  >
-                    {item}
-                  </span>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
-
-      <style>{`
-        @keyframes ticker {
-          0%   { transform: translateX(0); }
-          100% { transform: translateX(-50%); }
-        }
-      `}</style>
-
       {/* Remaining Page Sections */}
       <div className="space-y-10 sm:space-y-16 pt-4 sm:pt-6">
 
@@ -481,9 +401,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({
           {[
             { 
               icon: <Trophy className="w-6 h-6 text-[#0062FF]" />, 
-              value: '₹81,000+', 
+              value: '₹50,000', 
               label: 'Total Cash Pool',
-              sub: '₹13.5k Per Track + Trophies'
+              sub: 'Cash Awards + Trophies'
             },
             { 
               icon: <Zap className="w-6 h-6 text-[#0284C7]" />, 
@@ -540,7 +460,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               Choose Your <span className="text-[#0062FF]">Battleground</span>
             </h2>
             <p className="text-sm text-slate-600 leading-relaxed font-medium">
-              Compete in up to <strong>2 competitive tracks</strong>. Each track awards ₹13,500 cash, institutional trophies, and certified merit honors.
+              Compete in up to <strong>2 competitive tracks</strong>. Total cash pool of <strong>₹50,000</strong> plus institutional trophies, cash awards, and certified merit honors.
             </p>
           </div>
 
@@ -585,23 +505,28 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                 <div className="p-3.5 rounded-xl bg-blue-50/70 border border-blue-200/80 space-y-2 mb-5">
                   <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-wider text-slate-600">
                     <span>Prize Distribution</span>
-                    <span className="text-[#0062FF] font-extrabold">₹13,500 Pool</span>
+                    <span className="text-[#0062FF] font-extrabold">₹{event.prize_pool.toLocaleString('en-IN')} Pool</span>
                   </div>
                   
                   <div className="grid grid-cols-3 gap-2 text-center text-xs font-bold">
                     <div className="p-2 rounded-lg bg-blue-100 border border-blue-200 text-[#001F3F]">
                       <span className="text-[9px] block text-slate-500 font-semibold">1st Place</span>
-                      ₹{event.prize_distribution['1st']}
+                      ₹{event.prize_distribution['1st']?.toLocaleString('en-IN')}
                     </div>
                     <div className="p-2 rounded-lg bg-sky-100/70 border border-sky-200 text-[#003D7A]">
                       <span className="text-[9px] block text-slate-500 font-semibold">2nd Place</span>
-                      ₹{event.prize_distribution['2nd']}
+                      ₹{event.prize_distribution['2nd']?.toLocaleString('en-IN')}
                     </div>
                     <div className="p-2 rounded-lg bg-white border border-slate-200 text-slate-700 shadow-sm">
                       <span className="text-[9px] block text-slate-500 font-semibold">3rd Place</span>
-                      ₹{event.prize_distribution['3rd']}
+                      ₹{event.prize_distribution['3rd']?.toLocaleString('en-IN')}
                     </div>
                   </div>
+                  {event.prize_distribution['4th'] && (
+                    <div className="text-[10px] text-center font-bold text-blue-700 bg-blue-100/60 rounded-md py-1 px-2 border border-blue-200/60">
+                      + 4th, 5th, 6th Runner-ups: ₹1,500 each
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -717,8 +642,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                 },
                 {
                   icon: <Trophy className="w-5 h-5 text-sky-300 shrink-0 mt-0.5" />,
-                  title: '₹81,000+ Cash & Trophies',
-                  desc: 'Substantial cash prizes with bespoke institutional trophies and accredited participation certificates.'
+                  title: '₹50,000 Cash & Trophies',
+                  desc: 'Substantial cash awards across all 6 tracks with bespoke institutional trophies and accredited merit certificates.'
                 },
                 {
                   icon: <Zap className="w-5 h-5 text-cyan-300 shrink-0 mt-0.5" />,
@@ -883,6 +808,33 @@ export const LandingPage: React.FC<LandingPageProps> = ({
         </div>
       </section>
       </div>
+
+      {/* Floating Live Directive & Milestone Telemetry Beacon */}
+      {onOpenNoticeModal && (
+        <motion.button
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ delay: 1 }}
+          onClick={onOpenNoticeModal}
+          className="fixed bottom-20 lg:bottom-8 left-4 lg:left-8 z-30 px-3.5 py-2 rounded-2xl bg-[#000d1a]/95 hover:bg-[#001530] text-white shadow-2xl border border-cyan-500/40 backdrop-blur-xl flex items-center gap-2.5 transition-all hover:scale-105 active:scale-95 group cursor-pointer"
+          aria-label="Open Championship Notice and Guidelines"
+        >
+          <span className="relative flex h-2.5 w-2.5">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75" />
+            <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-cyan-500" />
+          </span>
+          <div className="flex flex-col text-left">
+            <span className="text-[10px] uppercase font-black tracking-wider text-cyan-300 group-hover:text-cyan-200">
+              Championship Notice
+            </span>
+            <span className="text-[11px] font-bold text-slate-300">
+              480+ Students • 50+ Colleges
+            </span>
+          </div>
+          <ChevronRight className="w-3.5 h-3.5 text-cyan-400 group-hover:translate-x-0.5 transition-transform" />
+        </motion.button>
+      )}
+
     </div>
   );
 };

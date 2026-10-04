@@ -1127,45 +1127,59 @@ insert into public.events (name, slug, event_group, description, event_icon, eve
     registration_deadline, venue_location)
 values
 (
-    'Intelect Odyssey (Quiz)', 'quiz', 'Group A',
-    'State-level inter-school knowledge battle featuring written preliminary round and high-voltage campus buzzer finals.',
-    'Brain', 'team', 2, 60, 13500, '{"1st": 6000, "2nd": 4500, "3rd": 3000}',
-    '{"criteria": [{"name": "Accuracy", "weight": 60, "max": 60, "description": "Correct answers and factual precision"}, {"name": "Speed & Buzzer Reflex", "weight": 40, "max": 40, "description": "Reaction time during direct buzzer questions"}]}',
-    '2026-11-15 09:30:00+05:30', '2026-11-15 11:30:00+05:30', '2026-11-14 23:59:59+05:30', 'Srusti Main Auditorium A'
+    'Quiz', 'quiz', 'Group A',
+    'Written test preliminary round followed by campus buzzer final round. Top 6 teams qualify for the final round. Trophy & cash awards for Champion & Runners-ups.',
+    'Brain', 'team', 2, 60, 24500, '{"1st": 6000, "2nd": 4000, "3rd": 3500, "4th": 1500, "5th": 1500, "6th": 1500}',
+    '{"criteria": [{"name": "Accuracy", "weight": 40, "max": 40, "description": "Correct answers and factual precision in written & buzzer rounds"}, {"name": "Speed", "weight": 30, "max": 30, "description": "Reaction time during direct buzzer questions"}, {"name": "Final Round Answers", "weight": 30, "max": 30, "description": "Performance in campus buzzer finals"}]}',
+    '2026-11-15 10:30:00+05:30', '2026-11-15 12:00:00+05:30', '2026-11-14 23:59:59+05:30', 'Srusti Campus - Main Auditorium A'
 ),
 (
-    'Spontanity Erena (Extempore/Debate)', 'debate', 'Group A',
-    'Sharp rhetoric, intellectual conviction, and quick rebuttal mastery on live surprise contemporary topics.',
-    'MessageSquareQuote', 'solo', 1, 40, 13500, '{"1st": 6000, "2nd": 4500, "3rd": 3000}',
-    '{"criteria": [{"name": "Argumentation & Logic", "weight": 40, "max": 40, "description": "Structural rigor and evidence quality"}, {"name": "Clarity & Oratory", "weight": 30, "max": 30, "description": "Voice modulation, body language, and fluency"}, {"name": "Rebuttal Strength", "weight": 30, "max": 30, "description": "Refutation of opposing arguments and speed of thought"}]}',
-    '2026-11-15 13:30:00+05:30', '2026-11-15 15:00:00+05:30', '2026-11-14 23:59:59+05:30', 'Management Seminar Hall B'
+    'Debate', 'debate', 'Group A',
+    'Argumentation & public speaking. Debate topic shall be communicated via mobile WhatsApp no. / SMS on event morning. Prep time: 15 mins (Opening: 2 min, Rebuttal: 1 min).',
+    'MessageSquareQuote', 'solo', 1, 40, 7000, '{"1st": 4000, "2nd": 2000, "3rd": 1000}',
+    '{"criteria": [{"name": "Argumentation & Logic", "weight": 40, "max": 40, "description": "Structural rigor, logic, and factual backing"}, {"name": "Clarity & Expression", "weight": 30, "max": 30, "description": "Voice modulation, body language, and fluency"}, {"name": "Rebuttal Strength", "weight": 30, "max": 30, "description": "Refutation of opposing arguments and speed of thought"}]}',
+    '2026-11-15 13:30:00+05:30', '2026-11-15 14:30:00+05:30', '2026-11-14 23:59:59+05:30', 'Srusti Campus - Management Seminar Hall B'
 ),
 (
-    'Spectrum on Canvas (Poster Making)', 'poster-making', 'Group A',
-    'Express persuasive social and technological themes through visual art, typography, and graphic power.',
-    'Palette', 'solo', 1, 60, 13500, '{"1st": 6000, "2nd": 4500, "3rd": 3000}',
-    '{"criteria": [{"name": "Design & Aesthetics", "weight": 35, "max": 35, "description": "Visual composition, color balance, and style"}, {"name": "Message Clarity & Impact", "weight": 35, "max": 35, "description": "Theme adherence and emotional resonance"}, {"name": "Creativity & Craft", "weight": 30, "max": 30, "description": "Originality of metaphor and execution finesse"}]}',
-    '2026-11-15 10:00:00+05:30', '2026-11-15 12:30:00+05:30', '2026-11-14 23:59:59+05:30', 'Creative Design Studio Block C'
+    'Poster Making', 'poster-making', 'Group A',
+    'Artistic design & creative expression. Theme announced at event start. Physical artwork created on campus using chart/canvas with acrylics, poster colors, or sketches.',
+    'Palette', 'solo', 1, 60, 7000, '{"1st": 4000, "2nd": 2000, "3rd": 1000}',
+    '{"criteria": [{"name": "Design & Aesthetics", "weight": 35, "max": 35, "description": "Visual composition, color balance, and style"}, {"name": "Message Clarity", "weight": 35, "max": 35, "description": "Theme adherence, relevance, and emotional impact"}, {"name": "Creativity & Innovation", "weight": 30, "max": 30, "description": "Originality of concept and creative finesse"}]}',
+    '2026-11-15 10:00:00+05:30', '2026-11-15 14:30:00+05:30', '2026-11-14 23:59:59+05:30', 'Srusti Campus - Creative Art Studio Block C'
 ),
 (
-    'Hidden Horizon (Treasure Hunt)', 'treasure-hunt', 'Group B',
-    'High adrenaline campus exploration decoding cryptic clues, historical riddles, and physical checkpoints.',
-    'Compass', 'team', 3, 90, 13500, '{"1st": 6000, "2nd": 4500, "3rd": 3000}',
-    '{"criteria": [{"name": "Speed & Checkpoint Finish", "weight": 50, "max": 50, "description": "Overall race completion time"}, {"name": "Clue Accuracy", "weight": 50, "max": 50, "description": "Solving riddles without hints or penalties"}]}',
-    '2026-11-15 14:00:00+05:30', '2026-11-15 16:30:00+05:30', '2026-11-14 23:59:59+05:30', 'Central Campus Quadrangle'
+    'Treasure Hunt', 'treasure-hunt', 'Group B',
+    'Physical puzzle solving across campus in teams of 3 students. Multi-station treasure hunt decoding cryptic clues, riddle trails, and racing against time.',
+    'Compass', 'team', 3, 90, 8000, '{"1st": 3000, "2nd": 2000, "3rd": 1000}',
+    '{"criteria": [{"name": "Speed (Checkpoint Finish)", "weight": 50, "max": 50, "description": "Overall race completion time across all stations"}, {"name": "Accuracy (Clues & Riddles)", "weight": 50, "max": 50, "description": "Solving riddles and clues without hints or penalties"}, {"name": "Bonus Checkpoint Points", "weight": 10, "max": 10, "description": "Bonus points for first 3 completing teams"}]}',
+    '2026-11-15 15:00:00+05:30', '2026-11-15 16:00:00+05:30', '2026-11-14 23:59:59+05:30', 'Srusti Campus - Central Campus Quadrangle'
 ),
 (
-    'Glam ''n'' Dazzle (Ramp Walk)', 'ramp-walk', 'Group B',
-    'Celebrate confidence, poise, styling, and charismatic stage presence on the premier college runway.',
-    'Sparkles', 'solo', 1, 50, 13500, '{"1st": 6000, "2nd": 4500, "3rd": 3000}',
-    '{"criteria": [{"name": "Appearance & Styling", "weight": 30, "max": 30, "description": "Attire elegance, grooming, and color coordination"}, {"name": "Stage Presence & Walk", "weight": 30, "max": 30, "description": "Posture, stride confidence, and crowd connection"}, {"name": "Personality & Expression", "weight": 40, "max": 40, "description": "Aura, authenticity, and spontaneous charm"}]}',
-    '2026-11-15 11:30:00+05:30', '2026-11-15 13:00:00+05:30', '2026-11-14 23:59:59+05:30', 'Central Open Air Amphitheatre'
+    'Ramp Walk', 'ramp-walk', 'Group B',
+    'Fashion & personality showcase. Live performance on stage (2 mins per participant). Celebrate confidence, poise, styling, and charismatic stage presence.',
+    'Sparkles', 'solo', 1, 50, 9000, '{"1st": 3000, "2nd": 2000, "3rd": 1000}',
+    '{"criteria": [{"name": "Appearance & Confidence", "weight": 30, "max": 30, "description": "Attire elegance, styling, grooming, and self-assurance"}, {"name": "Stage Presence", "weight": 30, "max": 30, "description": "Walk posture, stride confidence, and stage connection"}, {"name": "Personality & Expression", "weight": 40, "max": 40, "description": "Charisma, aura, authenticity, and spontaneous charm"}]}',
+    '2026-11-15 11:30:00+05:30', '2026-11-15 12:30:00+05:30', '2026-11-14 23:59:59+05:30', 'Srusti Campus - Central Open Air Amphitheatre'
 ),
 (
-    'Instaverse (Reels)', 'reels', 'Group B',
-    'Showcase creative cinematic vision with high-impact 30-60 second micro-films highlighting youth dynamism.',
-    'Video', 'solo', 1, 80, 13500, '{"1st": 6000, "2nd": 4500, "3rd": 3000}',
-    '{"criteria": [{"name": "Originality & Creativity", "weight": 35, "max": 35, "description": "Fresh perspective and narrative concept"}, {"name": "Story & Impact", "weight": 35, "max": 35, "description": "Engagement curve and clear messaging"}, {"name": "Technical Execution & Sound", "weight": 30, "max": 30, "description": "Editing cuts, color grading, and audio sync"}]}',
-    '2026-11-15 10:00:00+05:30', '2026-11-15 14:00:00+05:30', '2026-11-14 18:00:00+05:30', 'Media Lab & Studio Block'
+    'Reels', 'reels', 'Group B',
+    'Short video content creation (30-60 seconds). Reels to be shot in Srusti Campus on the same day. Showcase creative visual storytelling and youth dynamism.',
+    'Video', 'solo', 1, 80, 9000, '{"1st": 3000, "2nd": 2000, "3rd": 1000}',
+    '{"criteria": [{"name": "Creativity", "weight": 35, "max": 35, "description": "Fresh perspective, concept originality, and storytelling"}, {"name": "Content Quality", "weight": 35, "max": 35, "description": "Visual framing, theme resonance, and engagement"}, {"name": "Execution", "weight": 30, "max": 30, "description": "Editing cuts, rhythm, color grading, and audio sync"}]}',
+    '2026-11-15 10:00:00+05:30', '2026-11-15 14:30:00+05:30', '2026-11-14 18:00:00+05:30', 'Srusti Campus - Media Lab & Studio Block'
 )
-on conflict (slug) do nothing;
+on conflict (slug) do update set
+    name = excluded.name,
+    event_group = excluded.event_group,
+    description = excluded.description,
+    event_icon = excluded.event_icon,
+    event_type = excluded.event_type,
+    team_size = excluded.team_size,
+    max_participants = excluded.max_participants,
+    prize_pool = excluded.prize_pool,
+    prize_distribution = excluded.prize_distribution,
+    scoring_rubric = excluded.scoring_rubric,
+    start_time = excluded.start_time,
+    end_time = excluded.end_time,
+    registration_deadline = excluded.registration_deadline,
+    venue_location = excluded.venue_location;

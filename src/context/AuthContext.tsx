@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { UserProfile, UserRole } from '../types';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { DEMO_USERS } from '../data/mockData';
+import { studentDataService } from '../services/studentDataService';
 
 interface AuthContextType {
   user: UserProfile | null;
@@ -9,6 +10,7 @@ interface AuthContextType {
   isLoading: boolean;
   isConfigured: boolean;
   login: (email: string, password?: string) => Promise<{ success: boolean; error?: string }>;
+  loginWithEmail: (email: string) => Promise<{ success: boolean; error?: string }>;
   signUp: (formData: Omit<UserProfile, 'id' | 'role' | 'created_at'> & { password?: string }) => Promise<{ success: boolean; error?: string }>;
   loginWithGoogle: () => Promise<void>;
   logout: () => Promise<void>;
@@ -26,10 +28,40 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     const initAuth = async () => {
       try {
+        // First, check if there's a saved active user in localStorage
+        const savedMockUser = localStorage.getItem('crossfire_mock_user');
+        if (savedMockUser) {
+          const parsed = JSON.parse(savedMockUser);
+          // Check if this student has updated records in studentDataService
+          if (parsed.email) {
+            const freshStudent = studentDataService.findStudentByEmail(parsed.email);
+            if (freshStudent) {
+              const fullProfile = studentDataService.toUserProfile(freshStudent);
+              setUser(fullProfile);
+              localStorage.setItem('crossfire_mock_user', JSON.stringify(fullProfile));
+              setIsLoading(false);
+              return;
+            }
+          }
+          setUser(parsed);
+          setIsLoading(false);
+          return;
+        }
+
         if (isSupabaseConfigured) {
           const { data: { session } } = await supabase.auth.getSession();
           if (session?.user) {
-            // Fetch user profile from public.users table
+            // Check studentDataService first
+            const existingStudent = studentDataService.findStudentByEmail(session.user.email || '');
+            if (existingStudent) {
+              const profile = studentDataService.toUserProfile(existingStudent);
+              setUser(profile);
+              localStorage.setItem('crossfire_mock_user', JSON.stringify(profile));
+              setIsLoading(false);
+              return;
+            }
+
+            // Fallback to Supabase users table query
             const { data, error } = await supabase
               .from('users')
               .select('*')
@@ -39,7 +71,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             if (data && !error) {
               setUser(data as UserProfile);
             } else {
-              // Fallback to auth metadata if table query hasn't synced yet
               const meta = session.user.user_metadata || {};
               setUser({
                 id: session.user.id,
@@ -61,35 +92,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 terms_accepted: true,
               });
             }
-          }
-
-          // Subscribe to Supabase auth state changes
-          const { data: authListener } = supabase.auth.onAuthStateChange(async (_event, session) => {
-            if (session?.user) {
-              const { data } = await supabase
-                .from('users')
-                .select('*')
-                .eq('id', session.user.id)
-                .single();
-              if (data) setUser(data as UserProfile);
-            } else {
-              setUser(null);
-            }
-          });
-
-          return () => {
-            authListener.subscription.unsubscribe();
-          };
-        } else {
-          // Check local storage for mock session
-          const savedMockUser = localStorage.getItem('crossfire_mock_user');
-          if (savedMockUser) {
-            setUser(JSON.parse(savedMockUser));
           } else {
-            // Default to demo student for instantaneous preview
+            // Default demo student if no session exists yet
             setUser(DEMO_USERS.student);
             localStorage.setItem('crossfire_mock_user', JSON.stringify(DEMO_USERS.student));
           }
+        } else {
+          // Default to demo student for instantaneous preview
+          setUser(DEMO_USERS.student);
+          localStorage.setItem('crossfire_mock_user', JSON.stringify(DEMO_USERS.student));
         }
       } catch (err) {
         console.error('[CROSSFIRE] Error initializing auth:', err);
@@ -112,51 +123,110 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return age;
   };
 
+  // Dedicated Student Email Login: Allows registered students to log in directly via their email
+  const loginWithEmail = async (email: string): Promise<{ success: boolean; error?: string }> => {
+    setIsLoading(true);
+    try {
+      const cleanEmail = email.trim().toLowerCase();
+      if (!cleanEmail || !cleanEmail.includes('@')) {
+        return { success: false, error: 'Please enter a valid email address.' };
+      }
+
+      // Check student registry
+      const student = studentDataService.findStudentByEmail(cleanEmail);
+      if (student) {
+        const userProfile = studentDataService.toUserProfile(student);
+        setUser(userProfile);
+        localStorage.setItem('crossfire_mock_user', JSON.stringify(userProfile));
+        return { success: true };
+      }
+
+      // Check demo student accounts
+      if (cleanEmail === DEMO_USERS.student.email.toLowerCase()) {
+        setUser(DEMO_USERS.student);
+        localStorage.setItem('crossfire_mock_user', JSON.stringify(DEMO_USERS.student));
+        return { success: true };
+      }
+
+      return {
+        success: false,
+        error: `No student registration found for "${email}". Please complete the registration form first.`
+      };
+    } catch (err: any) {
+      return { success: false, error: err.message || 'Email authentication failed' };
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // General Login (Supports Student Email login & Staff credentials)
   const login = async (email: string, password = ''): Promise<{ success: boolean; error?: string }> => {
     setIsLoading(true);
     try {
-      if (isSupabaseConfigured) {
-        const { data, error } = await supabase.auth.signInWithPassword({
-          email,
-          password,
-        });
-        if (error) return { success: false, error: error.message };
+      const lowerEmail = email.toLowerCase().trim();
 
-        if (data.user) {
-          const { data: profile } = await supabase
-            .from('users')
-            .select('*')
-            .eq('id', data.user.id)
-            .single();
-          if (profile) setUser(profile as UserProfile);
-        }
-        return { success: true };
-      } else {
-        // Mock authentication login
-        const lowerEmail = email.toLowerCase().trim();
-        let targetUser: UserProfile = DEMO_USERS.student;
-
-        if (lowerEmail.includes('judge')) {
-          targetUser = DEMO_USERS.judge;
-        } else if (lowerEmail.includes('admin')) {
-          targetUser = DEMO_USERS.admin;
-        } else if (lowerEmail.includes('volunteer')) {
-          targetUser = DEMO_USERS.volunteer;
-        } else {
-          // Check if previously stored student matches
-          const stored = localStorage.getItem('crossfire_mock_user');
-          if (stored) {
-            const parsed = JSON.parse(stored);
-            if (parsed.email === lowerEmail) {
-              targetUser = parsed;
-            }
-          }
-        }
-
-        setUser(targetUser);
-        localStorage.setItem('crossfire_mock_user', JSON.stringify(targetUser));
+      // 1. Staff / Role-based Authentication
+      if (lowerEmail.includes('admin')) {
+        setUser(DEMO_USERS.admin);
+        localStorage.setItem('crossfire_mock_user', JSON.stringify(DEMO_USERS.admin));
         return { success: true };
       }
+      if (lowerEmail.includes('judge')) {
+        setUser(DEMO_USERS.judge);
+        localStorage.setItem('crossfire_mock_user', JSON.stringify(DEMO_USERS.judge));
+        return { success: true };
+      }
+      if (lowerEmail.includes('volunteer')) {
+        setUser(DEMO_USERS.volunteer);
+        localStorage.setItem('crossfire_mock_user', JSON.stringify(DEMO_USERS.volunteer));
+        return { success: true };
+      }
+
+      // 2. Check student registry by email
+      const registeredStudent = studentDataService.findStudentByEmail(lowerEmail);
+      if (registeredStudent) {
+        const profile = studentDataService.toUserProfile(registeredStudent);
+        setUser(profile);
+        localStorage.setItem('crossfire_mock_user', JSON.stringify(profile));
+        return { success: true };
+      }
+
+      // 3. If password was provided and Supabase is configured, attempt Supabase authentication
+      if (isSupabaseConfigured && password) {
+        try {
+          const { data, error } = await supabase.auth.signInWithPassword({
+            email: lowerEmail,
+            password,
+          });
+
+          if (!error && data.user) {
+            const { data: profile } = await supabase
+              .from('users')
+              .select('*')
+              .eq('id', data.user.id)
+              .single();
+            if (profile) {
+              setUser(profile as UserProfile);
+              localStorage.setItem('crossfire_mock_user', JSON.stringify(profile));
+              return { success: true };
+            }
+          }
+        } catch {
+          // Ignore and continue to fallback checks
+        }
+      }
+
+      // 4. Check Demo student
+      if (lowerEmail === DEMO_USERS.student.email.toLowerCase()) {
+        setUser(DEMO_USERS.student);
+        localStorage.setItem('crossfire_mock_user', JSON.stringify(DEMO_USERS.student));
+        return { success: true };
+      }
+
+      return {
+        success: false,
+        error: `Account with email "${email}" was not found. Please register as a participant.`
+      };
     } catch (err: any) {
       return { success: false, error: err.message || 'Login failed' };
     } finally {
@@ -164,10 +234,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  // Student Sign-Up & Immediate Registration
   const signUp = async (formData: Omit<UserProfile, 'id' | 'role' | 'created_at'> & { password?: string }): Promise<{ success: boolean; error?: string }> => {
     setIsLoading(true);
     try {
-      // 1. Validate Age (Must be 16-18 as per PRD Section 4.1 if DOB provided)
+      // 1. Age validation if provided
       if (formData.date_of_birth) {
         const age = calculateAge(formData.date_of_birth);
         if (age < 15 || age > 20) {
@@ -178,86 +249,60 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
       }
 
-      if (isSupabaseConfigured) {
-        const { data, error } = await supabase.auth.signUp({
-          email: formData.email,
-          password: formData.password || 'CrossFire2026!',
-          options: {
-            data: {
-              first_name: formData.first_name,
-              last_name: formData.last_name,
-              contact_number: formData.contact_number,
-              whatsapp_number: formData.whatsapp_number,
-              mobile_number: formData.contact_number,
-              date_of_birth: formData.date_of_birth || '2008-01-01',
-              institute_name: formData.institute_name,
-              school_name: formData.institute_name,
-              city_town: formData.city_town,
-              course_stream: formData.course_stream,
-              board: formData.board || 'CBSE',
-              food_preference: formData.food_preference,
-              role: 'student',
-              parent_consent: formData.parent_consent ?? true,
-              selected_competitions: formData.selected_competitions || [],
-            }
-          }
-        });
+      // 2. Persist directly in studentDataService (ensures instant availability across Admin & Student panels)
+      const regResult = await studentDataService.registerStudent({
+        first_name: formData.first_name,
+        last_name: formData.last_name,
+        email: formData.email,
+        contact_number: formData.contact_number,
+        whatsapp_number: formData.whatsapp_number || formData.contact_number,
+        institute_name: formData.institute_name,
+        city_town: formData.city_town,
+        course_stream: formData.course_stream,
+        board: formData.board || 'CBSE',
+        food_preference: formData.food_preference,
+        selected_competitions: formData.selected_competitions || [],
+        parent_consent: formData.parent_consent ?? true,
+        terms_accepted: formData.terms_accepted ?? true,
+      });
 
-        if (error) return { success: false, error: error.message };
-
-        if (data.user) {
-          const newUser: UserProfile = {
-            id: data.user.id,
-            email: formData.email,
-            first_name: formData.first_name,
-            last_name: formData.last_name,
-            contact_number: formData.contact_number,
-            whatsapp_number: formData.whatsapp_number,
-            mobile_number: formData.contact_number,
-            date_of_birth: formData.date_of_birth || '2008-01-01',
-            institute_name: formData.institute_name,
-            school_name: formData.institute_name,
-            city_town: formData.city_town,
-            course_stream: formData.course_stream,
-            board: formData.board || 'CBSE',
-            food_preference: formData.food_preference,
-            role: 'student',
-            parent_consent: formData.parent_consent,
-            terms_accepted: true,
-            selected_competitions: formData.selected_competitions || [],
-            created_at: new Date().toISOString()
-          };
-          setUser(newUser);
-        }
-        return { success: true };
-      } else {
-        // Mock Registration
-        const newMockUser: UserProfile = {
-          id: `user-${Date.now()}`,
-          email: formData.email,
-          first_name: formData.first_name,
-          last_name: formData.last_name,
-          contact_number: formData.contact_number,
-          whatsapp_number: formData.whatsapp_number,
-          mobile_number: formData.contact_number,
-          date_of_birth: formData.date_of_birth || '2008-01-01',
-          institute_name: formData.institute_name,
-          school_name: formData.institute_name,
-          city_town: formData.city_town,
-          course_stream: formData.course_stream,
-          board: formData.board || 'CBSE',
-          food_preference: formData.food_preference,
-          role: 'student',
-          parent_consent: formData.parent_consent,
-          terms_accepted: true,
-          selected_competitions: formData.selected_competitions || [],
-          created_at: new Date().toISOString()
-        };
-
-        setUser(newMockUser);
-        localStorage.setItem('crossfire_mock_user', JSON.stringify(newMockUser));
-        return { success: true };
+      if (!regResult.success) {
+        return { success: false, error: regResult.error || 'Failed to record registration' };
       }
+
+      const activeProfile = studentDataService.toUserProfile(regResult.student);
+      setUser(activeProfile);
+      localStorage.setItem('crossfire_mock_user', JSON.stringify(activeProfile));
+
+      // 3. Attempt Supabase Auth & RPC sync in background
+      if (isSupabaseConfigured) {
+        try {
+          await supabase.auth.signUp({
+            email: formData.email,
+            password: formData.password || 'CrossFire2026!',
+            options: {
+              data: {
+                first_name: formData.first_name,
+                last_name: formData.last_name,
+                contact_number: formData.contact_number,
+                whatsapp_number: formData.whatsapp_number,
+                mobile_number: formData.contact_number,
+                institute_name: formData.institute_name,
+                city_town: formData.city_town,
+                course_stream: formData.course_stream,
+                board: formData.board || 'CBSE',
+                food_preference: formData.food_preference,
+                role: 'student',
+                selected_competitions: formData.selected_competitions || [],
+              }
+            }
+          });
+        } catch (supabaseErr) {
+          console.warn('[CROSSFIRE] Supabase auth registration notice:', supabaseErr);
+        }
+      }
+
+      return { success: true };
     } catch (err: any) {
       return { success: false, error: err.message || 'Registration failed' };
     } finally {
@@ -276,16 +321,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } else {
       // Mock Google sign in
       const googleMockUser: UserProfile = {
-        id: 'google-user-' + Date.now(),
+        id: 'CF26-GOOGLE-01',
         email: 'imazureakash@gmail.com',
         first_name: 'Akash',
         last_name: 'Pattnaik',
-        contact_number: '+91 9876500000',
-        whatsapp_number: '+91 9876500000',
-        mobile_number: '+91 9876500000',
+        contact_number: '+91 9876543210',
+        whatsapp_number: '+91 9876543210',
+        mobile_number: '+91 9876543210',
         date_of_birth: '2008-06-15',
-        institute_name: 'Srusti Academy of Management and Technology',
-        school_name: 'Srusti Academy of Management and Technology',
+        institute_name: 'DAV Public School, Chandrasekharpur',
+        school_name: 'DAV Public School, Chandrasekharpur',
         city_town: 'Bhubaneswar',
         course_stream: '12th Science',
         food_preference: 'Veg',
@@ -293,7 +338,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         role: 'student',
         parent_consent: true,
         terms_accepted: true,
-        selected_competitions: ['Intelect Odyssey (Quiz)'],
+        selected_competitions: ['Quiz', 'Ramp Walk'],
         created_at: new Date().toISOString()
       };
       setUser(googleMockUser);
@@ -303,7 +348,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const logout = async () => {
     if (isSupabaseConfigured) {
-      await supabase.auth.signOut();
+      try {
+        await supabase.auth.signOut();
+      } catch {
+        // Ignore signOut error
+      }
     }
     setUser(null);
     localStorage.removeItem('crossfire_mock_user');
@@ -313,10 +362,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (!user) return;
     const newProfile = { ...user, ...updated };
     setUser(newProfile);
+    localStorage.setItem('crossfire_mock_user', JSON.stringify(newProfile));
+
+    if (user.email) {
+      studentDataService.updateStudentStatus(user.id, updated as any);
+    }
+
     if (isSupabaseConfigured) {
-      await supabase.from('users').update(updated).eq('id', user.id);
-    } else {
-      localStorage.setItem('crossfire_mock_user', JSON.stringify(newProfile));
+      try {
+        await supabase.from('users').update(updated).eq('id', user.id);
+      } catch {
+        // Ignore error
+      }
     }
   };
 
@@ -339,6 +396,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         isLoading,
         isConfigured: isSupabaseConfigured,
         login,
+        loginWithEmail,
         signUp,
         loginWithGoogle,
         logout,

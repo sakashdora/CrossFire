@@ -389,7 +389,7 @@ export const CinematicIntro: React.FC<CinematicIntroProps> = ({ onComplete }) =>
                 
                 <div className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-blue-600/20 border border-blue-400/40 text-white">
                   <Sparkles className="w-3.5 h-3.5 text-cyan-300" />
-                  <span>₹81,000+ Grand Prize Pool</span>
+                  <span>₹50,000 Grand Prize Pool</span>
                 </div>
               </motion.div>
 

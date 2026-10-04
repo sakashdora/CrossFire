@@ -1,0 +1,22 @@
+Event_ID,Event_Name,Registration_Type,Team_Size,Position,Prize_Title,Prize_Amount_INR,Total_Event_Allocation,Scoring_Criteria_1,Scoring_Criteria_2,Scoring_Criteria_3,Max_Score,Expected_Participants,Format,Location
+quiz,Quiz,Team,2,1,Champion,6000,24500,Accuracy,Speed,Final Answers,100,12,Written test + Final round,Srusti Campus
+quiz,Quiz,Team,2,2,1st Runner-up,4000,24500,Accuracy,Speed,Final Answers,100,12,Written test + Final round,Srusti Campus
+quiz,Quiz,Team,2,3,2nd Runner-up,3500,24500,Accuracy,Speed,Final Answers,100,12,Written test + Final round,Srusti Campus
+quiz,Quiz,Team,2,4,3rd Runner-up,1500,24500,Accuracy,Speed,Final Answers,100,12,Written test + Final round,Srusti Campus
+quiz,Quiz,Team,2,5,4th Runner-up,1500,24500,Accuracy,Speed,Final Answers,100,12,Written test + Final round,Srusti Campus
+quiz,Quiz,Team,2,6,5th Runner-up,1500,24500,Accuracy,Speed,Final Answers,100,12,Written test + Final round,Srusti Campus
+ramp-walk,Ramp Walk,Individual,1,1,Champion,3000,9000,Appearance & Confidence,Stage Presence,Personality & Expression,100,50,Live performance on stage,Srusti Campus - Main Stage
+ramp-walk,Ramp Walk,Individual,1,2,1st Runner-up,2000,9000,Appearance & Confidence,Stage Presence,Personality & Expression,100,50,Live performance on stage,Srusti Campus - Main Stage
+ramp-walk,Ramp Walk,Individual,1,3,2nd Runner-up,1000,9000,Appearance & Confidence,Stage Presence,Personality & Expression,100,50,Live performance on stage,Srusti Campus - Main Stage
+reels,Reels,Individual,1,1,Champion,3000,9000,Creativity,Content Quality,Execution,100,50,Pre-recorded video submission,Video submission online
+reels,Reels,Individual,1,2,1st Runner-up,2000,9000,Creativity,Content Quality,Execution,100,50,Pre-recorded video submission,Video submission online
+reels,Reels,Individual,1,3,2nd Runner-up,1000,9000,Creativity,Content Quality,Execution,100,50,Pre-recorded video submission,Video submission online
+debate,Debate,Individual,1,1,Champion,4000,7000,Argumentation & Logic,Clarity & Expression,Rebuttal Strength,100,50,Live debate with prepared topics,Srusti Campus - Debate Hall
+debate,Debate,Individual,1,2,1st Runner-up,2000,7000,Argumentation & Logic,Clarity & Expression,Rebuttal Strength,100,50,Live debate with prepared topics,Srusti Campus - Debate Hall
+debate,Debate,Individual,1,3,2nd Runner-up,1000,7000,Argumentation & Logic,Clarity & Expression,Rebuttal Strength,100,50,Live debate with prepared topics,Srusti Campus - Debate Hall
+poster-making,Poster Making,Individual,1,1,Champion,4000,7000,Design & Aesthetics,Message Clarity,Creativity & Innovation,100,50,On-campus creation,Srusti Campus - Art Studio
+poster-making,Poster Making,Individual,1,2,1st Runner-up,2000,7000,Design & Aesthetics,Message Clarity,Creativity & Innovation,100,50,On-campus creation,Srusti Campus - Art Studio
+poster-making,Poster Making,Individual,1,3,2nd Runner-up,1000,7000,Design & Aesthetics,Message Clarity,Creativity & Innovation,100,50,On-campus creation,Srusti Campus - Art Studio
+treasure-hunt,Treasure Hunt,Team,3,1,Champion,3000,8000,Speed,Accuracy,Bonus Points,110,27,Multi-station puzzle solving,Srusti Campus - Multiple venues
+treasure-hunt,Treasure Hunt,Team,3,2,1st Runner-up,2000,8000,Speed,Accuracy,Bonus Points,110,27,Multi-station puzzle solving,Srusti Campus - Multiple venues
+treasure-hunt,Treasure Hunt,Team,3,3,2nd Runner-up,1000,8000,Speed,Accuracy,Bonus Points,110,27,Multi-station puzzle solving,Srusti Campus - Multiple venues

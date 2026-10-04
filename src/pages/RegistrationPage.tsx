@@ -50,7 +50,7 @@ export const RegistrationPage: React.FC<RegistrationPageProps> = ({
 
   // Group A & Group B Selections (Combined Max 2 Limit)
   const [selectedCompetitions, setSelectedCompetitions] = useState<string[]>(
-    user?.selected_competitions || ['Intelect Odyssey (Quiz)']
+    user?.selected_competitions || ['Quiz']
   );
 
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -218,7 +218,7 @@ export const RegistrationPage: React.FC<RegistrationPageProps> = ({
                 <span className="hidden sm:inline">&bull;</span>
                 <span className="text-orange-400 font-bold">Nov 15, 2026</span>
                 <span className="hidden sm:inline">&bull;</span>
-                <span className="text-emerald-400 font-bold">₹81,000+ Cash Prizes</span>
+                <span className="text-emerald-400 font-bold">₹50,000 Cash Prizes</span>
               </div>
             </div>
           </div>
@@ -248,12 +248,25 @@ export const RegistrationPage: React.FC<RegistrationPageProps> = ({
         )}
 
         {submitted && (
-          <div className="p-6 bg-emerald-50 border border-emerald-200 rounded-2xl text-sm text-emerald-800 flex items-center gap-3 shadow-sm animate-fadeIn">
-            <CheckCircle className="w-6 h-6 text-emerald-600 flex-shrink-0" />
-            <div>
-              <p className="font-bold">Registration Successfully Recorded!</p>
-              <p className="text-xs text-emerald-700 mt-0.5">Redirecting you to your Student Competitor Portal...</p>
+          <div className="p-6 bg-emerald-50 border-2 border-emerald-300 rounded-2xl text-sm text-emerald-900 shadow-md animate-fadeIn space-y-2">
+            <div className="flex items-center gap-3">
+              <CheckCircle className="w-7 h-7 text-emerald-600 flex-shrink-0" />
+              <div>
+                <p className="font-black text-base text-emerald-900">Registration Successfully Recorded!</p>
+                <p className="text-xs text-emerald-700">Official competitor pass generated and added to Srusti CrossFire Roster.</p>
+              </div>
             </div>
+            <div className="p-3 bg-white/80 rounded-xl border border-emerald-200 text-xs">
+              <p className="font-bold text-navy">
+                💡 Student Login Access: <span className="text-orange-600 font-extrabold">{emailId}</span>
+              </p>
+              <p className="text-[11px] text-gray-600 mt-0.5">
+                You can log into your Student Portal anytime from any device using just this email address.
+              </p>
+            </div>
+            <p className="text-xs font-semibold text-emerald-700 animate-pulse">
+              Redirecting you to your verified Student Dashboard...
+            </p>
           </div>
         )}
 

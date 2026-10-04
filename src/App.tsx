@@ -5,6 +5,7 @@ import { Navbar } from './components/Navbar';
 import { Footer } from './components/Footer';
 import { CinematicIntro } from './components/CinematicIntro';
 import { AuthModal } from './components/AuthModal';
+import { ChampionshipNoticeModal } from './components/ChampionshipNoticeModal';
 import { LandingPage } from './pages/LandingPage';
 import { EventsDiscoveryPage } from './pages/EventsDiscoveryPage';
 import { StudentDashboard } from './pages/StudentDashboard';
@@ -88,13 +89,29 @@ const CrossFireApp: React.FC = () => {
 
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [authModalMode, setAuthModalMode] = useState<'login' | 'register'>('login');
+  const [noticeModalOpen, setNoticeModalOpen] = useState(false);
   
   const [showBackToTop, setShowBackToTop] = useState(false);
 
   useEffect(() => {
     const handleScroll = () => setShowBackToTop(window.scrollY > 300);
-    window.addEventListener('scroll', handleScroll);
+    window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  // Automatic advisory notice pop-up check (respects 24h dismissal)
+  useEffect(() => {
+    try {
+      const dismissedUntil = localStorage.getItem('crossfire_notice_dismissed_until');
+      if (!dismissedUntil || Date.now() > parseInt(dismissedUntil, 10)) {
+        const timer = setTimeout(() => {
+          setNoticeModalOpen(true);
+        }, 2200);
+        return () => clearTimeout(timer);
+      }
+    } catch (e) {
+      // Ignore storage errors
+    }
   }, []);
   // Cinematic Opening Screen State (Always-On on every page load / refresh)
   const [showIntro, setShowIntro] = useState<boolean>(true);
@@ -152,11 +169,12 @@ const CrossFireApp: React.FC = () => {
       />
 
       {/* Main View Router */}
-      <main className="flex-grow pb-24 lg:pb-12 min-h-[75vh]">
+      <main className={`flex-grow pb-24 lg:pb-12 min-h-[75vh] ${currentView !== 'landing' ? 'pt-16 sm:pt-[72px]' : ''}`}>
         {currentView === 'landing' && (
           <LandingPage
             onSelectEvent={handleSelectEvent}
             setCurrentView={setCurrentView}
+            onOpenNoticeModal={() => setNoticeModalOpen(true)}
           />
         )}
 
@@ -305,6 +323,16 @@ const CrossFireApp: React.FC = () => {
         isOpen={authModalOpen}
         onClose={() => setAuthModalOpen(false)}
         initialMode={authModalMode}
+      />
+
+      {/* Championship Milestone & Official Directive Notice Modal */}
+      <ChampionshipNoticeModal
+        isOpen={noticeModalOpen}
+        onClose={() => setNoticeModalOpen(false)}
+        onNavigateToRegister={() => {
+          setNoticeModalOpen(false);
+          setCurrentView('register');
+        }}
       />
 
     </div>
