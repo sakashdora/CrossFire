@@ -24,7 +24,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   setCurrentView,
   openAuthModal
 }) => {
-  const { user, role, logout } = useAuth();
+  const { user, role, logout, switchRoleForTesting } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
@@ -208,12 +208,12 @@ export const Navbar: React.FC<NavbarProps> = ({
                     <button
                       onClick={() => {
                         setUserDropdownOpen(false);
-                        setCurrentView(role === 'admin' ? 'admin' : role === 'judge' ? 'judge' : 'dashboard');
+                        setCurrentView(role === 'admin' ? 'admin' : role === 'judge' ? 'judge' : role === 'volunteer' ? 'volunteer' : 'dashboard');
                       }}
-                      className="w-full text-left px-4 py-2 text-xs font-bold text-gray-700 hover:bg-gray-50 flex items-center gap-2"
+                      className="w-full text-left px-4 py-2 text-xs font-bold text-gray-700 hover:bg-gray-50 flex items-center gap-2 cursor-pointer"
                     >
                       <LayoutDashboard className="w-4 h-4 text-orange-500" />
-                      Open My Portal
+                      <span>Open My Portal</span>
                     </button>
 
                     <button
@@ -221,18 +221,79 @@ export const Navbar: React.FC<NavbarProps> = ({
                         setUserDropdownOpen(false);
                         setCurrentView('register');
                       }}
-                      className="w-full text-left px-4 py-2 text-xs font-bold text-gray-700 hover:bg-gray-50 flex items-center gap-2"
+                      className="w-full text-left px-4 py-2 text-xs font-bold text-gray-700 hover:bg-gray-50 flex items-center gap-2 cursor-pointer"
                     >
                       <UserPlus className="w-4 h-4 text-emerald-500" />
-                      Registration Form
+                      <span>Registration Form</span>
                     </button>
+
+                    {/* Switch Persona Grid */}
+                    <div className="p-2 border-t border-gray-100 bg-gray-50/80 my-1">
+                      <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block px-2 mb-1.5">
+                        Switch Persona (Testing)
+                      </span>
+                      <div className="grid grid-cols-2 gap-1 text-[11px]">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            switchRoleForTesting('student');
+                            setCurrentView('dashboard');
+                            setUserDropdownOpen(false);
+                          }}
+                          className={`p-1.5 rounded-lg text-left font-bold transition-colors cursor-pointer ${
+                            role === 'student' ? 'bg-orange-500 text-white' : 'hover:bg-gray-200 text-gray-700'
+                          }`}
+                        >
+                          Student
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            switchRoleForTesting('volunteer');
+                            setCurrentView('volunteer');
+                            setUserDropdownOpen(false);
+                          }}
+                          className={`p-1.5 rounded-lg text-left font-bold transition-colors cursor-pointer ${
+                            role === 'volunteer' ? 'bg-emerald-600 text-white' : 'hover:bg-gray-200 text-gray-700'
+                          }`}
+                        >
+                          Volunteer
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            switchRoleForTesting('judge');
+                            setCurrentView('judge');
+                            setUserDropdownOpen(false);
+                          }}
+                          className={`p-1.5 rounded-lg text-left font-bold transition-colors cursor-pointer ${
+                            role === 'judge' ? 'bg-purple-600 text-white' : 'hover:bg-gray-200 text-gray-700'
+                          }`}
+                        >
+                          Judge
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            switchRoleForTesting('admin');
+                            setCurrentView('admin');
+                            setUserDropdownOpen(false);
+                          }}
+                          className={`p-1.5 rounded-lg text-left font-bold transition-colors cursor-pointer ${
+                            role === 'admin' ? 'bg-blue-600 text-white' : 'hover:bg-gray-200 text-gray-700'
+                          }`}
+                        >
+                          Admin
+                        </button>
+                      </div>
+                    </div>
 
                     <button
                       onClick={() => {
                         setUserDropdownOpen(false);
                         logout();
                       }}
-                      className="w-full text-left px-4 py-2 text-xs font-bold text-red-600 hover:bg-red-50 flex items-center gap-2 border-t border-gray-100 mt-1"
+                      className="w-full text-left px-4 py-2 text-xs font-bold text-red-600 hover:bg-red-50 flex items-center gap-2 border-t border-gray-100 cursor-pointer"
                     >
                       <LogOut className="w-4 h-4" />
                       Sign Out
@@ -244,13 +305,13 @@ export const Navbar: React.FC<NavbarProps> = ({
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => openAuthModal('login')}
-                  className="px-3 py-1.5 text-xs font-bold text-gray-200 hover:text-white"
+                  className="px-3 py-1.5 text-xs font-bold text-gray-200 hover:text-white cursor-pointer"
                 >
                   Sign In
                 </button>
                 <button
                   onClick={() => setCurrentView('register')}
-                  className="px-4 py-2 rounded-xl bg-orange-500 hover:bg-orange-600 text-white text-xs font-black shadow-md hover:shadow-orange-500/30 transition-all flex items-center gap-1"
+                  className="px-4 py-2 rounded-xl bg-orange-500 hover:bg-orange-600 text-white text-xs font-black shadow-md hover:shadow-orange-500/30 transition-all flex items-center gap-1 cursor-pointer"
                 >
                   <UserPlus className="w-3.5 h-3.5" />
                   <span>Register Free</span>
@@ -261,7 +322,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             {/* Mobile Hamburger Menu */}
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="lg:hidden p-2 rounded-xl text-gray-300 hover:text-white hover:bg-white/10"
+              className="lg:hidden p-2 rounded-xl text-gray-300 hover:text-white hover:bg-white/10 cursor-pointer"
               aria-label="Toggle Navigation Menu"
             >
               {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
@@ -274,11 +335,35 @@ export const Navbar: React.FC<NavbarProps> = ({
       {mobileMenuOpen && (
         <div className="lg:hidden bg-navy-dark border-t border-navy-light/30 px-4 pt-3 pb-6 space-y-3 animate-fadeIn">
           
-          {/* Quick Role Access for Mobile (Removed per role-aware requirement) */}
+          {/* Quick Persona Switcher in Mobile Drawer */}
+          <div className="bg-black/30 p-2.5 rounded-2xl border border-white/10 space-y-1.5">
+            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">
+              Switch Persona (Testing)
+            </span>
+            <div className="grid grid-cols-4 gap-1 text-[10px] font-bold">
+              {(['student', 'volunteer', 'judge', 'admin'] as const).map((r) => (
+                <button
+                  key={r}
+                  onClick={() => {
+                    switchRoleForTesting(r);
+                    setCurrentView(r === 'student' ? 'dashboard' : r);
+                    setMobileMenuOpen(false);
+                  }}
+                  className={`py-1.5 rounded-lg capitalize transition-colors text-center cursor-pointer ${
+                    role === r 
+                      ? 'bg-orange-500 text-white shadow-sm' 
+                      : 'bg-white/10 text-gray-300 hover:bg-white/20'
+                  }`}
+                >
+                  {r}
+                </button>
+              ))}
+            </div>
+          </div>
 
           <button
             onClick={() => { setCurrentView('landing'); setMobileMenuOpen(false); }}
-            className={`w-full text-left px-3 py-2.5 rounded-xl text-xs font-bold ${
+            className={`w-full text-left px-3 py-2.5 rounded-xl text-xs font-bold cursor-pointer ${
               currentView === 'landing' ? 'bg-orange-500 text-white' : 'text-gray-200 hover:bg-white/5'
             }`}
           >
@@ -287,7 +372,7 @@ export const Navbar: React.FC<NavbarProps> = ({
 
           <button
             onClick={() => { setCurrentView('events'); setMobileMenuOpen(false); }}
-            className={`w-full flex items-center gap-2 px-3 py-2.5 rounded-xl text-xs font-bold ${
+            className={`w-full flex items-center gap-2 px-3 py-2.5 rounded-xl text-xs font-bold cursor-pointer ${
               currentView === 'events' ? 'bg-orange-500 text-white' : 'text-gray-200 hover:bg-white/5'
             }`}
           >
@@ -297,7 +382,7 @@ export const Navbar: React.FC<NavbarProps> = ({
 
           <button
             onClick={() => { setCurrentView('register'); setMobileMenuOpen(false); }}
-            className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-black ${
+            className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-black cursor-pointer ${
               currentView === 'register' ? 'bg-orange-500 text-white' : 'bg-orange-500/20 text-orange-400 hover:bg-orange-500/30'
             }`}
           >
@@ -310,7 +395,7 @@ export const Navbar: React.FC<NavbarProps> = ({
 
           <button
             onClick={() => { setCurrentView('leaderboard'); setMobileMenuOpen(false); }}
-            className={`w-full flex items-center gap-2 px-3 py-2.5 rounded-xl text-xs font-bold ${
+            className={`w-full flex items-center gap-2 px-3 py-2.5 rounded-xl text-xs font-bold cursor-pointer ${
               currentView === 'leaderboard' ? 'bg-orange-500 text-white' : 'text-gray-200 hover:bg-white/5'
             }`}
           >
@@ -323,7 +408,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               setCurrentView(role === 'admin' ? 'admin' : role === 'judge' ? 'judge' : role === 'volunteer' ? 'volunteer' : 'dashboard');
               setMobileMenuOpen(false);
             }}
-            className="w-full flex items-center gap-2 px-3 py-2.5 rounded-xl text-xs font-bold text-gray-200 hover:bg-white/5"
+            className="w-full flex items-center gap-2 px-3 py-2.5 rounded-xl text-xs font-bold text-gray-200 hover:bg-white/5 cursor-pointer"
           >
             <LayoutDashboard className="w-4 h-4 text-orange-500" />
             <span>My {role === 'admin' ? 'Admin' : role === 'judge' ? 'Judge' : role === 'volunteer' ? 'Volunteer' : 'Student'} Portal</span>

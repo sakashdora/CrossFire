@@ -1,50 +1,58 @@
 import React from 'react';
 import { useAuth } from '../context/AuthContext';
 import { UserRole } from '../types';
-import { ShieldCheck, UserCheck, Gavel, Sparkles } from 'lucide-react';
+import { ShieldCheck, UserCheck, Gavel, Sparkles, HeartHandshake } from 'lucide-react';
 
-export const RoleSwitcher: React.FC = () => {
-  const { role, switchRoleForTesting, isConfigured } = useAuth();
+interface RoleSwitcherProps {
+  onRoleSelected?: (role: UserRole) => void;
+  className?: string;
+}
+
+export const RoleSwitcher: React.FC<RoleSwitcherProps> = ({ onRoleSelected, className = '' }) => {
+  const { role, switchRoleForTesting } = useAuth();
 
   const roles: { id: UserRole; label: string; icon: React.ReactNode; color: string }[] = [
     { id: 'student', label: 'Student', icon: <UserCheck className="w-3.5 h-3.5" />, color: 'hover:border-orange-500' },
+    { id: 'volunteer', label: 'Volunteer', icon: <HeartHandshake className="w-3.5 h-3.5" />, color: 'hover:border-emerald-500' },
     { id: 'judge', label: 'Judge', icon: <Gavel className="w-3.5 h-3.5" />, color: 'hover:border-purple-500' },
     { id: 'admin', label: 'Admin', icon: <ShieldCheck className="w-3.5 h-3.5" />, color: 'hover:border-blue-500' },
   ];
 
+  const handleSelect = (rId: UserRole) => {
+    switchRoleForTesting(rId);
+    if (onRoleSelected) {
+      onRoleSelected(rId);
+    }
+  };
+
   return (
-    <div className="bg-navy-900/90 text-white border border-white/10 backdrop-blur-md px-3 py-1.5 rounded-full flex items-center gap-2 shadow-lg text-xs">
-      <div className="flex items-center gap-1.5 text-gray-300 font-medium">
+    <div className={`bg-navy-950/95 text-white border border-white/15 backdrop-blur-md px-2.5 sm:px-3 py-1.5 rounded-full flex items-center gap-1.5 sm:gap-2 shadow-xl text-xs ${className}`}>
+      <div className="flex items-center gap-1 text-gray-300 font-bold shrink-0">
         <Sparkles className="w-3.5 h-3.5 text-orange-400 animate-pulse" />
-        <span className="hidden sm:inline">Active Role:</span>
+        <span className="hidden md:inline text-[11px] text-gray-300">Persona:</span>
       </div>
 
-      <div className="flex items-center gap-1 bg-black/30 p-0.5 rounded-full border border-white/5">
+      <div className="flex items-center gap-0.5 sm:gap-1 bg-black/40 p-0.5 rounded-full border border-white/10">
         {roles.map((r) => {
           const isActive = role === r.id;
           return (
             <button
               key={r.id}
-              onClick={() => switchRoleForTesting(r.id)}
-              className={`flex items-center gap-1 px-2.5 py-1 rounded-full font-medium transition-all ${
+              onClick={() => handleSelect(r.id)}
+              className={`flex items-center gap-1 px-2 sm:px-2.5 py-1 rounded-full font-bold text-[10px] sm:text-xs transition-all cursor-pointer ${
                 isActive
-                  ? 'bg-orange-500 text-white shadow-sm'
-                  : 'text-gray-400 hover:text-white'
+                  ? 'bg-orange-500 text-white shadow-md scale-105'
+                  : 'text-gray-300 hover:text-white hover:bg-white/10'
               }`}
-              title={`Switch simulation role to ${r.label}`}
+              title={`Switch preview role to ${r.label}`}
             >
               {r.icon}
-              <span className="capitalize">{r.label}</span>
+              <span>{r.label}</span>
             </button>
           );
         })}
       </div>
-
-      {!isConfigured && (
-        <span className="bg-amber-500/20 text-amber-300 text-[10px] px-2 py-0.5 rounded-full font-semibold border border-amber-500/30 hidden md:inline">
-          Demo Sandbox
-        </span>
-      )}
     </div>
   );
 };
+

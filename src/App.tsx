@@ -13,18 +13,28 @@ import { LeaderboardPage } from './pages/LeaderboardPage';
 import { RegistrationPage } from './pages/RegistrationPage';
 import { EventItem, Registration } from './types';
 import { INITIAL_EVENTS } from './data/mockData';
-import { Home, Calendar, Trophy, User, ShieldCheck, Gavel, UserPlus, HeartHandshake } from 'lucide-react';
+import { Home, Calendar, Trophy, User, ShieldCheck, Gavel, UserPlus, HeartHandshake, ArrowUp } from 'lucide-react';
 
 const CrossFireApp: React.FC = () => {
   const { user, role } = useAuth();
   const [currentView, setCurrentView] = useState<string>('landing');
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [authModalMode, setAuthModalMode] = useState<'login' | 'register'>('login');
+  const [showBackToTop, setShowBackToTop] = useState(false);
 
   // Auto scroll to top on any page view transition
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'instant' });
   }, [currentView]);
+
+  // Back to top scroll listener
+  useEffect(() => {
+    const handleScroll = () => {
+      setShowBackToTop(window.scrollY > 400);
+    };
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   // Initial user registrations (seeded with 2 demo events matching Google Form)
   const [userRegistrations, setUserRegistrations] = useState<Registration[]>([
@@ -127,7 +137,7 @@ const CrossFireApp: React.FC = () => {
       />
 
       {/* Main View Router */}
-      <main className="flex-grow">
+      <main className="flex-grow pb-24 lg:pb-12 min-h-[75vh]">
         {currentView === 'landing' && (
           <LandingPage
             onSelectEvent={handleSelectEvent}
@@ -255,6 +265,17 @@ const CrossFireApp: React.FC = () => {
           </span>
         </button>
       </div>
+
+      {/* Floating Back to Top Button */}
+      {showBackToTop && (
+        <button
+          onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+          className="fixed bottom-20 lg:bottom-8 right-4 lg:right-8 z-30 w-11 h-11 rounded-full bg-navy hover:bg-navy-light text-white shadow-2xl border border-white/20 flex items-center justify-center transition-all hover:scale-110 active:scale-95 backdrop-blur-md cursor-pointer group"
+          aria-label="Scroll back to top"
+        >
+          <ArrowUp className="w-5 h-5 text-orange-400 group-hover:-translate-y-0.5 transition-transform" />
+        </button>
+      )}
 
       {/* Supabase Authentication & Registration Modal */}
       <AuthModal
