@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { EventItem, Registration } from '../types';
-import { INITIAL_EVENTS } from '../data/mockData';
+import { useEvents } from '../context/EventsContext';
 import { useAuth } from '../context/AuthContext';
 import { 
   Trophy, 
@@ -29,6 +29,7 @@ export const EventsDiscoveryPage: React.FC<EventsDiscoveryPageProps> = ({
   openAuthModal,
 }) => {
   const { user } = useAuth();
+  const { events } = useEvents();
   const [filter, setFilter] = useState<'all' | 'solo' | 'team'>('all');
   const [selectedEvent, setSelectedEvent] = useState<EventItem | null>(null);
   const [teamName, setTeamName] = useState('');
@@ -41,7 +42,7 @@ export const EventsDiscoveryPage: React.FC<EventsDiscoveryPageProps> = ({
   const registrationCount = userRegistrations.length;
   const isLimitReached = registrationCount >= 2;
 
-  const filteredEvents = INITIAL_EVENTS.filter(event => {
+  const filteredEvents = events.filter(event => {
     if (filter === 'solo') return event.event_type === 'solo';
     if (filter === 'team') return event.event_type === 'team';
     return true;

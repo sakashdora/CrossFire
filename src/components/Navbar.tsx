@@ -9,32 +9,29 @@ import {
   Menu, 
   X, 
   ChevronDown, 
-  UserPlus 
+  UserPlus,
+  Film
 } from 'lucide-react';
-import { INITIAL_NOTIFICATIONS } from '../data/mockData';
+import { useNotifications } from '../hooks/useNotifications';
 
 interface NavbarProps {
   currentView: string;
   setCurrentView: (view: string) => void;
   openAuthModal: (mode: 'login' | 'register') => void;
+  onReplayIntro?: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
   currentView,
   setCurrentView,
-  openAuthModal
+  openAuthModal,
+  onReplayIntro
 }) => {
   const { user, role, logout } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
-  const [notifications, setNotifications] = useState(INITIAL_NOTIFICATIONS);
-
-  const unreadCount = notifications.filter(n => !n.read_at).length;
-
-  const markAllAsRead = () => {
-    setNotifications(prev => prev.map(n => ({ ...n, read_at: new Date().toISOString() })));
-  };
+  const { notifications, unreadCount, markAllAsRead } = useNotifications();
 
   return (
     <header className="sticky top-0 z-50 bg-[#001F3F] text-white shadow-xl border-b border-navy-light/40">
@@ -46,11 +43,11 @@ export const Navbar: React.FC<NavbarProps> = ({
             onClick={() => setCurrentView('landing')} 
             className="flex items-center gap-2 sm:gap-3 cursor-pointer group select-none shrink-0"
           >
-            {/* Srusti College Official Logo */}
+            {/* SAGS Official Logo */}
             <div className="h-9 sm:h-11 px-1.5 py-0.5 rounded-xl bg-white shadow-sm flex items-center justify-center border border-white/20 shrink-0">
               <img 
-                src="/collegeLogo.jpeg" 
-                alt="Srusti College Logo" 
+                src="/sagslogo.png" 
+                alt="SAGS Logo" 
                 className="h-full object-contain" 
               />
             </div>
@@ -132,6 +129,18 @@ export const Navbar: React.FC<NavbarProps> = ({
           {/* Right Action Bar */}
           <div className="flex items-center gap-2 sm:gap-3">
             
+            {/* Replay Cinematic Intro Button */}
+            {onReplayIntro && (
+              <button
+                onClick={onReplayIntro}
+                className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-orange-500/15 via-amber-500/20 to-orange-500/15 hover:from-orange-500/30 hover:to-amber-500/30 text-amber-300 hover:text-white text-xs font-bold border border-orange-500/30 hover:border-orange-500/60 shadow-[0_0_15px_rgba(255,107,53,0.15)] transition-all"
+                title="Play Cinematic Opening Screen"
+              >
+                <Film className="w-3.5 h-3.5 text-orange-400 animate-pulse" />
+                <span>SAGS × CROSSFIRE</span>
+              </button>
+            )}
+
             {/* Notifications Bell */}
             <div className="relative">
               <button

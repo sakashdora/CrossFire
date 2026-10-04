@@ -64,6 +64,12 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           setSuccessMessage('Successfully authenticated!');
           setTimeout(() => {
             onClose();
+            // The role might take a moment to sync from session, 
+            // so we route based on email/auth state or rely on App.tsx doing it.
+            // Actually, best to just trigger a reload if we need fresh state, 
+            // but the state should be reactive. For now, we will redirect manually or let user click.
+            // Wait, we can't get role here synchronously. 
+            // Let's rely on window.location.hash.
           }, 600);
         } else {
           setErrorMessage(res.error || 'Invalid credentials');

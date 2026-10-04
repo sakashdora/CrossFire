@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { Registration } from '../types';
-import { INITIAL_NOTIFICATIONS } from '../data/mockData';
+import { useNotifications } from '../hooks/useNotifications';
 import { 
   Trophy, 
   Upload, 
@@ -36,7 +36,7 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
   const [mediaLink, setMediaLink] = useState('');
   const [uploadSuccess, setUploadSuccess] = useState(false);
 
-  const notifications = INITIAL_NOTIFICATIONS;
+  const { notifications } = useNotifications();
 
   const handleMediaSubmit = (e: React.FormEvent) => {
     e.preventDefault();

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { INITIAL_EVENTS } from '../data/mockData';
+import { useEvents } from '../context/EventsContext';
 import { 
   Gavel, 
   Lock, 
@@ -33,6 +33,7 @@ interface CandidateEvaluation {
 
 export const JudgePanel: React.FC = () => {
   const { user } = useAuth();
+  const { events } = useEvents();
   const [selectedEventId, setSelectedEventId] = useState<string>('ev-quiz');
   const [selectedCandidateId, setSelectedCandidateId] = useState<string>('c-1');
   const [candidateSearch, setCandidateSearch] = useState('');
@@ -170,7 +171,7 @@ export const JudgePanel: React.FC = () => {
     ]
   });
 
-  const selectedEvent = INITIAL_EVENTS.find(e => e.id === selectedEventId) || INITIAL_EVENTS[0];
+  const selectedEvent = events.find(e => e.id === selectedEventId) || events[0];
   const candidates = trackCandidates[selectedEventId] || [];
   const currentCandidate = candidates.find(c => c.id === selectedCandidateId) || candidates[0];
 
@@ -262,7 +263,7 @@ export const JudgePanel: React.FC = () => {
             }}
             className="bg-navy-dark text-white font-bold text-xs px-3 py-2 rounded-xl border border-white/20 focus:ring-2 focus:ring-orange-500 outline-none cursor-pointer"
           >
-            {INITIAL_EVENTS.map(event => (
+            {events.map(event => (
               <option key={event.id} value={event.id}>
                 {event.name} ({event.group})
               </option>

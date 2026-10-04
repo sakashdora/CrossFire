@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { INITIAL_LEADERBOARD } from '../data/mockData';
+import { useLeaderboard } from '../hooks/useLeaderboard';
 import { 
   Trophy, 
   Search, 
@@ -14,6 +14,7 @@ import confetti from 'canvas-confetti';
 
 export const LeaderboardPage: React.FC = () => {
   const { user } = useAuth();
+  const { leaderboard } = useLeaderboard();
   const [searchQuery, setSearchQuery] = useState('');
   const [boardFilter, setBoardFilter] = useState<'all' | 'CBSE' | 'ICSE' | 'CHSE'>('all');
 
@@ -26,7 +27,7 @@ export const LeaderboardPage: React.FC = () => {
     });
   };
 
-  const filteredEntries = INITIAL_LEADERBOARD.filter((entry) => {
+  const filteredEntries = leaderboard.filter((entry) => {
     const matchesSearch = 
       entry.participant_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       entry.school_name.toLowerCase().includes(searchQuery.toLowerCase());
@@ -34,7 +35,7 @@ export const LeaderboardPage: React.FC = () => {
     return matchesSearch && matchesBoard;
   });
 
-  const top3 = INITIAL_LEADERBOARD.slice(0, 3);
+  const top3 = leaderboard.slice(0, 3);
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 space-y-8">

@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { EventsProvider, useEvents } from './context/EventsContext';
 import { Navbar } from './components/Navbar';
 import { Footer } from './components/Footer';
+import { CinematicIntro } from './components/CinematicIntro';
 import { AuthModal } from './components/AuthModal';
 import { LandingPage } from './pages/LandingPage';
 import { EventsDiscoveryPage } from './pages/EventsDiscoveryPage';
@@ -11,101 +13,111 @@ import { AdminDashboard } from './pages/AdminDashboard';
 import { VolunteerDashboard } from './pages/VolunteerDashboard';
 import { LeaderboardPage } from './pages/LeaderboardPage';
 import { RegistrationPage } from './pages/RegistrationPage';
-import { EventItem, Registration } from './types';
-import { INITIAL_EVENTS } from './data/mockData';
+import { EventItem } from './types';
+
 import { Home, Calendar, Trophy, User, ShieldCheck, Gavel, UserPlus, HeartHandshake } from 'lucide-react';
 
+import { ShieldAlert } from 'lucide-react';
+
+const ProtectedRoute = ({ children, allowedRoles }: { children: React.ReactNode, allowedRoles?: string[] }) => {
+  const { user, role, isLoading } = useAuth();
+  
+  if (isLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh]">
+        <div className="w-12 h-12 border-4 border-orange-500 border-t-transparent rounded-full animate-spin mb-4"></div>
+        <p className="text-gray-500 font-bold uppercase tracking-widest text-sm animate-pulse">Authenticating...</p>
+      </div>
+    );
+  }
+  
+  if (!user) {
+    return (
+      <div className="max-w-md mx-auto mt-20 p-8 bg-white rounded-3xl shadow-xl text-center border border-gray-100">
+        <ShieldAlert className="w-16 h-16 text-red-500 mx-auto mb-4" />
+        <h2 className="text-2xl font-black text-navy mb-2">Access Denied</h2>
+        <p className="text-gray-600 text-sm mb-6">You must be signed in to view this portal.</p>
+        <button 
+          onClick={() => window.location.hash = 'landing'} 
+          className="px-6 py-2.5 bg-navy hover:bg-navy-light text-white font-bold rounded-xl transition-colors"
+        >
+          Return to Home
+        </button>
+      </div>
+    );
+  }
+  
+  if (allowedRoles && !allowedRoles.includes(role)) {
+    return (
+      <div className="max-w-md mx-auto mt-20 p-8 bg-white rounded-3xl shadow-xl text-center border border-gray-100">
+        <ShieldAlert className="w-16 h-16 text-red-500 mx-auto mb-4" />
+        <h2 className="text-2xl font-black text-navy mb-2">Unauthorized Request</h2>
+        <p className="text-gray-600 text-sm mb-6">Your current role ({role}) does not have permission to access this area.</p>
+        <button 
+          onClick={() => window.location.hash = 'landing'} 
+          className="px-6 py-2.5 bg-navy hover:bg-navy-light text-white font-bold rounded-xl transition-colors"
+        >
+          Return to Home
+        </button>
+      </div>
+    );
+  }
+
+  return <>{children}</>;
+};
+
 const CrossFireApp: React.FC = () => {
-  const { user, role } = useAuth();
-  const [currentView, setCurrentView] = useState<string>('landing');
+  const { role } = useAuth();
+  const [currentView, setCurrentView] = useState<string>(() => {
+    const hash = window.location.hash.replace('#', '');
+    return hash || 'landing';
+  });
+
+  useEffect(() => {
+    window.location.hash = currentView;
+  }, [currentView]);
+
+  useEffect(() => {
+    const onHashChange = () => {
+      const hash = window.location.hash.replace('#', '');
+      setCurrentView(hash || 'landing');
+    };
+    window.addEventListener('hashchange', onHashChange);
+    return () => window.removeEventListener('hashchange', onHashChange);
+  }, []);
+
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [authModalMode, setAuthModalMode] = useState<'login' | 'register'>('login');
+  
+  // Cinematic Opening Screen State (Always-On on every page load / refresh)
+  const [showIntro, setShowIntro] = useState<boolean>(true);
+
+  const handleIntroComplete = () => {
+    setShowIntro(false);
+  };
+
+  const handleReplayIntro = () => {
+    setShowIntro(true);
+  };
 
   // Auto scroll to top on any page view transition
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'instant' });
   }, [currentView]);
 
-  // Initial user registrations (seeded with 2 demo events matching Google Form)
-  const [userRegistrations, setUserRegistrations] = useState<Registration[]>([
-    {
-      id: 'reg-demo-1',
-      user_id: 'user-student-demo',
-      event_id: 'ev-quiz',
-      event: INITIAL_EVENTS[0], // Intelect Odyssey (Quiz)
-      team_name: 'DAV Brainiacs',
-      team_members: [{ name: 'Priya Sahoo (Roll 14)' }],
-      status: 'confirmed',
-      score: 89.5,
-      score_locked: true,
-      created_at: new Date().toISOString()
-    },
-    {
-      id: 'reg-demo-2',
-      user_id: 'user-student-demo',
-      event_id: 'ev-ramp-walk',
-      event: INITIAL_EVENTS[4], // Glam 'n' Dazzle (Ramp Walk)
-      status: 'confirmed',
-      score: 90.0,
-      score_locked: true,
-      created_at: new Date().toISOString()
+  const { userRegistrations, handleRegisterEvent, handleWithdrawEvent, handleSubmitMedia, refreshRegistrations } = useEvents();
+
+
+
+  const handleGoogleFormRegistrationSuccess = async () => {
+    // For real implementation, form submits events to Supabase directly
+    // Then we just refresh the registrations
+    if (refreshRegistrations) {
+       await refreshRegistrations();
     }
-  ]);
-
-  const handleRegisterEvent = async (eventId: string, teamName?: string, members?: any[]): Promise<boolean> => {
-    if (userRegistrations.length >= 2) {
-      alert('Maximum 2 events registration limit reached per student.');
-      return false;
-    }
-
-    const event = INITIAL_EVENTS.find(e => e.id === eventId);
-    if (!event) return false;
-
-    const newReg: Registration = {
-      id: `reg-${Date.now()}`,
-      user_id: user?.id || 'guest',
-      event_id: eventId,
-      event,
-      team_name: teamName,
-      team_members: members,
-      status: 'registered',
-      created_at: new Date().toISOString()
-    };
-
-    setUserRegistrations(prev => [...prev, newReg]);
-    return true;
   };
 
-  const handleGoogleFormRegistrationSuccess = (events: EventItem[]) => {
-    const newRegs: Registration[] = events.map(ev => ({
-      id: `reg-${Date.now()}-${ev.id}`,
-      user_id: user?.id || 'registered-student',
-      event_id: ev.id,
-      event: ev,
-      team_name: `${user?.first_name || 'Student'}'s Team`,
-      status: 'registered',
-      created_at: new Date().toISOString()
-    }));
 
-    setUserRegistrations(newRegs);
-  };
-
-  const handleWithdrawEvent = (registrationId: string) => {
-    setUserRegistrations(prev => prev.filter(r => r.id !== registrationId));
-  };
-
-  const handleSubmitMedia = (registrationId: string, url: string) => {
-    setUserRegistrations(prev => prev.map(r => {
-      if (r.id === registrationId) {
-        return {
-          ...r,
-          media_url: url,
-          media_submitted_at: new Date().toISOString()
-        };
-      }
-      return r;
-    }));
-  };
 
   const openAuth = (mode: 'login' | 'register') => {
     setAuthModalMode(mode);
@@ -119,11 +131,17 @@ const CrossFireApp: React.FC = () => {
   return (
     <div className="min-h-screen flex flex-col bg-[#F8FAFC] text-gray-900 pb-20 lg:pb-0">
       
+      {/* Cinematic Opening Screen: SAGS x CROSSFIRE */}
+      {showIntro && (
+        <CinematicIntro onComplete={handleIntroComplete} />
+      )}
+
       {/* Top Navbar */}
       <Navbar 
         currentView={currentView}
         setCurrentView={setCurrentView}
         openAuthModal={openAuth}
+        onReplayIntro={handleReplayIntro}
       />
 
       {/* Main View Router */}
@@ -151,24 +169,32 @@ const CrossFireApp: React.FC = () => {
         )}
 
         {currentView === 'dashboard' && (
-          <StudentDashboard
-            userRegistrations={userRegistrations}
-            onWithdrawEvent={handleWithdrawEvent}
-            onSubmitMedia={handleSubmitMedia}
-            setCurrentView={setCurrentView}
-          />
+          <ProtectedRoute allowedRoles={['student']}>
+            <StudentDashboard
+              userRegistrations={userRegistrations}
+              onWithdrawEvent={handleWithdrawEvent}
+              onSubmitMedia={handleSubmitMedia}
+              setCurrentView={setCurrentView}
+            />
+          </ProtectedRoute>
         )}
 
         {currentView === 'judge' && (
-          <JudgePanel />
+          <ProtectedRoute allowedRoles={['judge', 'admin']}>
+            <JudgePanel />
+          </ProtectedRoute>
         )}
 
         {currentView === 'volunteer' && (
-          <VolunteerDashboard />
+          <ProtectedRoute allowedRoles={['volunteer', 'admin']}>
+            <VolunteerDashboard />
+          </ProtectedRoute>
         )}
 
         {currentView === 'admin' && (
-          <AdminDashboard />
+          <ProtectedRoute allowedRoles={['admin']}>
+            <AdminDashboard />
+          </ProtectedRoute>
         )}
 
         {currentView === 'leaderboard' && (
@@ -177,7 +203,7 @@ const CrossFireApp: React.FC = () => {
       </main>
 
       {/* Footer */}
-      <Footer />
+      <Footer setCurrentView={setCurrentView} />
 
       {/* Bottom Mobile App Bar (Fixed 5-Key Navigation) */}
       <div className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-navy text-white border-t border-navy-light/40 px-2 py-1.5 flex items-center justify-around shadow-2xl backdrop-blur-lg">
@@ -270,7 +296,9 @@ const CrossFireApp: React.FC = () => {
 export const App: React.FC = () => {
   return (
     <AuthProvider>
-      <CrossFireApp />
+      <EventsProvider>
+        <CrossFireApp />
+      </EventsProvider>
     </AuthProvider>
   );
 };

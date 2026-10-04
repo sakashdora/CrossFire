@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { CourseStream, FoodPreference, EventItem } from '../types';
-import { INITIAL_EVENTS } from '../data/mockData';
+
 import { 
   CheckCircle, 
   AlertCircle, 
@@ -22,6 +22,7 @@ import {
   ArrowRight
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
+import { useEvents } from '../context/EventsContext';
 
 interface RegistrationPageProps {
   onSuccess: (selectedEvents: EventItem[]) => void;
@@ -33,6 +34,7 @@ export const RegistrationPage: React.FC<RegistrationPageProps> = ({
   setCurrentView,
 }) => {
   const { user, signUp } = useAuth();
+  const { events } = useEvents();
 
   // Form Fields from Google Form
   const [studentName, setStudentName] = useState(user?.first_name ? `${user.first_name} ${user.last_name || ''}`.trim() : '');
@@ -55,8 +57,8 @@ export const RegistrationPage: React.FC<RegistrationPageProps> = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
 
-  const groupAEvents = INITIAL_EVENTS.filter(e => e.group === 'Group A');
-  const groupBEvents = INITIAL_EVENTS.filter(e => e.group === 'Group B');
+  const groupAEvents = events.filter(e => e.group === 'Group A');
+  const groupBEvents = events.filter(e => e.group === 'Group B');
 
   const handleCompetitionToggle = (eventName: string) => {
     setErrorMessage(null);
@@ -137,7 +139,7 @@ export const RegistrationPage: React.FC<RegistrationPageProps> = ({
           origin: { y: 0.6 }
         });
 
-        const selectedEventObjects = INITIAL_EVENTS.filter(e => selectedCompetitions.includes(e.name));
+        const selectedEventObjects = events.filter(e => selectedCompetitions.includes(e.name));
         onSuccess(selectedEventObjects);
 
         setTimeout(() => {
@@ -175,11 +177,11 @@ export const RegistrationPage: React.FC<RegistrationPageProps> = ({
 
           <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 sm:gap-5 relative z-10 text-center sm:text-left">
             <div className="flex items-center gap-3 shrink-0">
-              {/* Srusti College Emblem */}
+              {/* SAGS Emblem */}
               <div className="h-16 w-16 sm:h-20 sm:w-20 md:h-24 md:w-24 p-1.5 rounded-2xl bg-white shadow-2xl flex items-center justify-center border-2 border-white/30 shrink-0">
                 <img 
-                  src="/collegeLogo.jpeg" 
-                  alt="Srusti Academy Official Logo" 
+                  src="/sagslogo.png" 
+                  alt="SAGS Official Logo" 
                   className="w-full h-full object-contain"
                 />
               </div>
