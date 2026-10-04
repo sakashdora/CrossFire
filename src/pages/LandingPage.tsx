@@ -80,7 +80,6 @@ const StaggeredText = ({ text, className }: { text: string, className?: string }
 interface LandingPageProps {
   onSelectEvent: (event: EventItem) => void;
   setCurrentView: (view: string) => void;
-  onOpenNoticeModal?: () => void;
 }
 
 
@@ -196,7 +195,6 @@ const FAQS = [
 export const LandingPage: React.FC<LandingPageProps> = ({
   onSelectEvent,
   setCurrentView,
-  onOpenNoticeModal,
 }) => {
   const { events } = useEvents();
   const [openFaq, setOpenFaq] = useState<number | null>(0);
@@ -808,32 +806,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({
         </div>
       </section>
       </div>
-
-      {/* Floating Live Directive & Milestone Telemetry Beacon */}
-      {onOpenNoticeModal && (
-        <motion.button
-          initial={{ opacity: 0, x: -20 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ delay: 1 }}
-          onClick={onOpenNoticeModal}
-          className="fixed bottom-20 lg:bottom-8 left-4 lg:left-8 z-30 px-3.5 py-2 rounded-2xl bg-[#000d1a]/95 hover:bg-[#001530] text-white shadow-2xl border border-cyan-500/40 backdrop-blur-xl flex items-center gap-2.5 transition-all hover:scale-105 active:scale-95 group cursor-pointer"
-          aria-label="Open Championship Notice and Guidelines"
-        >
-          <span className="relative flex h-2.5 w-2.5">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75" />
-            <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-cyan-500" />
-          </span>
-          <div className="flex flex-col text-left">
-            <span className="text-[10px] uppercase font-black tracking-wider text-cyan-300 group-hover:text-cyan-200">
-              Championship Notice
-            </span>
-            <span className="text-[11px] font-bold text-slate-300">
-              480+ Students • 50+ Colleges
-            </span>
-          </div>
-          <ChevronRight className="w-3.5 h-3.5 text-cyan-400 group-hover:translate-x-0.5 transition-transform" />
-        </motion.button>
-      )}
 
     </div>
   );

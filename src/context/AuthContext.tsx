@@ -148,6 +148,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return { success: true };
       }
 
+      if (isSupabaseConfigured) {
+        try {
+          const { data, error } = await supabase
+            .from('users')
+            .select('*')
+            .eq('email', cleanEmail)
+            .single();
+          if (!error && data) {
+            setUser(data as UserProfile);
+            localStorage.setItem('crossfire_mock_user', JSON.stringify(data));
+            return { success: true };
+          }
+        } catch {
+          // Fall through
+        }
+      }
+
       return {
         success: false,
         error: `No student registration found for "${email}". Please complete the registration form first.`
