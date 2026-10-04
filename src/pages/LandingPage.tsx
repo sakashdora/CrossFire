@@ -1,7 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CountdownTimer } from '../components/CountdownTimer';
-import { HeroParticlesBackground } from '../components/HeroParticlesBackground';
 import { EventItem } from '../types';
 import { useEvents } from '../context/EventsContext';
 import {
@@ -404,17 +403,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                 ))}
               </div>
             </div>
-            <button
-              onClick={() => setTickerMinimized(true)}
-              className="px-3 text-white/40 hover:text-white flex items-center justify-center hover:bg-white/10 transition-colors cursor-pointer shrink-0"
-              title="Minimize announcements ticker"
-              aria-label="Minimize ticker"
-            >
-              <X className="w-4 h-4" />
-            </button>
           </div>
-        </aside>
-      )}
+        </div>
 
       <style>{`
         @keyframes ticker {
@@ -834,7 +824,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
 
         </div>
       </section>
+      </div>
     </div>
-  </div>
-);
+  );
 };

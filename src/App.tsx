@@ -15,7 +15,7 @@ import { LeaderboardPage } from './pages/LeaderboardPage';
 import { RegistrationPage } from './pages/RegistrationPage';
 import { EventItem } from './types';
 
-import { Home, Calendar, Trophy, User, ShieldCheck, Gavel, UserPlus, HeartHandshake } from 'lucide-react';
+import { Home, Calendar, Trophy, User, ShieldCheck, Gavel, UserPlus, HeartHandshake, ArrowUp } from 'lucide-react';
 
 import { ShieldAlert } from 'lucide-react';
 
@@ -89,6 +89,13 @@ const CrossFireApp: React.FC = () => {
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [authModalMode, setAuthModalMode] = useState<'login' | 'register'>('login');
   
+  const [showBackToTop, setShowBackToTop] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => setShowBackToTop(window.scrollY > 300);
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
   // Cinematic Opening Screen State (Always-On on every page load / refresh)
   const [showIntro, setShowIntro] = useState<boolean>(true);
 

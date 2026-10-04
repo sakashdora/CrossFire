@@ -138,6 +138,7 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
   const [copiedWifi, setCopiedWifi] = useState(false);
 
   const { notifications } = useNotifications();
+  const passId = "CF-" + (user?.id?.substring(0, 5).toUpperCase() || "XXXX");
 
   const handleMediaSubmit = (e: React.FormEvent) => {
     e.preventDefault();

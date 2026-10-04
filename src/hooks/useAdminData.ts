@@ -35,7 +35,7 @@ export function useAdminData() {
         // 3. Today's registrations
         const today = new Date();
         today.setHours(0, 0, 0, 0);
-        const { count: todayRegistrations, error: trErr } = await supabase
+        const { count: todayRegistrations, error: _trErr } = await supabase
           .from('registrations')
           .select('*', { count: 'exact', head: true })
           .gte('created_at', today.toISOString());
@@ -46,7 +46,7 @@ export function useAdminData() {
           .select('id, name, max_participants, current_participants');
 
         // 5. Recent registrations
-        const { data: recent, error: recErr } = await supabase
+        const { data: recent, error: _recErr } = await supabase
           .from('registrations')
           .select(`
             id,
