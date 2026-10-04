@@ -145,7 +145,7 @@ const CrossFireApp: React.FC = () => {
       />
 
       {/* Main View Router */}
-      <main className="flex-grow">
+      <main className="flex-grow pb-24 lg:pb-12 min-h-[75vh]">
         {currentView === 'landing' && (
           <LandingPage
             onSelectEvent={handleSelectEvent}
@@ -281,6 +281,17 @@ const CrossFireApp: React.FC = () => {
           </span>
         </button>
       </div>
+
+      {/* Floating Back to Top Button */}
+      {showBackToTop && (
+        <button
+          onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+          className="fixed bottom-20 lg:bottom-8 right-4 lg:right-8 z-30 w-11 h-11 rounded-full bg-navy hover:bg-navy-light text-white shadow-2xl border border-white/20 flex items-center justify-center transition-all hover:scale-110 active:scale-95 backdrop-blur-md cursor-pointer group"
+          aria-label="Scroll back to top"
+        >
+          <ArrowUp className="w-5 h-5 text-orange-400 group-hover:-translate-y-0.5 transition-transform" />
+        </button>
+      )}
 
       {/* Supabase Authentication & Registration Modal */}
       <AuthModal

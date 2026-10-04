@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CountdownTimer } from '../components/CountdownTimer';
+import { HeroParticlesBackground } from '../components/HeroParticlesBackground';
 import { EventItem } from '../types';
 import { useEvents } from '../context/EventsContext';
 import {
@@ -379,6 +380,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
           </motion.div>
 
         </div>
+      </section>
 
         {/* Live News Broadcast Ticker */}
         <div className="relative z-10 w-full border-t border-white/15 bg-[#00142A]/95 backdrop-blur-md overflow-hidden">
@@ -402,16 +404,27 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                 ))}
               </div>
             </div>
+            <button
+              onClick={() => setTickerMinimized(true)}
+              className="px-3 text-white/40 hover:text-white flex items-center justify-center hover:bg-white/10 transition-colors cursor-pointer shrink-0"
+              title="Minimize announcements ticker"
+              aria-label="Minimize ticker"
+            >
+              <X className="w-4 h-4" />
+            </button>
           </div>
-        </div>
+        </aside>
+      )}
 
-        <style>{`
-          @keyframes ticker {
-            0%   { transform: translateX(0); }
-            100% { transform: translateX(-50%); }
-          }
-        `}</style>
-      </section>
+      <style>{`
+        @keyframes ticker {
+          0%   { transform: translateX(0); }
+          100% { transform: translateX(-50%); }
+        }
+      `}</style>
+
+      {/* Remaining Page Sections */}
+      <div className="space-y-10 sm:space-y-16 pt-4 sm:pt-6">
 
 
       {/* ─── 2. KPI METRIC POWER CARDS (Clean Pure White + Deep Navy) ─── */}
@@ -821,7 +834,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
 
         </div>
       </section>
-
     </div>
-  );
+  </div>
+);
 };

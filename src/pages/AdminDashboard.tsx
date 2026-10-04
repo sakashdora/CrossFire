@@ -14,12 +14,35 @@ import {
   AlertCircle
 } from 'lucide-react';
 
+interface RosterStudent {
+  id: string;
+  name: string;
+  school: string;
+  city: string;
+  stream: string;
+  board: string;
+  events: string[];
+  contact: string;
+  checkedIn: boolean;
+  score: number;
+}
+
 export const AdminDashboard: React.FC = () => {
   const { stats, isLoading, error } = useAdminData();
   const [broadcastTarget, setBroadcastTarget] = useState<'all' | 'debate' | 'quiz' | 'judges'>('all');
   const [broadcastChannel, setBroadcastChannel] = useState<'whatsapp' | 'sms' | 'in_app'>('whatsapp');
   const [broadcastMessage, setBroadcastMessage] = useState('');
   const [broadcastSent, setBroadcastSent] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
+  const [rosterSearch, setRosterSearch] = useState('');
+  const [streamFilter, setStreamFilter] = useState<'all' | 'Science' | 'Commerce' | 'Arts'>('all');
+  const [disputeUnlockedIds, setDisputeUnlockedIds] = useState<string[]>([]);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  const showToast = (msg: string) => {
+    setToastMessage(msg);
+    setTimeout(() => setToastMessage(null), 3500);
+  };
 
   if (isLoading) {
     return (
@@ -47,11 +70,23 @@ export const AdminDashboard: React.FC = () => {
     { label: 'Active Events', value: stats.eventsStats.length, trend: 'Currently Running', color: 'text-orange-600', bg: 'bg-orange-50' },
   ];
 
+  // Master roster mock
+  const [rosterList, setRosterList] = useState<RosterStudent[]>([
+    { id: 'CF-101', name: 'Akash Pattnaik', school: 'DAV Public School', city: 'Bhubaneswar', stream: 'Science', board: 'CBSE', events: ['Intelect Odyssey (Quiz)', "Glam 'n' Dazzle"], contact: '+91 9876543210', checkedIn: true, score: 89.5 },
+    { id: 'CF-102', name: 'Rohan Mohanty', school: 'BJB English Medium', city: 'Bhubaneswar', stream: 'Science', board: 'CBSE', events: ['Intelect Odyssey (Quiz)'], contact: '+91 9876543211', checkedIn: true, score: 92.0 },
+    { id: 'CF-103', name: 'Ananya Dash', school: 'Mothers Public School', city: 'Bhubaneswar', stream: 'Commerce', board: 'CBSE', events: ["Glam 'n' Dazzle"], contact: '+91 9876543212', checkedIn: true, score: 94.5 },
+    { id: 'CF-104', name: 'Debasish Swain', school: 'Stewart School', city: 'Cuttack', stream: 'Arts', board: 'ICSE', events: ['Spontanity Erena (Debate)'], contact: '+91 9876543213', checkedIn: false, score: 0 },
+    { id: 'CF-105', name: 'Tanvi Agarwal', school: 'SAI International School', city: 'Bhubaneswar', stream: 'Commerce', board: 'CBSE', events: ['Spectrum on Canvas'], contact: '+91 9876543214', checkedIn: true, score: 86.0 },
+    { id: 'CF-106', name: 'Siddharth Rout', school: 'BJB Higher Secondary', city: 'Bhubaneswar', stream: 'Science', board: 'CHSE', events: ['Hidden Horizon'], contact: '+91 9876543215', checkedIn: true, score: 91.0 },
+    { id: 'CF-107', name: 'Priyanka Tripathy', school: 'KIIT International School', city: 'Bhubaneswar', stream: 'Science', board: 'CBSE', events: ['Spontanity Erena (Debate)'], contact: '+91 9876543216', checkedIn: true, score: 88.0 },
+  ]);
+
   const handleSendBroadcast = (e: React.FormEvent) => {
     e.preventDefault();
     if (!broadcastMessage.trim()) return;
 
     setBroadcastSent(true);
+    showToast(`Broadcast dispatched via ${broadcastChannel.toUpperCase()} to ${broadcastTarget.toUpperCase()} recipients!`);
     setTimeout(() => {
       setBroadcastMessage('');
       setBroadcastSent(false);
@@ -93,14 +128,32 @@ export const AdminDashboard: React.FC = () => {
     }
   };
 
+  const handleUnlockScore = (disputeId: string, candidateName: string) => {
+    setDisputeUnlockedIds(prev => [...prev, disputeId]);
+    showToast(`Score unlocked for ${candidateName}. Assigned judge notified for rubric revision.`);
+  };
+
+  const filteredRoster = rosterList.filter(student => {
+    const matchesSearch = 
+      student.name.toLowerCase().includes(rosterSearch.toLowerCase()) ||
+      student.school.toLowerCase().includes(rosterSearch.toLowerCase()) ||
+      student.id.toLowerCase().includes(rosterSearch.toLowerCase());
+    const matchesStream = streamFilter === 'all' || student.stream === streamFilter;
+    return matchesSearch && matchesStream;
+  });
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
       {/* Header */}
       <div className="bg-navy p-6 sm:p-8 rounded-3xl text-white shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div>
           <div className="flex items-center gap-2 mb-2">
-            <span className="px-2.5 py-0.5 rounded-full bg-blue-500/20 text-blue-300 text-[10px] font-bold uppercase tracking-wider border border-blue-500/30 flex items-center gap-1">
-              <ShieldCheck className="w-3.5 h-3.5" /> Super Admin Command Center
+            <span className="px-2.5 py-0.5 rounded-full bg-blue-500/20 text-blue-300 text-[10px] font-black uppercase tracking-wider border border-blue-500/30 flex items-center gap-1">
+              <ShieldCheck className="w-3.5 h-3.5 text-blue-400" /> Super Admin Control Hub
+            </span>
+            <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 text-[10px] font-bold border border-emerald-500/30 flex items-center gap-1">
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+              Live Sync
             </span>
           </div>
           <h1 className="text-2xl sm:text-3xl font-black text-white">
@@ -111,17 +164,31 @@ export const AdminDashboard: React.FC = () => {
           </p>
         </div>
 
-        <button
-          onClick={handleExportCSV}
-          className="self-start md:self-auto px-4 py-2.5 bg-orange-500 hover:bg-orange-600 text-white font-bold text-xs rounded-xl shadow-md flex items-center gap-2 transition-all hover:scale-105"
-        >
-          <Download className="w-4 h-4" />
-          <span>Export Master Roster (CSV)</span>
-        </button>
+        <div className="flex flex-wrap items-center gap-2 relative z-10">
+          <button
+            onClick={() => {
+              setRosterList(prev => [...prev]);
+              showToast('Refreshed real-time telemetry from registration and gate scanners.');
+            }}
+            className="px-3.5 py-2.5 bg-white/10 hover:bg-white/20 text-white font-bold text-xs rounded-xl border border-white/20 shadow-sm flex items-center gap-1.5 transition-all cursor-pointer"
+          >
+            <RefreshCw className="w-4 h-4 text-orange-400" />
+            <span className="hidden sm:inline">Refresh Data</span>
+          </button>
+
+          <button
+            onClick={handleExportCSV}
+            disabled={isExporting}
+            className="px-4 py-2.5 bg-orange-500 hover:bg-orange-600 active:scale-95 text-white font-black text-xs rounded-xl shadow-lg shadow-orange-500/20 flex items-center gap-2 transition-all cursor-pointer disabled:opacity-50"
+          >
+            <Download className="w-4 h-4" />
+            <span>{isExporting ? 'Exporting...' : 'Export Master Roster (CSV)'}</span>
+          </button>
+        </div>
       </div>
 
       {/* KPI Cards Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         {kpis.map((kpi, idx) => (
           <div key={idx} className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm space-y-2 hover:border-gray-300 transition-colors">
             <span className="text-xs font-bold uppercase tracking-wider text-gray-400 block">
@@ -130,7 +197,7 @@ export const AdminDashboard: React.FC = () => {
             <div className={`text-2xl sm:text-3xl font-black ${kpi.color}`}>
               {kpi.value}
             </div>
-            <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${kpi.bg} ${kpi.color} inline-block`}>
+            <span className={`text-[10px] sm:text-[11px] font-bold px-2 py-0.5 rounded-full ${kpi.bg} ${kpi.color} inline-block`}>
               {kpi.trend}
             </span>
           </div>
@@ -229,6 +296,7 @@ export const AdminDashboard: React.FC = () => {
             </div>
           </div>
         </div>
+      )}
 
         {/* Right Col: Operations & Broadcast */}
         <div className="space-y-6">
