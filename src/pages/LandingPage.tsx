@@ -29,6 +29,54 @@ import {
   ChevronRight
 } from 'lucide-react';
 
+const StaggeredText = ({ text, className }: { text: string, className?: string }) => {
+  const letters = Array.from(text);
+  
+  const container = {
+    hidden: { opacity: 0 },
+    visible: (i = 1) => ({
+      opacity: 1,
+      transition: { staggerChildren: 0.08, delayChildren: 0.1 * i }
+    })
+  };
+  
+  const child = {
+    visible: {
+      opacity: 1,
+      y: 0,
+      rotateX: 0,
+      transition: { type: "spring", damping: 12, stiffness: 200 } as any
+    },
+    hidden: {
+      opacity: 0,
+      y: 40,
+      rotateX: 90,
+      transition: { type: "spring", damping: 12, stiffness: 200 } as any
+    }
+  };
+
+  return (
+    <motion.div
+      style={{ display: 'inline-flex', overflow: 'visible', perspective: 1000 }}
+      variants={container}
+      initial="hidden"
+      animate="visible"
+      className={className}
+    >
+      {letters.map((letter, index) => (
+        <motion.span
+          key={index}
+          variants={child}
+          style={{ display: 'inline-block' }}
+          className="hover:text-cyan-300 hover:drop-shadow-[0_0_15px_rgba(56,189,248,0.8)] transition-all duration-300 cursor-default"
+        >
+          {letter === " " ? "\u00A0" : letter}
+        </motion.span>
+      ))}
+    </motion.div>
+  );
+};
+
 interface LandingPageProps {
   onSelectEvent: (event: EventItem) => void;
   setCurrentView: (view: string) => void;
@@ -212,12 +260,12 @@ export const LandingPage: React.FC<LandingPageProps> = ({
     <div className="bg-[#F8FAFC] text-slate-800 font-sans">
 
       {/* ─── 1. HERO ARENA SECTION (Deep Srusti Navy + Pure White + Cyan Shimmer) ─── */}
-      <section className="relative min-h-[90vh] lg:min-h-screen flex flex-col justify-between overflow-hidden bg-[#001F3F]">
+      <section className="relative min-h-[90vh] lg:min-h-screen flex flex-col justify-between overflow-hidden bg-[#000d1a] group">
         
-        {/* Ambient Cyan / Royal Blue Radial Shaders */}
-        <div className="absolute top-[-100px] left-1/2 -translate-x-1/2 w-[600px] sm:w-[900px] h-[450px] bg-blue-500/20 rounded-full blur-[140px] pointer-events-none" />
-        <div className="absolute top-1/3 -left-32 w-[350px] h-[350px] bg-sky-500/15 rounded-full blur-[120px] pointer-events-none" />
-        <div className="absolute top-1/2 -right-32 w-[350px] h-[350px] bg-cyan-400/15 rounded-full blur-[120px] pointer-events-none" />
+        {/* Ambient Cyan / Royal Blue Radial Shaders - Mouse Reactive Simulation */}
+        <div className="absolute top-[-100px] left-1/2 -translate-x-1/2 w-[600px] sm:w-[900px] h-[450px] bg-blue-500/20 rounded-full blur-[140px] pointer-events-none transition-transform duration-1000 group-hover:scale-110" />
+        <div className="absolute top-1/3 -left-32 w-[350px] h-[350px] bg-sky-500/15 rounded-full blur-[120px] pointer-events-none animate-pulse" />
+        <div className="absolute top-1/2 -right-32 w-[350px] h-[350px] bg-orange-500/10 rounded-full blur-[120px] pointer-events-none transition-all duration-1000 group-hover:bg-cyan-400/20" />
 
         {/* Dynamic Starfield Canvas */}
         <StarField />
@@ -271,25 +319,28 @@ export const LandingPage: React.FC<LandingPageProps> = ({
           </motion.div>
 
           {/* Main Title */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2, duration: 0.7 }}
-            className="space-y-2 mb-4"
-          >
-            <p className="text-slate-300 text-xs sm:text-sm font-bold tracking-[0.3em] uppercase">
+          <div className="space-y-2 mb-4 perspective-1000">
+            <motion.p
+              initial={{ opacity: 0, letterSpacing: '0em' }}
+              animate={{ opacity: 1, letterSpacing: '0.3em' }}
+              transition={{ delay: 0.1, duration: 1 }}
+              className="text-slate-300 text-xs sm:text-sm font-bold uppercase"
+            >
               Ignite Your Talent At
-            </p>
-            <h1 className="text-4xl sm:text-6xl md:text-7xl lg:text-8xl font-black tracking-tight leading-[1.05] uppercase">
-              <span className="text-white drop-shadow-[0_4px_25px_rgba(0,0,0,0.8)]">CROSS</span>
-              <span className="bg-gradient-to-r from-white via-sky-200 to-blue-400 bg-clip-text text-transparent drop-shadow-[0_0_35px_rgba(0,98,255,0.7)]">
-                FIRE
-              </span>
-              <span className="inline-block ml-2 sm:ml-3 px-3 py-0.5 rounded-2xl bg-blue-500/20 border border-blue-400/40 text-cyan-300 text-xl sm:text-3xl md:text-4xl lg:text-5xl font-black align-middle shadow-inner">
+            </motion.p>
+            <h1 className="text-4xl sm:text-6xl md:text-7xl lg:text-8xl font-black tracking-tight leading-[1.05] uppercase flex items-center justify-center flex-wrap">
+              <StaggeredText text="CROSS" className="text-white drop-shadow-[0_4px_25px_rgba(0,0,0,0.8)]" />
+              <StaggeredText text="FIRE" className="bg-gradient-to-r from-white via-sky-200 to-blue-400 bg-clip-text text-transparent drop-shadow-[0_0_35px_rgba(0,98,255,0.7)] ml-2" />
+              <motion.span 
+                initial={{ opacity: 0, scale: 0.5, rotateX: 90 }}
+                animate={{ opacity: 1, scale: 1, rotateX: 0 }}
+                transition={{ type: "spring", damping: 10, stiffness: 100, delay: 1 }}
+                className="inline-block ml-2 sm:ml-4 px-3 py-0.5 rounded-2xl bg-blue-500/20 border border-blue-400/40 text-cyan-300 text-xl sm:text-3xl md:text-4xl lg:text-5xl font-black align-middle shadow-[0_0_20px_rgba(56,189,248,0.2)]"
+              >
                 2026
-              </span>
+              </motion.span>
             </h1>
-          </motion.div>
+          </div>
 
           {/* Date & Location Pill Strip */}
           <motion.div
@@ -329,20 +380,27 @@ export const LandingPage: React.FC<LandingPageProps> = ({
             transition={{ delay: 0.5, duration: 0.5 }}
             className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4 mb-6 w-full max-w-md sm:max-w-none"
           >
-            <button
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
               onClick={() => setCurrentView('register')}
-              className="w-full sm:w-auto h-13 px-8 sm:px-10 rounded-2xl bg-[#0062FF] hover:bg-blue-600 text-white font-black text-sm shadow-xl shadow-blue-500/40 hover:shadow-blue-500/60 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-2 cursor-pointer"
+              className="relative overflow-hidden w-full sm:w-auto h-13 px-8 sm:px-10 rounded-2xl bg-[#0062FF] text-white font-black text-sm shadow-[0_0_40px_rgba(0,98,255,0.5)] transition-all flex items-center justify-center gap-2 cursor-pointer group border border-blue-400/50"
             >
-              <span>Register Free in 60s</span>
-              <ArrowRight className="w-4 h-4" />
-            </button>
+              <div className="absolute inset-0 bg-gradient-to-r from-cyan-400 to-blue-600 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+              <span className="relative z-10 flex items-center gap-2">
+                Register Free in 60s
+                <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+              </span>
+            </motion.button>
 
-            <button
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
               onClick={() => setCurrentView('events')}
-              className="w-full sm:w-auto h-13 px-8 sm:px-10 rounded-2xl bg-white/10 hover:bg-white/20 text-white font-bold text-sm border border-white/25 hover:border-cyan-300/50 transition-all flex items-center justify-center gap-2 cursor-pointer"
+              className="w-full sm:w-auto h-13 px-8 sm:px-10 rounded-2xl bg-white/5 hover:bg-white/10 backdrop-blur-md text-white font-bold text-sm border border-white/20 hover:border-cyan-400/50 hover:shadow-[0_0_20px_rgba(56,189,248,0.2)] transition-all flex items-center justify-center gap-2 cursor-pointer"
             >
               <span>Explore All 6 Tracks</span>
-            </button>
+            </motion.button>
 
             <a
               href="/Crossfire - 2026 Brochure.pdf"
