@@ -252,27 +252,6 @@ export const INITIAL_EVENTS: EventItem[] = [
 ];
 
 export const DEMO_USERS: Record<string, UserProfile> = {
-  student: {
-    id: 'user-student-demo',
-    email: 'imazureakash@gmail.com',
-    first_name: 'Akash',
-    last_name: 'Pattnaik',
-    contact_number: '+91 9876543210',
-    whatsapp_number: '+91 9876543210',
-    mobile_number: '+91 9876543210',
-    date_of_birth: '2008-04-12',
-    institute_name: 'DAV Public School, Chandrasekharpur',
-    school_name: 'DAV Public School, Chandrasekharpur',
-    city_town: 'Bhubaneswar',
-    course_stream: '12th Science',
-    board: 'CBSE',
-    food_preference: 'Veg',
-    role: 'student',
-    parent_consent: true,
-    terms_accepted: true,
-    selected_competitions: ['Quiz', 'Ramp Walk'],
-    created_at: new Date().toISOString()
-  },
   judge: {
     id: 'user-judge-demo',
     email: 'judge@srusti.edu.in',
@@ -338,7 +317,7 @@ export const DEMO_USERS: Record<string, UserProfile> = {
 export const INITIAL_LEADERBOARD: LeaderboardEntry[] = [
   { rank: 1, user_id: 'u-1', participant_name: 'Rohan Mohanty & Team', school_name: 'Buxi Jagabandhu English Medium School', board: 'CBSE', events_count: 2, total_score: 188.5, trend: 'up' },
   { rank: 2, user_id: 'u-2', participant_name: 'Ananya Dash', school_name: 'Mothers Public School', board: 'CBSE', events_count: 2, total_score: 184.0, trend: 'same' },
-  { rank: 3, user_id: 'user-student-demo', participant_name: 'Aarav Pattnaik', school_name: 'DAV Public School, Chandrasekharpur', board: 'CBSE', events_count: 2, total_score: 179.5, is_current_user: true, trend: 'up' },
+  { rank: 3, user_id: 'u-3', participant_name: 'Pooja Das', school_name: 'DAV Public School, Chandrasekharpur', board: 'CBSE', events_count: 2, total_score: 179.5, trend: 'up' },
   { rank: 4, user_id: 'u-4', participant_name: 'Debasish Swain', school_name: 'Stewart School, Cuttack', board: 'ICSE', events_count: 2, total_score: 175.0, trend: 'down' },
   { rank: 5, user_id: 'u-5', participant_name: 'Priyanka Tripathy & Team', school_name: 'KIIT International School', board: 'CBSE', events_count: 2, total_score: 172.5, trend: 'same' },
   { rank: 6, user_id: 'u-6', participant_name: 'Siddharth Rout', school_name: 'BJB Higher Secondary School', board: 'CHSE', events_count: 1, total_score: 94.0, trend: 'up' },

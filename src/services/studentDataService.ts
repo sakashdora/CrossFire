@@ -25,197 +25,46 @@ export interface StudentRegistrationRecord {
 const STORAGE_KEY = 'crossfire_student_records';
 export const REGISTRATION_EVENT_KEY = 'crossfire_registration_updated';
 
-// Realistic initial dataset representing +2 final year students across Odisha colleges
-const INITIAL_STUDENTS: StudentRegistrationRecord[] = [
-  {
-    id: 'CF26-1001',
-    first_name: 'Akash',
-    last_name: 'Pattnaik',
-    email: 'imazureakash@gmail.com',
-    contact_number: '+91 9876543210',
-    whatsapp_number: '+91 9876543210',
-    institute_name: 'DAV Public School, Chandrasekharpur',
-    city_town: 'Bhubaneswar',
-    course_stream: '12th Science',
-    board: 'CBSE',
-    food_preference: 'Veg',
-    selected_competitions: ['Quiz', 'Ramp Walk'],
-    status: 'confirmed',
-    parent_consent: true,
-    terms_accepted: true,
-    checked_in_at: null,
-    food_redeemed_at: null,
-    created_at: new Date(Date.now() - 3600000 * 24 * 3).toISOString()
-  },
-  {
-    id: 'CF26-1002',
-    first_name: 'Ananya',
-    last_name: 'Dash',
-    email: 'ananya.dash@gmail.com',
-    contact_number: '+91 9437012345',
-    whatsapp_number: '+91 9437012345',
-    institute_name: "Mother's Public School",
-    city_town: 'Bhubaneswar',
-    course_stream: '12th Science',
-    board: 'CBSE',
-    food_preference: 'Veg',
-    selected_competitions: ['Debate', 'Poster Making'],
-    status: 'confirmed',
-    parent_consent: true,
-    terms_accepted: true,
-    checked_in_at: null,
-    food_redeemed_at: null,
-    created_at: new Date(Date.now() - 3600000 * 24 * 2).toISOString()
-  },
-  {
-    id: 'CF26-1003',
-    first_name: 'Rohan',
-    last_name: 'Mohanty',
-    email: 'rohan.m@yahoo.com',
-    contact_number: '+91 9861234567',
-    whatsapp_number: '+91 9861234567',
-    institute_name: 'Buxi Jagabandhu English Medium School (BJEM)',
-    city_town: 'Bhubaneswar',
-    course_stream: '12th Commerce',
-    board: 'CBSE',
-    food_preference: 'Non-veg',
-    selected_competitions: ['Quiz', 'Treasure Hunt'],
-    status: 'confirmed',
-    parent_consent: true,
-    terms_accepted: true,
-    checked_in_at: null,
-    food_redeemed_at: null,
-    created_at: new Date(Date.now() - 3600000 * 24).toISOString()
-  },
-  {
-    id: 'CF26-1004',
-    first_name: 'Debasish',
-    last_name: 'Swain',
-    email: 'debasish.swain@rediffmail.com',
-    contact_number: '+91 7008123456',
-    whatsapp_number: '+91 7008123456',
-    institute_name: 'Stewart School',
-    city_town: 'Cuttack',
-    course_stream: '12th Science',
-    board: 'ICSE',
-    food_preference: 'Veg',
-    selected_competitions: ['Debate'],
-    status: 'registered',
-    parent_consent: true,
-    terms_accepted: true,
-    checked_in_at: null,
-    food_redeemed_at: null,
-    created_at: new Date(Date.now() - 3600000 * 18).toISOString()
-  },
-  {
-    id: 'CF26-1005',
-    first_name: 'Priyanka',
-    last_name: 'Tripathy',
-    email: 'priyanka.tripathy@outlook.com',
-    contact_number: '+91 9439988776',
-    whatsapp_number: '+91 9439988776',
-    institute_name: 'KIIT International School',
-    city_town: 'Bhubaneswar',
-    course_stream: '12th Arts',
-    board: 'CBSE',
-    food_preference: 'Veg',
-    selected_competitions: ['Poster Making', 'Reels'],
-    status: 'confirmed',
-    parent_consent: true,
-    terms_accepted: true,
-    checked_in_at: null,
-    food_redeemed_at: null,
-    created_at: new Date(Date.now() - 3600000 * 12).toISOString()
-  },
-  {
-    id: 'CF26-1006',
-    first_name: 'Siddharth',
-    last_name: 'Rout',
-    email: 'siddharth.rout@gmail.com',
-    contact_number: '+91 8455112233',
-    whatsapp_number: '+91 8455112233',
-    institute_name: 'BJB Higher Secondary School',
-    city_town: 'Bhubaneswar',
-    course_stream: '12th Science',
-    board: 'CHSE',
-    food_preference: 'Non-veg',
-    selected_competitions: ['Treasure Hunt'],
-    status: 'registered',
-    parent_consent: true,
-    terms_accepted: true,
-    checked_in_at: null,
-    food_redeemed_at: null,
-    created_at: new Date(Date.now() - 3600000 * 8).toISOString()
-  },
-  {
-    id: 'CF26-1007',
-    first_name: 'Tanvi',
-    last_name: 'Agarwal',
-    email: 'tanvi.agarwal@gmail.com',
-    contact_number: '+91 9777654321',
-    whatsapp_number: '+91 9777654321',
-    institute_name: 'SAI International School',
-    city_town: 'Bhubaneswar',
-    course_stream: '12th Commerce',
-    board: 'CBSE',
-    food_preference: 'Veg',
-    selected_competitions: ['Ramp Walk'],
-    status: 'confirmed',
-    parent_consent: true,
-    terms_accepted: true,
-    checked_in_at: null,
-    food_redeemed_at: null,
-    created_at: new Date(Date.now() - 3600000 * 4).toISOString()
-  },
-  {
-    id: 'CF26-1008',
-    first_name: 'Ayush',
-    last_name: 'Ray',
-    email: 'ayush.ray@gmail.com',
-    contact_number: '+91 9124567890',
-    whatsapp_number: '+91 9124567890',
-    institute_name: 'Ravenshaw Higher Secondary School',
-    city_town: 'Cuttack',
-    course_stream: '12th Science',
-    board: 'CHSE',
-    food_preference: 'Non-veg',
-    selected_competitions: ['Quiz', 'Reels'],
-    status: 'registered',
-    parent_consent: true,
-    terms_accepted: true,
-    checked_in_at: null,
-    food_redeemed_at: null,
-    created_at: new Date(Date.now() - 3600000 * 2).toISOString()
-  }
-];
+// Known demo emails to purge from storage
+const DEMO_EMAILS = new Set([
+  'imazureakash@gmail.com',
+  'ananya.dash@gmail.com',
+  'rohan.m@yahoo.com',
+  'debasish.swain@rediffmail.com',
+  'priyanka.tripathy@outlook.com',
+  'siddharth.rout@gmail.com',
+  'tanvi.agarwal@gmail.com',
+  'ayush.ray@gmail.com'
+]);
 
 class StudentDataService {
-  private memoryCache: StudentRegistrationRecord[] | null = null;
-
-  // Retrieve all student records from persistent storage
+  // Retrieve all student records from persistent storage (only real registrations)
   public getAllStudents(): StudentRegistrationRecord[] {
     try {
       const stored = localStorage.getItem(STORAGE_KEY);
       if (stored) {
         const parsed = JSON.parse(stored);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          this.memoryCache = parsed;
-          return parsed;
+        if (Array.isArray(parsed)) {
+          // Filter out legacy demo entries so only genuine student registrations remain
+          const realStudents = parsed.filter(
+            s => s && s.email && !DEMO_EMAILS.has(s.email.toLowerCase()) && !s.id.startsWith('CF26-100')
+          );
+          // Save cleaned list back if demo items were purged
+          if (realStudents.length !== parsed.length) {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(realStudents));
+          }
+          return realStudents;
         }
       }
     } catch (e) {
-      console.warn('[CROSSFIRE] Failed to parse stored student records, initializing defaults:', e);
+      console.warn('[CROSSFIRE] Failed to parse stored student records:', e);
     }
 
-    // Default initialization
-    this.memoryCache = [...INITIAL_STUDENTS];
-    this.saveStudents(this.memoryCache);
-    return this.memoryCache;
+    return [];
   }
 
   // Save student records
   public saveStudents(records: StudentRegistrationRecord[]): void {
-    this.memoryCache = records;
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
       window.dispatchEvent(new CustomEvent(REGISTRATION_EVENT_KEY, { detail: records }));

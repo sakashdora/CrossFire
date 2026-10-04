@@ -140,13 +140,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     }
   };
 
-  // Quick preset loader for test accounts
-  const fillQuickTestAccount = (testRole: 'student' | 'judge' | 'admin' | 'volunteer') => {
-    if (testRole === 'student') {
-      setEmail('imazureakash@gmail.com');
-      setPassword('Crossfire2026!');
-      setLoginMethod('student_email');
-    } else if (testRole === 'judge') {
+  // Quick preset loader for staff test accounts
+  const fillQuickTestAccount = (testRole: 'judge' | 'admin' | 'volunteer') => {
+    if (testRole === 'judge') {
       setEmail('judge@crossfire.org');
       setPassword('JudgePass123!');
       setLoginMethod('staff_password');
@@ -251,16 +247,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           {/* Quick Test Demo Helpers */}
           <div className="mb-4 bg-navy-50/70 border border-navy-100 rounded-2xl p-2.5">
             <p className="text-[10px] font-bold text-navy-800 uppercase tracking-wider mb-1.5">
-              1-Click Demo Accounts:
+              Staff 1-Click Credentials:
             </p>
-            <div className="grid grid-cols-4 gap-1.5">
-              <button
-                type="button"
-                onClick={() => fillQuickTestAccount('student')}
-                className="text-[10px] py-1 px-1.5 rounded-lg bg-white hover:bg-orange-50 text-navy font-bold border border-navy-200 text-center hover:border-orange-400 transition-colors truncate"
-              >
-                🎓 Student
-              </button>
+            <div className="grid grid-cols-3 gap-1.5">
               <button
                 type="button"
                 onClick={() => fillQuickTestAccount('admin')}

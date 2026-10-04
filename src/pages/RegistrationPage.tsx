@@ -36,21 +36,22 @@ export const RegistrationPage: React.FC<RegistrationPageProps> = ({
   const { user, signUp } = useAuth();
   const { events } = useEvents();
 
-  // Form Fields from Google Form
-  const [studentName, setStudentName] = useState(user?.first_name ? `${user.first_name} ${user.last_name || ''}`.trim() : '');
-  const [contactNo, setContactNo] = useState(user?.contact_number || user?.mobile_number || '');
-  const [emailId, setEmailId] = useState(user?.email || 'imazureakash@gmail.com');
-  const [whatsappNo, setWhatsappNo] = useState(user?.whatsapp_number || user?.mobile_number || '');
+  // Form Fields from Google Form - Start empty for new visitors
+  const isExistingStudent = Boolean(user && user.role === 'student' && user.email);
+  const [studentName, setStudentName] = useState(isExistingStudent && user ? `${user.first_name} ${user.last_name || ''}`.trim() : '');
+  const [contactNo, setContactNo] = useState(isExistingStudent && user ? (user.contact_number || user.mobile_number || '') : '');
+  const [emailId, setEmailId] = useState(isExistingStudent && user ? user.email : '');
+  const [whatsappNo, setWhatsappNo] = useState(isExistingStudent && user ? (user.whatsapp_number || user.mobile_number || '') : '');
   const [sameAsContact, setSameAsContact] = useState(true);
-  const [instituteName, setInstituteName] = useState(user?.institute_name || user?.school_name || '');
-  const [cityTown, setCityTown] = useState(user?.city_town || 'Bhubaneswar');
-  const [courseStream, setCourseStream] = useState<CourseStream>(user?.course_stream || '12th Science');
-  const [foodPreference, setFoodPreference] = useState<FoodPreference>(user?.food_preference || 'Veg');
+  const [instituteName, setInstituteName] = useState(isExistingStudent && user ? (user.institute_name || user.school_name || '') : '');
+  const [cityTown, setCityTown] = useState(isExistingStudent && user ? (user.city_town || '') : '');
+  const [courseStream, setCourseStream] = useState<CourseStream>(isExistingStudent && user ? user.course_stream : '12th Science');
+  const [foodPreference, setFoodPreference] = useState<FoodPreference>(isExistingStudent && user ? user.food_preference : 'Veg');
   const [sendCopy, setSendCopy] = useState(true);
 
-  // Group A & Group B Selections (Combined Max 2 Limit)
+  // Group A & Group B Selections (Combined Max 2 Limit) - Start empty
   const [selectedCompetitions, setSelectedCompetitions] = useState<string[]>(
-    user?.selected_competitions || ['Quiz']
+    isExistingStudent && user ? (user.selected_competitions || []) : []
   );
 
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -312,7 +313,7 @@ export const RegistrationPage: React.FC<RegistrationPageProps> = ({
                     required
                     value={emailId}
                     onChange={(e) => setEmailId(e.target.value)}
-                    placeholder="imazureakash@gmail.com"
+                    placeholder="e.g. yourname@gmail.com"
                     className="w-full pl-10 pr-4 py-3 text-sm border border-gray-300 rounded-xl focus:ring-2 focus:ring-navy focus:border-navy transition-all"
                   />
                 </div>

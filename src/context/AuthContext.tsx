@@ -32,6 +32,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const savedMockUser = localStorage.getItem('crossfire_mock_user');
         if (savedMockUser) {
           const parsed = JSON.parse(savedMockUser);
+          // Purge legacy demo student so visitors aren't automatically logged in as Akash
+          if (parsed.id === 'user-student-demo' || parsed.email === 'imazureakash@gmail.com') {
+            localStorage.removeItem('crossfire_mock_user');
+            setUser(null);
+            setIsLoading(false);
+            return;
+          }
+
           // Check if this student has updated records in studentDataService
           if (parsed.email) {
             const freshStudent = studentDataService.findStudentByEmail(parsed.email);
@@ -93,17 +101,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               });
             }
           } else {
-            // Default demo student if no session exists yet
-            setUser(DEMO_USERS.student);
-            localStorage.setItem('crossfire_mock_user', JSON.stringify(DEMO_USERS.student));
+            // Unauthenticated visitor
+            setUser(null);
           }
         } else {
-          // Default to demo student for instantaneous preview
-          setUser(DEMO_USERS.student);
-          localStorage.setItem('crossfire_mock_user', JSON.stringify(DEMO_USERS.student));
+          // Unauthenticated visitor
+          setUser(null);
         }
       } catch (err) {
         console.error('[CROSSFIRE] Error initializing auth:', err);
+        setUser(null);
       } finally {
         setIsLoading(false);
       }
@@ -138,13 +145,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const userProfile = studentDataService.toUserProfile(student);
         setUser(userProfile);
         localStorage.setItem('crossfire_mock_user', JSON.stringify(userProfile));
-        return { success: true };
-      }
-
-      // Check demo student accounts
-      if (cleanEmail === DEMO_USERS.student.email.toLowerCase()) {
-        setUser(DEMO_USERS.student);
-        localStorage.setItem('crossfire_mock_user', JSON.stringify(DEMO_USERS.student));
         return { success: true };
       }
 
@@ -214,13 +214,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         } catch {
           // Ignore and continue to fallback checks
         }
-      }
-
-      // 4. Check Demo student
-      if (lowerEmail === DEMO_USERS.student.email.toLowerCase()) {
-        setUser(DEMO_USERS.student);
-        localStorage.setItem('crossfire_mock_user', JSON.stringify(DEMO_USERS.student));
-        return { success: true };
       }
 
       return {
@@ -318,31 +311,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           redirectTo: window.location.origin
         }
       });
-    } else {
-      // Mock Google sign in
-      const googleMockUser: UserProfile = {
-        id: 'CF26-GOOGLE-01',
-        email: 'imazureakash@gmail.com',
-        first_name: 'Akash',
-        last_name: 'Pattnaik',
-        contact_number: '+91 9876543210',
-        whatsapp_number: '+91 9876543210',
-        mobile_number: '+91 9876543210',
-        date_of_birth: '2008-06-15',
-        institute_name: 'DAV Public School, Chandrasekharpur',
-        school_name: 'DAV Public School, Chandrasekharpur',
-        city_town: 'Bhubaneswar',
-        course_stream: '12th Science',
-        food_preference: 'Veg',
-        board: 'CBSE',
-        role: 'student',
-        parent_consent: true,
-        terms_accepted: true,
-        selected_competitions: ['Quiz', 'Ramp Walk'],
-        created_at: new Date().toISOString()
-      };
-      setUser(googleMockUser);
-      localStorage.setItem('crossfire_mock_user', JSON.stringify(googleMockUser));
     }
   };
 
@@ -378,14 +346,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const switchRoleForTesting = (newRole: UserRole) => {
-    const template = DEMO_USERS[newRole] || {
-      ...DEMO_USERS.student,
-      role: newRole,
-      first_name: newRole.toUpperCase(),
-      email: `${newRole}@crossfire.org`
-    };
-    setUser(template);
-    localStorage.setItem('crossfire_mock_user', JSON.stringify(template));
+    if (newRole === 'student') {
+      setUser(null);
+      localStorage.removeItem('crossfire_mock_user');
+      return;
+    }
+    const template = DEMO_USERS[newRole];
+    if (template) {
+      setUser(template);
+      localStorage.setItem('crossfire_mock_user', JSON.stringify(template));
+    }
   };
 
   return (
