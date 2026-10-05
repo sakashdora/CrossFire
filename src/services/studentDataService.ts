@@ -29,164 +29,28 @@ export interface StudentRegistrationRecord {
 const STORAGE_KEY = 'crossfire_student_records';
 export const REGISTRATION_EVENT_KEY = 'crossfire_registration_updated';
 
-// Default initial registered delegates representing Odisha +2 colleges (Program not started yet — scores pending jury evaluation)
-const INITIAL_STUDENTS: StudentRegistrationRecord[] = [
-  {
-    id: 'CF26-1001',
-    first_name: 'Akash',
-    last_name: 'Pattnaik',
-    email: 'akash.pattnaik@gmail.com',
-    contact_number: '+91 9876543210',
-    whatsapp_number: '+91 9876543210',
-    institute_name: 'DAV Public School, Chandrasekharpur',
-    city_town: 'Bhubaneswar',
-    course_stream: '12th Science',
-    board: 'CBSE',
-    food_preference: 'Veg',
-    selected_competitions: ['Quiz', 'Reels'],
-    status: 'confirmed',
-    parent_consent: true,
-    terms_accepted: true,
-    checked_in_at: null,
-    food_redeemed_at: null,
-    media_urls: {},
-    scores: {},
-    room_reported: {},
-    created_at: '2026-10-01T10:00:00+05:30'
-  },
-  {
-    id: 'CF26-1002',
-    first_name: 'Rohan',
-    last_name: 'Mohanty',
-    email: 'rohan.mohanty@yahoo.com',
-    contact_number: '+91 9876543211',
-    whatsapp_number: '+91 9876543211',
-    institute_name: 'Buxi Jagabandhu English Medium School',
-    city_town: 'Bhubaneswar',
-    course_stream: '12th Science',
-    board: 'CBSE',
-    food_preference: 'Non-veg',
-    selected_competitions: ['Quiz', 'Treasure Hunt'],
-    status: 'confirmed',
-    parent_consent: true,
-    terms_accepted: true,
-    checked_in_at: null,
-    food_redeemed_at: null,
-    scores: {},
-    room_reported: {},
-    created_at: '2026-10-02T11:15:00+05:30'
-  },
-  {
-    id: 'CF26-1003',
-    first_name: 'Ananya',
-    last_name: 'Dash',
-    email: 'ananya.dash@gmail.com',
-    contact_number: '+91 9876543212',
-    whatsapp_number: '+91 9876543212',
-    institute_name: 'Mothers Public School',
-    city_town: 'Bhubaneswar',
-    course_stream: '12th Commerce',
-    board: 'CBSE',
-    food_preference: 'Veg',
-    selected_competitions: ['Ramp Walk', 'Debate'],
-    status: 'confirmed',
-    parent_consent: true,
-    terms_accepted: true,
-    checked_in_at: null,
-    food_redeemed_at: null,
-    scores: {},
-    room_reported: {},
-    created_at: '2026-10-02T14:30:00+05:30'
-  },
-  {
-    id: 'CF26-1004',
-    first_name: 'Debasish',
-    last_name: 'Swain',
-    email: 'debasish.swain@rediffmail.com',
-    contact_number: '+91 9876543213',
-    whatsapp_number: '+91 9876543213',
-    institute_name: 'Stewart School, Cuttack',
-    city_town: 'Cuttack',
-    course_stream: '12th Arts',
-    board: 'ICSE',
-    food_preference: 'Non-veg',
-    selected_competitions: ['Debate', 'Poster Making'],
-    status: 'confirmed',
-    parent_consent: true,
-    terms_accepted: true,
-    checked_in_at: null,
-    food_redeemed_at: null,
-    scores: {},
-    room_reported: {},
-    created_at: '2026-10-03T09:20:00+05:30'
-  },
-  {
-    id: 'CF26-1005',
-    first_name: 'Tanvi',
-    last_name: 'Agarwal',
-    email: 'tanvi.agarwal@gmail.com',
-    contact_number: '+91 9876543214',
-    whatsapp_number: '+91 9876543214',
-    institute_name: 'SAI International School',
-    city_town: 'Bhubaneswar',
-    course_stream: '12th Commerce',
-    board: 'CBSE',
-    food_preference: 'Veg',
-    selected_competitions: ['Poster Making', 'Debate'],
-    status: 'confirmed',
-    parent_consent: true,
-    terms_accepted: true,
-    checked_in_at: null,
-    food_redeemed_at: null,
-    scores: {},
-    room_reported: {},
-    created_at: '2026-10-03T16:40:00+05:30'
-  },
-  {
-    id: 'CF26-1006',
-    first_name: 'Siddharth',
-    last_name: 'Rout',
-    email: 'siddharth.rout@gmail.com',
-    contact_number: '+91 9876543215',
-    whatsapp_number: '+91 9876543215',
-    institute_name: 'BJB Higher Secondary School',
-    city_town: 'Bhubaneswar',
-    course_stream: '12th Science',
-    board: 'CHSE',
-    food_preference: 'Non-veg',
-    selected_competitions: ['Treasure Hunt'],
-    status: 'confirmed',
-    parent_consent: true,
-    terms_accepted: true,
-    checked_in_at: null,
-    food_redeemed_at: null,
-    scores: {},
-    room_reported: {},
-    created_at: '2026-10-04T12:00:00+05:30'
-  }
-];
+// Clean slate: 0 registered students initially. Real student registrations will populate dynamically.
+export const INITIAL_STUDENTS: StudentRegistrationRecord[] = [];
+
 
 class StudentDataService {
   // Retrieve all student records from persistent storage
   public getAllStudents(): StudentRegistrationRecord[] {
     try {
+      // Auto-purge legacy mock data once to establish a clean database
+      const isCleanSlate = localStorage.getItem('crossfire_clean_slate_2026_v4');
+      if (!isCleanSlate) {
+        localStorage.removeItem(STORAGE_KEY);
+        localStorage.removeItem('crossfire_mock_user');
+        localStorage.setItem('crossfire_clean_slate_2026_v4', 'true');
+        this.saveStudents([]);
+        return [];
+      }
+
       const stored = localStorage.getItem(STORAGE_KEY);
-      const isSanitized = localStorage.getItem('crossfire_pre_event_scores_purged_v2');
       if (stored) {
-        let parsed = JSON.parse(stored);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          if (!isSanitized) {
-            // Program has not started yet — purge fake pre-event scores, room statuses, and mock check-in timestamps
-            parsed = parsed.map((s: StudentRegistrationRecord) => ({
-              ...s,
-              scores: {},
-              checked_in_at: null,
-              food_redeemed_at: null,
-              room_reported: {},
-            }));
-            this.saveStudents(parsed);
-            localStorage.setItem('crossfire_pre_event_scores_purged_v2', 'true');
-          }
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed)) {
           return parsed;
         }
       }
@@ -194,9 +58,7 @@ class StudentDataService {
       console.warn('[CROSSFIRE] Failed to parse stored student records:', e);
     }
 
-    // Initialize with standard roster if empty
-    this.saveStudents(INITIAL_STUDENTS);
-    return INITIAL_STUDENTS;
+    return [];
   }
 
   // Save student records and broadcast update event
@@ -317,7 +179,8 @@ class StudentDataService {
   }
 
   // Sync to Supabase in background
-  private async syncWithSupabase(student: StudentRegistrationRecord): Promise<void> {
+  public async syncWithSupabase(student: StudentRegistrationRecord): Promise<void> {
+    if (!isSupabaseConfigured) return;
     try {
       const slugMap: Record<string, string> = {
         'Quiz': 'quiz',
@@ -332,8 +195,52 @@ class StudentDataService {
         .map(c => slugMap[c] || c.toLowerCase().replace(/[^a-z0-9]/g, '-'))
         .filter(Boolean);
 
+      const generatedPassword = `CrossFire@${student.id.replace(/[^a-zA-Z0-9]/g, '')}`;
+
       const { data: { session } } = await supabase.auth.getSession();
-      if (session?.user) {
+      if (!session?.user) {
+        // Sign up with crossfire app metadata so the user is created in public.users via DB trigger
+        const { data: authData, error: authError } = await supabase.auth.signUp({
+          email: student.email,
+          password: generatedPassword,
+          options: {
+            data: {
+              app: 'crossfire',
+              first_name: student.first_name,
+              last_name: student.last_name,
+              contact_number: student.contact_number,
+              whatsapp_number: student.whatsapp_number,
+              institute_name: student.institute_name,
+              city_town: student.city_town,
+              course_stream: student.course_stream,
+              board: student.board || 'CBSE',
+              food_preference: student.food_preference,
+              parent_consent: student.parent_consent,
+              terms_accepted: student.terms_accepted,
+              role: 'student'
+            }
+          }
+        });
+
+        if (!authError && authData.session) {
+          await supabase.rpc('submit_registration_form', {
+            p_profile: {
+              first_name: student.first_name,
+              last_name: student.last_name,
+              contact_number: student.contact_number,
+              whatsapp_number: student.whatsapp_number,
+              institute_name: student.institute_name,
+              city_town: student.city_town,
+              course_stream: student.course_stream,
+              board: student.board || 'CBSE',
+              food_preference: student.food_preference,
+              parent_consent: student.parent_consent,
+              terms_accepted: student.terms_accepted,
+            },
+            p_event_slugs: eventSlugs
+          });
+        }
+      } else {
         await supabase.rpc('submit_registration_form', {
           p_profile: {
             first_name: student.first_name,
@@ -343,7 +250,7 @@ class StudentDataService {
             institute_name: student.institute_name,
             city_town: student.city_town,
             course_stream: student.course_stream,
-            board: student.board,
+            board: student.board || 'CBSE',
             food_preference: student.food_preference,
             parent_consent: student.parent_consent,
             terms_accepted: student.terms_accepted,
@@ -352,8 +259,62 @@ class StudentDataService {
         });
       }
     } catch (err) {
-      console.warn('[CROSSFIRE] Supabase RPC sync notice:', err);
+      console.warn('[CROSSFIRE] Supabase sync notice:', err);
     }
+  }
+
+  // Fetch real-time registrations from Supabase into local service
+  public async syncFromSupabase(): Promise<StudentRegistrationRecord[]> {
+    if (!isSupabaseConfigured) return this.getAllStudents();
+    try {
+      const { data: users, error: userErr } = await supabase
+        .from('users')
+        .select('*')
+        .eq('role', 'student')
+        .order('created_at', { ascending: false });
+
+      if (!userErr && Array.isArray(users) && users.length > 0) {
+        const { data: registrations } = await supabase
+          .from('registrations')
+          .select('user_id, status, event:events(name, slug)');
+
+        const currentLocal = this.getAllStudents();
+        const localMap = new Map(currentLocal.map(s => [s.email.toLowerCase(), s]));
+
+        const synced: StudentRegistrationRecord[] = users.map((u: any) => {
+          const existing = localMap.get(u.email?.toLowerCase());
+          const userRegs = (registrations || []).filter((r: any) => r.user_id === u.id);
+          const eventNames = userRegs.map((r: any) => r.event?.name).filter(Boolean);
+
+          return {
+            id: existing?.id || (u.pass_number ? `CF26-${u.pass_number}` : `CF26-${u.id.slice(0, 4).toUpperCase()}`),
+            first_name: u.first_name || '',
+            last_name: u.last_name || '',
+            email: u.email || '',
+            contact_number: u.contact_number || existing?.contact_number || '',
+            whatsapp_number: u.whatsapp_number || existing?.whatsapp_number || '',
+            institute_name: u.institute_name || existing?.institute_name || '',
+            city_town: u.city_town || existing?.city_town || '',
+            course_stream: u.course_stream || existing?.course_stream || '12th Science',
+            board: u.board || existing?.board || 'CBSE',
+            food_preference: u.food_preference || existing?.food_preference || 'Veg',
+            selected_competitions: eventNames.length > 0 ? eventNames : (existing?.selected_competitions || []),
+            status: (u.status || existing?.status || 'registered') as any,
+            parent_consent: u.parent_consent ?? true,
+            terms_accepted: u.terms_accepted ?? true,
+            checked_in_at: u.checked_in_at || existing?.checked_in_at || null,
+            food_redeemed_at: u.food_redeemed_at || existing?.food_redeemed_at || null,
+            created_at: u.created_at || existing?.created_at || new Date().toISOString()
+          };
+        });
+
+        this.saveStudents(synced);
+        return synced;
+      }
+    } catch (err) {
+      console.warn('[CROSSFIRE] Error querying Supabase student records:', err);
+    }
+    return this.getAllStudents();
   }
 
   // Update student status
@@ -950,6 +911,217 @@ class StudentDataService {
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
   }
+
+  // Generate and download Excel (.xls) file with formatted headers & metadata
+  public downloadExcel(): void {
+    const students = this.getAllStudents();
+    const now = new Date();
+    const timestampFormatted = now.toLocaleString('en-IN', {
+      timeZone: 'Asia/Kolkata',
+      dateStyle: 'full',
+      timeStyle: 'medium'
+    });
+
+    let xml = `<?xml version="1.0"?>
+<?mso-application progid="Excel.Sheet"?>
+<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet"
+ xmlns:o="urn:schemas-microsoft-com:office:office"
+ xmlns:x="urn:schemas-microsoft-com:office:excel"
+ xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet"
+ xmlns:html="http://www.w3.org/TR/REC-html40">
+ <Styles>
+  <Style ss:ID="HeaderTitle">
+   <Font ss:FontName="Calibri" ss:Size="14" ss:Bold="1" ss:Color="#0A192F"/>
+  </Style>
+  <Style ss:ID="HeaderMeta">
+   <Font ss:FontName="Calibri" ss:Size="10" ss:Italic="1" ss:Color="#555555"/>
+  </Style>
+  <Style ss:ID="ColHeader">
+   <Font ss:FontName="Calibri" ss:Size="11" ss:Bold="1" ss:Color="#FFFFFF"/>
+   <Interior ss:Color="#FF5722" ss:Pattern="Solid"/>
+   <Alignment ss:Horizontal="Center" ss:Vertical="Center"/>
+   <Borders>
+    <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#D84315"/>
+   </Borders>
+  </Style>
+  <Style ss:ID="DataRow">
+   <Font ss:FontName="Calibri" ss:Size="10" ss:Color="#111111"/>
+   <Borders>
+    <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/>
+   </Borders>
+  </Style>
+  <Style ss:ID="DataRowCenter">
+   <Font ss:FontName="Calibri" ss:Size="10" ss:Color="#111111"/>
+   <Alignment ss:Horizontal="Center"/>
+   <Borders>
+    <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/>
+   </Borders>
+  </Style>
+ </Styles>
+ <Worksheet ss:Name="Master Student Roster">
+  <Table>
+   <Column ss:Width="90"/>
+   <Column ss:Width="140"/>
+   <Column ss:Width="180"/>
+   <Column ss:Width="100"/>
+   <Column ss:Width="100"/>
+   <Column ss:Width="200"/>
+   <Column ss:Width="90"/>
+   <Column ss:Width="90"/>
+   <Column ss:Width="70"/>
+   <Column ss:Width="70"/>
+   <Column ss:Width="180"/>
+   <Column ss:Width="80"/>
+   <Column ss:Width="70"/>
+   <Column ss:Width="70"/>
+   <Row>
+    <Cell ss:MergeAcross="13" ss:StyleID="HeaderTitle"><Data ss:Type="String">CROSSFIRE 2026 | SRUSTI ACADEMY OF GRADUATE STUDIES - OFFICIAL STUDENT ROSTER</Data></Cell>
+   </Row>
+   <Row>
+    <Cell ss:MergeAcross="13" ss:StyleID="HeaderMeta"><Data ss:Type="String">Exported on: ${timestampFormatted} | Venue: Srusti Campus, Bhubaneswar | Total Candidates: ${students.length}</Data></Cell>
+   </Row>
+   <Row ss:Index="4">
+    <Cell ss:StyleID="ColHeader"><Data ss:Type="String">Pass ID</Data></Cell>
+    <Cell ss:StyleID="ColHeader"><Data ss:Type="String">Student Name</Data></Cell>
+    <Cell ss:StyleID="ColHeader"><Data ss:Type="String">Email Address</Data></Cell>
+    <Cell ss:StyleID="ColHeader"><Data ss:Type="String">Contact No</Data></Cell>
+    <Cell ss:StyleID="ColHeader"><Data ss:Type="String">WhatsApp No</Data></Cell>
+    <Cell ss:StyleID="ColHeader"><Data ss:Type="String">Institute / School Name</Data></Cell>
+    <Cell ss:StyleID="ColHeader"><Data ss:Type="String">City / Town</Data></Cell>
+    <Cell ss:StyleID="ColHeader"><Data ss:Type="String">Stream</Data></Cell>
+    <Cell ss:StyleID="ColHeader"><Data ss:Type="String">Board</Data></Cell>
+    <Cell ss:StyleID="ColHeader"><Data ss:Type="String">Diet</Data></Cell>
+    <Cell ss:StyleID="ColHeader"><Data ss:Type="String">Selected Events</Data></Cell>
+    <Cell ss:StyleID="ColHeader"><Data ss:Type="String">Status</Data></Cell>
+    <Cell ss:StyleID="ColHeader"><Data ss:Type="String">Checked In</Data></Cell>
+    <Cell ss:StyleID="ColHeader"><Data ss:Type="String">Meal Claim</Data></Cell>
+   </Row>`;
+
+    students.forEach(s => {
+      xml += `
+   <Row>
+    <Cell ss:StyleID="DataRowCenter"><Data ss:Type="String">${s.id}</Data></Cell>
+    <Cell ss:StyleID="DataRow"><Data ss:Type="String">${`${s.first_name} ${s.last_name || ''}`.trim()}</Data></Cell>
+    <Cell ss:StyleID="DataRow"><Data ss:Type="String">${s.email}</Data></Cell>
+    <Cell ss:StyleID="DataRowCenter"><Data ss:Type="String">${s.contact_number}</Data></Cell>
+    <Cell ss:StyleID="DataRowCenter"><Data ss:Type="String">${s.whatsapp_number}</Data></Cell>
+    <Cell ss:StyleID="DataRow"><Data ss:Type="String">${s.institute_name}</Data></Cell>
+    <Cell ss:StyleID="DataRow"><Data ss:Type="String">${s.city_town}</Data></Cell>
+    <Cell ss:StyleID="DataRow"><Data ss:Type="String">${s.course_stream}</Data></Cell>
+    <Cell ss:StyleID="DataRowCenter"><Data ss:Type="String">${s.board || 'CBSE'}</Data></Cell>
+    <Cell ss:StyleID="DataRowCenter"><Data ss:Type="String">${s.food_preference}</Data></Cell>
+    <Cell ss:StyleID="DataRow"><Data ss:Type="String">${s.selected_competitions.join(' &amp; ')}</Data></Cell>
+    <Cell ss:StyleID="DataRowCenter"><Data ss:Type="String">${s.status.toUpperCase()}</Data></Cell>
+    <Cell ss:StyleID="DataRowCenter"><Data ss:Type="String">${s.checked_in_at ? 'YES' : 'NO'}</Data></Cell>
+    <Cell ss:StyleID="DataRowCenter"><Data ss:Type="String">${s.food_redeemed_at ? 'YES' : 'NO'}</Data></Cell>
+   </Row>`;
+    });
+
+    xml += `
+  </Table>
+ </Worksheet>
+</Workbook>`;
+
+    const blob = new Blob([xml], { type: 'application/vnd.ms-excel;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    const dateStr = new Date().toISOString().split('T')[0];
+    link.href = url;
+    link.setAttribute('download', `CrossFire_2026_Official_Roster_${dateStr}.xls`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  }
+
+  // Print/Save Desk Check-In Verification Sheet for physical event volunteers
+  public printDeskCheckInSheet(): void {
+    const students = this.getAllStudents();
+    const reportWindow = window.open('', '_blank', 'width=1200,height=850');
+    if (!reportWindow) {
+      alert('Pop-up was blocked. Please allow pop-ups for this website to view the printable sheet.');
+      return;
+    }
+
+    const html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>CROSSFIRE 2026 | Physical Gate Check-In &amp; Verification Sheet</title>
+  <style>
+    @page { size: A4 landscape; margin: 10mm; }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; color: #0f172a; padding: 12px; font-size: 11px; }
+    .header { display: flex; align-items: center; justify-content: space-between; border-bottom: 2px solid #0a192f; padding-bottom: 10px; margin-bottom: 12px; }
+    .title { font-size: 18px; font-weight: 900; color: #ff5722; }
+    .subtitle { font-size: 11px; color: #475569; font-weight: bold; }
+    .instructions { background: #f1f5f9; padding: 8px 12px; border-radius: 6px; margin-bottom: 10px; font-size: 10px; border-left: 3px solid #ff5722; }
+    table { width: 100%; border-collapse: collapse; font-size: 10px; }
+    th { background: #0a192f; color: #fff; text-align: left; padding: 6px 8px; font-weight: bold; }
+    td { padding: 6px 8px; border-bottom: 1px solid #e2e8f0; }
+    tr:nth-child(even) { background: #f8fafc; }
+    .check-box { width: 16px; height: 16px; border: 1.5px solid #64748b; border-radius: 3px; display: inline-block; }
+    .sig-line { width: 70px; border-bottom: 1px dashed #94a3b8; height: 14px; }
+    .badge { padding: 2px 6px; border-radius: 3px; font-weight: bold; font-size: 9px; }
+    .veg { background: #dcfce7; color: #166534; }
+    .nonveg { background: #fee2e2; color: #991b1b; }
+    @media print {
+      body { padding: 0; }
+      .no-print { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div>
+      <div class="title">CROSSFIRE 2026 • GATE CHECK-IN &amp; FOOD VERIFICATION ROSTER</div>
+      <div class="subtitle">Srusti Academy of Graduate Studies • Event Date: November 15, 2026</div>
+    </div>
+    <button class="no-print" onclick="window.print()" style="padding: 6px 12px; background: #ff5722; color: #fff; font-weight: bold; border: none; border-radius: 6px; cursor: pointer;">
+      Print Verification Sheet
+    </button>
+  </div>
+  <div class="instructions">
+    <strong>Gate Volunteer Instructions:</strong> Verify physical student ID card against Registration ID. Mark the Check-in box upon arrival and verify food preference badge before issuing refreshment tokens.
+  </div>
+  <table>
+    <thead>
+      <tr>
+        <th style="width: 70px;">Reg ID</th>
+        <th style="width: 130px;">Student Name</th>
+        <th style="width: 85px;">Contact</th>
+        <th style="width: 170px;">Institution</th>
+        <th style="width: 140px;">Competitions</th>
+        <th style="width: 65px;">Diet</th>
+        <th style="width: 65px; text-align: center;">Gate Arrival</th>
+        <th style="width: 65px; text-align: center;">Food Token</th>
+        <th style="width: 80px;">Candidate Signature</th>
+      </tr>
+    </thead>
+    <tbody>
+      ${students.length === 0 ? '<tr><td colspan="9" style="text-align: center; padding: 20px; color: #64748b;">No registrations currently recorded. New registrations will appear here in real time.</td></tr>' : students.map(s => `
+        <tr>
+          <td><strong>${s.id}</strong></td>
+          <td>${s.first_name} ${s.last_name || ''}</td>
+          <td>${s.contact_number}</td>
+          <td>${s.institute_name}</td>
+          <td>${s.selected_competitions.join(', ')}</td>
+          <td><span class="badge ${s.food_preference === 'Veg' ? 'veg' : 'nonveg'}">${s.food_preference}</span></td>
+          <td style="text-align: center;"><span class="check-box"></span></td>
+          <td style="text-align: center;"><span class="check-box"></span></td>
+          <td><div class="sig-line"></div></td>
+        </tr>
+      `).join('')}
+    </tbody>
+  </table>
+</body>
+</html>`;
+
+    reportWindow.document.open();
+    reportWindow.document.write(html);
+    reportWindow.document.close();
+  }
 }
 
 export const studentDataService = new StudentDataService();
+

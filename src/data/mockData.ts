@@ -292,6 +292,26 @@ export const DEMO_USERS: Record<string, UserProfile> = {
     terms_accepted: true,
     created_at: new Date().toISOString()
   },
+  admin_chandan: {
+    id: 'user-admin-chandan',
+    email: 'chandanmahapatra2400@gmail.com',
+    first_name: 'Chandan',
+    last_name: 'Mahapatra',
+    contact_number: '+91 8328863317',
+    whatsapp_number: '+91 8328863317',
+    mobile_number: '+91 8328863317',
+    date_of_birth: '1988-01-01',
+    institute_name: 'Srusti Academy of Graduate Studies',
+    school_name: 'Srusti Academy of Graduate Studies',
+    city_town: 'Bhubaneswar',
+    course_stream: '12th Science',
+    board: 'CHSE',
+    food_preference: 'Veg',
+    role: 'admin',
+    parent_consent: true,
+    terms_accepted: true,
+    created_at: new Date().toISOString()
+  },
   volunteer: {
     id: 'user-volunteer-demo',
     email: 'volunteer@srusti.edu.in',

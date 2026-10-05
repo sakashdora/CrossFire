@@ -185,41 +185,29 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
           <form onSubmit={handleSubmit} className="space-y-4">
             {loginMethod === 'student_email' ? (
-              /* Student Email Login */
-              <div className="space-y-3">
-                <div>
-                  <label className="block text-[11px] font-bold uppercase text-gray-700 mb-1">
-                    Registered Email Address *
-                  </label>
-                  <div className="relative">
-                    <Mail className="w-4 h-4 text-gray-400 absolute left-3 top-3" />
-                    <input
-                      type="email"
-                      required
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      placeholder="e.g. yourname@gmail.com"
-                      className="w-full pl-9 pr-3 py-2.5 border border-gray-200 rounded-xl text-xs focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 outline-none transition-all"
-                    />
+              /* Student Portal Locked Notice */
+              <div className="space-y-4">
+                <div className="p-4 bg-amber-50 border border-amber-200 rounded-2xl text-xs text-amber-950 space-y-2.5">
+                  <div className="flex items-center gap-2 text-amber-800 font-extrabold text-sm">
+                    <Lock className="w-4 h-4 text-amber-600" />
+                    <span>Registration is Active • Portal Login Closed</span>
                   </div>
-                  <p className="text-[10px] text-gray-500 mt-1.5 leading-normal">
-                    Enter the email address you used when registering on the portal to access your student dashboard & pass.
+                  <p className="text-[11px] leading-relaxed text-amber-900">
+                    Participant registration for +2 students is officially <strong>OPEN</strong>. Candidate portal login access is temporarily locked until registrations officially conclude.
+                  </p>
+                  <p className="text-[11px] leading-relaxed text-amber-900 font-medium">
+                    Once registration closes, the CrossFire Administration will generate and dispatch your official <strong>Student ID</strong> and secure <strong>Login Password</strong> to your registered Email &amp; WhatsApp.
                   </p>
                 </div>
 
                 <button
-                  type="submit"
-                  disabled={isSubmitting}
-                  className="w-full py-2.5 bg-orange-500 hover:bg-orange-600 disabled:opacity-60 text-white font-bold rounded-xl text-xs shadow-md transition-all flex items-center justify-center gap-2 hover:scale-[1.01]"
+                  type="button"
+                  onClick={handleNavigateToRegister}
+                  className="w-full py-3 bg-orange-500 hover:bg-orange-600 text-white font-black rounded-xl text-xs shadow-md transition-all flex items-center justify-center gap-2 hover:scale-[1.01]"
                 >
-                  {isSubmitting ? (
-                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                  ) : (
-                    <>
-                      <span>Access Student Dashboard</span>
-                      <ArrowRight className="w-4 h-4" />
-                    </>
-                  )}
+                  <GraduationCap className="w-4 h-4" />
+                  <span>Register Free for Competitions Now</span>
+                  <ArrowRight className="w-4 h-4" />
                 </button>
               </div>
             ) : (
@@ -227,16 +215,16 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               <div className="space-y-3">
                 <div>
                   <label className="block text-[11px] font-bold uppercase text-gray-700 mb-1">
-                    Staff / Admin Email *
+                    Admin / Volunteer Email or Volunteer ID *
                   </label>
                   <div className="relative">
                     <Mail className="w-4 h-4 text-gray-400 absolute left-3 top-3" />
                     <input
-                      type="email"
+                      type="text"
                       required
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      placeholder="admin@crossfire.org"
+                      placeholder="e.g. admin@srusti.edu.in or VOL-101"
                       className="w-full pl-9 pr-3 py-2.5 border border-gray-200 rounded-xl text-xs focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all"
                     />
                   </div>

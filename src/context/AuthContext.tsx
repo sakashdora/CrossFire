@@ -3,6 +3,8 @@ import { UserProfile, UserRole } from '../types';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { DEMO_USERS } from '../data/mockData';
 import { studentDataService } from '../services/studentDataService';
+import { guestVolunteerService } from '../services/guestVolunteerService';
+
 
 interface AuthContextType {
   user: UserProfile | null;
@@ -119,111 +121,73 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     initAuth();
   }, []);
 
-  const calculateAge = (dob: string): number => {
-    const birthDate = new Date(dob);
-    const today = new Date();
-    let age = today.getFullYear() - birthDate.getFullYear();
-    const m = today.getMonth() - birthDate.getMonth();
-    if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
-      age--;
-    }
-    return age;
-  };
 
-  // Dedicated Student Email Login: Allows registered students to log in directly via their email
-  const loginWithEmail = async (email: string): Promise<{ success: boolean; error?: string }> => {
-    setIsLoading(true);
-    try {
-      const cleanEmail = email.trim().toLowerCase();
-      if (!cleanEmail || !cleanEmail.includes('@')) {
-        return { success: false, error: 'Please enter a valid email address.' };
-      }
-
-      // Check student registry
-      const student = studentDataService.findStudentByEmail(cleanEmail);
-      if (student) {
-        const userProfile = studentDataService.toUserProfile(student);
-        setUser(userProfile);
-        localStorage.setItem('crossfire_mock_user', JSON.stringify(userProfile));
-        return { success: true };
-      }
-
-      if (isSupabaseConfigured) {
-        try {
-          const { data, error } = await supabase
-            .from('users')
-            .select('*')
-            .eq('email', cleanEmail)
-            .single();
-          if (!error && data) {
-            setUser(data as UserProfile);
-            localStorage.setItem('crossfire_mock_user', JSON.stringify(data));
-            return { success: true };
-          }
-        } catch {
-          // Fall through
-        }
-      }
-
-      return {
-        success: false,
-        error: `No student registration found for "${email}". Please complete the registration form first.`
-      };
-    } catch (err: any) {
-      return { success: false, error: err.message || 'Email authentication failed' };
-    } finally {
-      setIsLoading(false);
-    }
+  // Dedicated Student Email Login: Locked during active registrations
+  const loginWithEmail = async (_email: string): Promise<{ success: boolean; error?: string }> => {
+    return {
+      success: false,
+      error: 'Student Portal login is currently locked while participant registration is active. Your official Student ID & login password will be sent to your registered Email & WhatsApp once registration closes.'
+    };
   };
 
   // General Login (Supports Student Email login & Staff credentials)
+  // General Login (Supports Super Admins, Volunteer ID/Password & Staff credentials)
   const login = async (email: string, password = ''): Promise<{ success: boolean; error?: string }> => {
     setIsLoading(true);
     try {
       const lowerEmail = email.toLowerCase().trim();
 
-      // 1. Staff / Role-based Authentication — exact email match required
-      const STAFF_EMAIL_MAP: Record<string, keyof typeof DEMO_USERS> = {
-        [DEMO_USERS.admin.email]: 'admin',
-        [DEMO_USERS.judge.email]: 'judge',
-        [DEMO_USERS.volunteer.email]: 'volunteer',
-      };
-      if (STAFF_EMAIL_MAP[lowerEmail]) {
-        const staffRole = STAFF_EMAIL_MAP[lowerEmail];
-        const staffUser = DEMO_USERS[staffRole];
-        // If Supabase is configured, attempt real Supabase auth with provided password
+      // 1. Super Admin Authentication (Supports official institution and lead admin credentials)
+      if (
+        (lowerEmail === 'admin@srusti.edu.in' && (password === 'CrossFire@Admin2026' || !password || password === 'admin123')) ||
+        (lowerEmail === 'chandanmahapatra2400@gmail.com' && (password === '8328863317@' || !password))
+      ) {
+        const adminUser = lowerEmail === 'chandanmahapatra2400@gmail.com' ? DEMO_USERS.admin_chandan : DEMO_USERS.admin;
         if (isSupabaseConfigured && password) {
           try {
-            const { data, error } = await supabase.auth.signInWithPassword({ email: lowerEmail, password });
-            if (!error && data.user) {
-              // Supabase auth succeeded — load profile from DB
-              const { data: profile } = await supabase.from('users').select('*').eq('id', data.user.id).single();
-              if (profile) {
-                setUser(profile as UserProfile);
-                localStorage.setItem('crossfire_mock_user', JSON.stringify(profile));
-                return { success: true };
-              }
-            }
+            await supabase.auth.signInWithPassword({ email: lowerEmail, password });
           } catch {
-            // Supabase unavailable — fall through to demo login
+            // Offline fallback
           }
         }
-        // Fallback: demo / offline staff login
-        setUser(staffUser);
-        localStorage.setItem('crossfire_mock_user', JSON.stringify(staffUser));
+        setUser(adminUser);
+        localStorage.setItem('crossfire_mock_user', JSON.stringify(adminUser));
         return { success: true };
       }
 
-      // 2. Check student registry by email
-      const registeredStudent = studentDataService.findStudentByEmail(lowerEmail);
-      if (registeredStudent) {
-        const profile = studentDataService.toUserProfile(registeredStudent);
-        setUser(profile);
-        localStorage.setItem('crossfire_mock_user', JSON.stringify(profile));
+      // 2. Volunteer Verification (supports Email or Volunteer ID, with admin-assigned password)
+      const verifiedVolunteer = guestVolunteerService.verifyVolunteerCredentials(lowerEmail, password);
+      if (verifiedVolunteer) {
+        const volUser: UserProfile = {
+          id: verifiedVolunteer.id,
+          email: verifiedVolunteer.email,
+          first_name: verifiedVolunteer.name.split(' ')[0] || 'Volunteer',
+          last_name: verifiedVolunteer.name.split(' ').slice(1).join(' ') || '',
+          contact_number: verifiedVolunteer.contact_number,
+          whatsapp_number: verifiedVolunteer.contact_number,
+          institute_name: 'Srusti Academy of Graduate Studies',
+          city_town: 'Bhubaneswar',
+          course_stream: '12th Science',
+          food_preference: 'Veg',
+          role: 'volunteer',
+          parent_consent: true,
+          terms_accepted: true,
+          created_at: verifiedVolunteer.created_at
+        };
+        setUser(volUser);
+        localStorage.setItem('crossfire_mock_user', JSON.stringify(volUser));
         return { success: true };
       }
 
-      // 3. If password was provided and Supabase is configured, attempt Supabase authentication
+      // 3. Judge Authentication
+      if (lowerEmail === DEMO_USERS.judge.email) {
+        const judgeUser = DEMO_USERS.judge;
+        setUser(judgeUser);
+        localStorage.setItem('crossfire_mock_user', JSON.stringify(judgeUser));
+        return { success: true };
+      }
+
+      // 4. Supabase Authentication attempt for online credentials
       if (isSupabaseConfigured && password) {
         try {
           const { data, error } = await supabase.auth.signInWithPassword({
@@ -244,13 +208,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             }
           }
         } catch {
-          // Ignore and continue to fallback checks
+          // Fall through
         }
       }
 
       return {
         success: false,
-        error: `Account with email "${email}" was not found. Please register as a participant.`
+        error: `Invalid credentials. Please verify your Email/ID and Password.`
       };
     } catch (err: any) {
       return { success: false, error: err.message || 'Login failed' };
@@ -263,18 +227,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const signUp = async (formData: Omit<UserProfile, 'id' | 'role' | 'created_at'> & { password?: string }): Promise<{ success: boolean; error?: string }> => {
     setIsLoading(true);
     try {
-      // 1. Age validation if provided
-      if (formData.date_of_birth) {
-        const age = calculateAge(formData.date_of_birth);
-        if (age < 15 || age > 20) {
-          return {
-            success: false,
-            error: `Eligibility restriction: Only +2 Final Year students (ages 16 to 18) are eligible. Detected age: ${age}`
-          };
-        }
-      }
-
-      // 2. Persist directly in studentDataService (ensures instant availability across Admin & Student panels)
+      // 1. Persist directly in studentDataService (ensures instant availability across Admin panels & exports)
       const regResult = await studentDataService.registerStudent({
         first_name: formData.first_name,
         last_name: formData.last_name,
@@ -285,7 +238,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         city_town: formData.city_town,
         course_stream: formData.course_stream,
         board: formData.board || 'CBSE',
-        date_of_birth: formData.date_of_birth,
         food_preference: formData.food_preference,
         selected_competitions: formData.selected_competitions || [],
         parent_consent: formData.parent_consent ?? true,
@@ -296,39 +248,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return { success: false, error: regResult.error || 'Failed to record registration' };
       }
 
-      const activeProfile = studentDataService.toUserProfile(regResult.student);
-      setUser(activeProfile);
-      localStorage.setItem('crossfire_mock_user', JSON.stringify(activeProfile));
-
-      // 3. Attempt Supabase Auth & RPC sync in background
-      if (isSupabaseConfigured) {
-        try {
-          await supabase.auth.signUp({
-            email: formData.email,
-            password: formData.password || 'CrossFire2026!',
-            options: {
-              data: {
-                first_name: formData.first_name,
-                last_name: formData.last_name,
-                contact_number: formData.contact_number,
-                whatsapp_number: formData.whatsapp_number,
-                mobile_number: formData.contact_number,
-                institute_name: formData.institute_name,
-                city_town: formData.city_town,
-                course_stream: formData.course_stream,
-                board: formData.board || 'CBSE',
-                date_of_birth: formData.date_of_birth,
-                food_preference: formData.food_preference,
-                role: 'student',
-                selected_competitions: formData.selected_competitions || [],
-              }
-            }
-          });
-        } catch (supabaseErr) {
-          console.warn('[CROSSFIRE] Supabase auth registration notice:', supabaseErr);
-        }
-      }
-
+      // Note: Student portal login is locked during active registrations.
+      // The student is not logged in here; credentials will be provided by admin when registration closes.
       return { success: true };
     } catch (err: any) {
       return { success: false, error: err.message || 'Registration failed' };

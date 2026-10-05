@@ -24,7 +24,10 @@ import {
   Radio,
   Clock,
   Plus,
-  Trash2
+  Trash2,
+  FileSpreadsheet,
+  ClipboardList,
+  Key
 } from 'lucide-react';
 
 export const AdminDashboard: React.FC = () => {
@@ -83,6 +86,8 @@ export const AdminDashboard: React.FC = () => {
     name: string;
     contact_number: string;
     email: string;
+    volunteer_id: string;
+    password: string;
     assigned_station: VolunteerStation;
     shift: VolunteerShift;
     attendance_status: VolunteerAttendance;
@@ -93,6 +98,8 @@ export const AdminDashboard: React.FC = () => {
     name: '',
     contact_number: '',
     email: '',
+    volunteer_id: '',
+    password: '',
     assigned_station: 'Gate 1 Registration & Security',
     shift: 'Full Day (08:30 AM - 05:30 PM)',
     attendance_status: 'Present / On Duty',
@@ -100,6 +107,23 @@ export const AdminDashboard: React.FC = () => {
     walkie_channel: 'CH-1 (Main Security & Entry)',
     notes: ''
   });
+
+  const [createdVolunteerAlert, setCreatedVolunteerAlert] = useState<{
+    name: string;
+    volunteer_id: string;
+    email: string;
+    pass: string;
+    station: string;
+  } | null>(null);
+
+  const generateVolunteerPassword = () => {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789!@#';
+    let pass = 'CF26-';
+    for (let i = 0; i < 4; i++) {
+      pass += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    setNewVolunteer(prev => ({ ...prev, password: pass }));
+  };
 
   // Broadcast state
   const [broadcastTarget, setBroadcastTarget] = useState<'all' | 'debate' | 'quiz' | 'judges'>('all');
@@ -111,6 +135,11 @@ export const AdminDashboard: React.FC = () => {
 
   const handleRefresh = async () => {
     setIsRefreshing(true);
+    try {
+      await studentDataService.syncFromSupabase();
+    } catch (err) {
+      console.warn('Supabase sync warning:', err);
+    }
     await refreshStats();
     setTimeout(() => setIsRefreshing(false), 500);
   };
@@ -203,12 +232,26 @@ export const AdminDashboard: React.FC = () => {
     e.preventDefault();
     if (!newVolunteer.name.trim() || !newVolunteer.contact_number.trim()) return;
 
-    guestVolunteerService.addVolunteer({
+    const count = guestVolunteerService.getAllVolunteers().length + 1;
+    const finalVolId = newVolunteer.volunteer_id.trim() || `VOL-${100 + count}`;
+    const finalPass = newVolunteer.password.trim() || 'volunteer123';
+
+    const created = guestVolunteerService.addVolunteer({
       ...newVolunteer,
       name: newVolunteer.name.trim(),
       contact_number: newVolunteer.contact_number.trim(),
       email: newVolunteer.email.trim(),
+      volunteer_id: finalVolId,
+      password: finalPass,
       notes: newVolunteer.notes.trim()
+    });
+
+    setCreatedVolunteerAlert({
+      name: created.name,
+      volunteer_id: created.volunteer_id || finalVolId,
+      email: created.email || 'None',
+      pass: finalPass,
+      station: created.assigned_station
     });
 
     setIsAddVolunteerModalOpen(false);
@@ -216,6 +259,8 @@ export const AdminDashboard: React.FC = () => {
       name: '',
       contact_number: '',
       email: '',
+      volunteer_id: '',
+      password: '',
       assigned_station: 'Gate 1 Registration & Security',
       shift: 'Full Day (08:30 AM - 05:30 PM)',
       attendance_status: 'Present / On Duty',
@@ -481,19 +526,37 @@ export const AdminDashboard: React.FC = () => {
             </p>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2.5">
+          <div className="flex flex-wrap items-center gap-2">
             <button
               onClick={() => studentDataService.printOfficialReportWithLogo()}
-              className="px-4 py-2.5 bg-white/15 hover:bg-white/25 text-white font-bold text-xs rounded-xl flex items-center gap-1.5 transition-colors cursor-pointer border border-white/20"
-              title="Print official student roster"
+              className="px-3.5 py-2.5 bg-white/15 hover:bg-white/25 text-white font-bold text-xs rounded-xl flex items-center gap-1.5 transition-colors cursor-pointer border border-white/20"
+              title="Print official student master roster with Srusti header"
             >
               <Printer className="w-4 h-4 text-orange-400" />
-              <span>Print Roster</span>
+              <span>Master Roster (PDF)</span>
+            </button>
+
+            <button
+              onClick={() => studentDataService.printDeskCheckInSheet()}
+              className="px-3.5 py-2.5 bg-white/15 hover:bg-white/25 text-white font-bold text-xs rounded-xl flex items-center gap-1.5 transition-colors cursor-pointer border border-white/20"
+              title="Print gate check-in desk verification sheet"
+            >
+              <ClipboardList className="w-4 h-4 text-emerald-400" />
+              <span>Desk Check-In (PDF)</span>
+            </button>
+
+            <button
+              onClick={() => studentDataService.downloadExcel()}
+              className="px-3.5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl flex items-center gap-1.5 transition-colors cursor-pointer shadow-lg"
+              title="Export all student registrations to Excel spreadsheet (.xls)"
+            >
+              <FileSpreadsheet className="w-4 h-4" />
+              <span>Export Excel</span>
             </button>
 
             <button
               onClick={() => studentDataService.downloadCSV()}
-              className="px-4 py-2.5 bg-orange-500 hover:bg-orange-600 text-white font-bold text-xs rounded-xl flex items-center gap-1.5 transition-colors cursor-pointer shadow-lg"
+              className="px-3.5 py-2.5 bg-orange-500 hover:bg-orange-600 text-white font-bold text-xs rounded-xl flex items-center gap-1.5 transition-colors cursor-pointer shadow-lg"
               title="Export all student registrations to CSV"
             >
               <Download className="w-4 h-4" />
@@ -504,7 +567,7 @@ export const AdminDashboard: React.FC = () => {
               onClick={handleRefresh}
               disabled={isRefreshing}
               className="p-2.5 bg-white/10 hover:bg-white/20 text-white rounded-xl transition-colors cursor-pointer"
-              title="Refresh database records"
+              title="Sync with Supabase and refresh database records"
             >
               <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin text-orange-400' : ''}`} />
             </button>
@@ -709,6 +772,43 @@ export const AdminDashboard: React.FC = () => {
                 <option value="confirmed">Confirmed</option>
                 <option value="registered">Registered</option>
               </select>
+            </div>
+          </div>
+
+          {/* Students Sub-bar with Counts & Direct Exports */}
+          <div className="flex flex-wrap items-center justify-between gap-2.5 pt-2 border-t border-gray-100">
+            <span className="text-xs font-bold text-gray-500">
+              Showing <strong className="text-navy">{filteredStudents.length}</strong> of <strong className="text-navy">{stats?.totalUsers || 0}</strong> registered candidates
+            </span>
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                onClick={() => studentDataService.printOfficialReportWithLogo()}
+                className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-navy font-bold text-xs rounded-xl flex items-center gap-1.5 transition-colors cursor-pointer"
+              >
+                <Printer className="w-3.5 h-3.5 text-orange-500" />
+                <span>Master Roster (PDF)</span>
+              </button>
+              <button
+                onClick={() => studentDataService.printDeskCheckInSheet()}
+                className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-navy font-bold text-xs rounded-xl flex items-center gap-1.5 transition-colors cursor-pointer"
+              >
+                <ClipboardList className="w-3.5 h-3.5 text-emerald-600" />
+                <span>Desk Check-In (PDF)</span>
+              </button>
+              <button
+                onClick={() => studentDataService.downloadExcel()}
+                className="px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 font-bold text-xs rounded-xl flex items-center gap-1.5 transition-colors cursor-pointer"
+              >
+                <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-600" />
+                <span>Export Excel</span>
+              </button>
+              <button
+                onClick={() => studentDataService.downloadCSV()}
+                className="px-3 py-1.5 bg-orange-50 hover:bg-orange-100 text-orange-800 border border-orange-200 font-bold text-xs rounded-xl flex items-center gap-1.5 transition-colors cursor-pointer"
+              >
+                <Download className="w-3.5 h-3.5 text-orange-600" />
+                <span>Export CSV</span>
+              </button>
             </div>
           </div>
 
@@ -972,6 +1072,42 @@ export const AdminDashboard: React.FC = () => {
       {/* ============================================================== */}
       {activeTab === 'volunteers' && (
         <div className="bg-white rounded-3xl p-6 border border-gray-200/80 shadow-sm space-y-5">
+          {/* Volunteer Created Credential Alert */}
+          {createdVolunteerAlert && (
+            <div className="bg-emerald-50 border-2 border-emerald-500/40 rounded-2xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-md animate-fadeIn">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-emerald-500 text-white flex items-center justify-center font-black shrink-0">
+                  <CheckCircle className="w-6 h-6" />
+                </div>
+                <div>
+                  <h4 className="font-black text-emerald-950 text-sm">
+                    Volunteer Credentials Created & Live in Portal
+                  </h4>
+                  <p className="text-xs text-emerald-800">
+                    <strong>{createdVolunteerAlert.name}</strong> can now log in at the Staff portal using:
+                  </p>
+                  <div className="flex flex-wrap gap-2 mt-1">
+                    <span className="bg-white px-2.5 py-1 rounded-lg border border-emerald-300 font-mono text-xs font-bold text-emerald-900">
+                      ID: <span className="text-orange-600">{createdVolunteerAlert.volunteer_id}</span>
+                    </span>
+                    <span className="bg-white px-2.5 py-1 rounded-lg border border-emerald-300 font-mono text-xs font-bold text-emerald-900">
+                      Password: <span className="text-navy">{createdVolunteerAlert.pass}</span>
+                    </span>
+                    <span className="bg-emerald-100/60 px-2.5 py-1 rounded-lg text-xs font-bold text-emerald-800">
+                      Station: {createdVolunteerAlert.station}
+                    </span>
+                  </div>
+                </div>
+              </div>
+              <button
+                onClick={() => setCreatedVolunteerAlert(null)}
+                className="self-end sm:self-auto px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl transition cursor-pointer"
+              >
+                Dismiss
+              </button>
+            </div>
+          )}
+
           {/* Header & Controls */}
           <div className="flex flex-col md:flex-row items-center justify-between gap-4">
             <div>
@@ -979,7 +1115,7 @@ export const AdminDashboard: React.FC = () => {
                 <HeartHandshake className="w-5 h-5 text-orange-500" />
                 <span>Student Volunteer & Ground Ops Staff Directory</span>
               </h3>
-              <p className="text-xs text-gray-500">Manage station assignments, duty shifts, walkie-talkie channels, and kit distribution.</p>
+              <p className="text-xs text-gray-500">Manage station assignments, login credentials, duty shifts, walkie-talkie channels, and kit distribution.</p>
             </div>
 
             <div className="flex flex-wrap items-center gap-2.5">
@@ -1037,7 +1173,8 @@ export const AdminDashboard: React.FC = () => {
             <table className="w-full text-left text-xs">
               <thead className="bg-gray-50 text-gray-400 font-bold uppercase tracking-wider text-[10px] border-y border-gray-100">
                 <tr>
-                  <th className="py-3 px-4">Volunteer Name & Contact</th>
+                  <th className="py-3 px-4">Volunteer ID & Name</th>
+                  <th className="py-3 px-4">Portal Login</th>
                   <th className="py-3 px-4">Assigned Station</th>
                   <th className="py-3 px-4">Duty Shift & Walkie</th>
                   <th className="py-3 px-4 text-center">Kit Issued</th>
@@ -1048,7 +1185,7 @@ export const AdminDashboard: React.FC = () => {
               <tbody className="divide-y divide-gray-100">
                 {filteredVolunteers.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="py-8 text-center text-gray-400 font-medium">
+                    <td colSpan={7} className="py-8 text-center text-gray-400 font-medium">
                       No volunteers found matching current filter.
                     </td>
                   </tr>
@@ -1056,9 +1193,23 @@ export const AdminDashboard: React.FC = () => {
                   filteredVolunteers.map((v) => (
                     <tr key={v.id} className="hover:bg-gray-50/80 transition-colors">
                       <td className="py-3.5 px-4">
-                        <strong className="text-navy font-bold text-sm block">{v.name}</strong>
-                        <span className="text-[11px] text-gray-500">{v.contact_number}</span>
-                        <span className="text-[10px] text-gray-400">{v.email}</span>
+                        <div className="flex items-center gap-2 mb-0.5">
+                          <span className="px-2 py-0.5 rounded bg-orange-100 text-orange-800 font-mono font-bold text-[11px] border border-orange-200">
+                            {v.volunteer_id || 'VOL-100'}
+                          </span>
+                          <strong className="text-navy font-bold text-sm">{v.name}</strong>
+                        </div>
+                        <span className="text-[11px] text-gray-500 block">{v.contact_number}</span>
+                        <span className="text-[10px] text-gray-400 block">{v.email || 'No institutional email'}</span>
+                      </td>
+                      <td className="py-3.5 px-4">
+                        <div className="flex flex-col gap-1">
+                          <span className="inline-flex items-center gap-1 font-mono text-xs font-bold text-gray-700 bg-gray-100 px-2 py-0.5 rounded border border-gray-200 w-fit">
+                            <Key className="w-3 h-3 text-orange-500" />
+                            <span>{v.password || 'volunteer123'}</span>
+                          </span>
+                          <span className="text-[10px] text-emerald-600 font-medium">✓ Portal Ready</span>
+                        </div>
                       </td>
                       <td className="py-3.5 px-4">
                         <span className="inline-flex items-center gap-1 font-bold text-navy bg-navy-50 px-2.5 py-1 rounded-lg border border-navy-100">
@@ -1441,6 +1592,48 @@ export const AdminDashboard: React.FC = () => {
                     className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-navy"
                   />
                 </div>
+              </div>
+
+              {/* Portal Login Credentials Section */}
+              <div className="bg-orange-50/70 border border-orange-200/80 rounded-2xl p-3 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="font-black text-orange-950 flex items-center gap-1.5 text-xs">
+                    <Key className="w-3.5 h-3.5 text-orange-600" />
+                    <span>Portal Sign-In Credentials</span>
+                  </span>
+                  <button
+                    type="button"
+                    onClick={generateVolunteerPassword}
+                    className="text-[10px] font-bold text-orange-700 hover:text-orange-900 bg-white px-2 py-0.5 rounded-lg border border-orange-200 cursor-pointer shadow-xs"
+                  >
+                    Auto-Gen Password
+                  </button>
+                </div>
+                <div className="grid grid-cols-2 gap-2.5">
+                  <div>
+                    <label className="font-bold text-gray-500 block mb-1 text-[11px]">Volunteer Login ID</label>
+                    <input
+                      type="text"
+                      value={newVolunteer.volunteer_id}
+                      onChange={(e) => setNewVolunteer({ ...newVolunteer, volunteer_id: e.target.value })}
+                      placeholder="e.g. VOL-107"
+                      className="w-full bg-white border border-gray-200 rounded-xl px-3 py-1.5 text-navy font-mono font-bold"
+                    />
+                  </div>
+                  <div>
+                    <label className="font-bold text-gray-500 block mb-1 text-[11px]">Login Password</label>
+                    <input
+                      type="text"
+                      value={newVolunteer.password}
+                      onChange={(e) => setNewVolunteer({ ...newVolunteer, password: e.target.value })}
+                      placeholder="e.g. volunteer123"
+                      className="w-full bg-white border border-gray-200 rounded-xl px-3 py-1.5 text-navy font-mono font-bold"
+                    />
+                  </div>
+                </div>
+                <p className="text-[10px] text-gray-500 leading-tight">
+                  Volunteer will sign in at Ground Ops Hub using this ID (or their email) and password.
+                </p>
               </div>
 
               <div>

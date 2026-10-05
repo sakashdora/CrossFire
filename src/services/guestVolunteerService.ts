@@ -78,6 +78,8 @@ const DEFAULT_GUESTS: GuestItem[] = [
 const DEFAULT_VOLUNTEERS: VolunteerItem[] = [
   {
     id: 'vol-1',
+    volunteer_id: 'VOL-101',
+    password: 'volunteer123',
     name: 'Subhashree Mohapatra',
     contact_number: '+91 9437198765',
     email: 'volunteer@srusti.edu.in',
@@ -91,6 +93,8 @@ const DEFAULT_VOLUNTEERS: VolunteerItem[] = [
   },
   {
     id: 'vol-2',
+    volunteer_id: 'VOL-102',
+    password: 'volunteer123',
     name: 'Rudra Narayan Samal',
     contact_number: '+91 7978123456',
     email: 'rudra.samal@srusti.edu.in',
@@ -104,6 +108,8 @@ const DEFAULT_VOLUNTEERS: VolunteerItem[] = [
   },
   {
     id: 'vol-3',
+    volunteer_id: 'VOL-103',
+    password: 'volunteer123',
     name: 'Pooja Mohanty',
     contact_number: '+91 9123456780',
     email: 'pooja.mohanty@srusti.edu.in',
@@ -117,6 +123,8 @@ const DEFAULT_VOLUNTEERS: VolunteerItem[] = [
   },
   {
     id: 'vol-4',
+    volunteer_id: 'VOL-104',
+    password: 'volunteer123',
     name: 'Biswajit Sahoo',
     contact_number: '+91 8249011223',
     email: 'biswajit.sahoo@srusti.edu.in',
@@ -130,6 +138,8 @@ const DEFAULT_VOLUNTEERS: VolunteerItem[] = [
   },
   {
     id: 'vol-5',
+    volunteer_id: 'VOL-105',
+    password: 'volunteer123',
     name: 'Ankita Dash',
     contact_number: '+91 9439876543',
     email: 'ankita.dash@srusti.edu.in',
@@ -143,6 +153,8 @@ const DEFAULT_VOLUNTEERS: VolunteerItem[] = [
   },
   {
     id: 'vol-6',
+    volunteer_id: 'VOL-106',
+    password: 'volunteer123',
     name: 'Manish Kumar Panda',
     contact_number: '+91 7008991122',
     email: 'manish.panda@srusti.edu.in',
@@ -244,7 +256,22 @@ class GuestVolunteerService {
       if (raw) {
         const parsed = JSON.parse(raw);
         if (Array.isArray(parsed) && parsed.length > 0) {
-          return parsed;
+          let hasMissing = false;
+          const normalized = parsed.map((v: VolunteerItem, idx: number) => {
+            if (!v.volunteer_id || !v.password) {
+              hasMissing = true;
+              return {
+                ...v,
+                volunteer_id: v.volunteer_id || `VOL-${101 + idx}`,
+                password: v.password || 'volunteer123'
+              };
+            }
+            return v;
+          });
+          if (hasMissing) {
+            this.saveVolunteers(normalized);
+          }
+          return normalized;
         }
       }
     } catch (e) {
@@ -266,9 +293,12 @@ class GuestVolunteerService {
 
   public addVolunteer(volData: Omit<VolunteerItem, 'id' | 'created_at'>): VolunteerItem {
     const volunteers = this.getAllVolunteers();
+    const volunteerCount = volunteers.length + 1;
+    const volId = volData.volunteer_id || `VOL-${100 + volunteerCount}`;
     const newVol: VolunteerItem = {
       ...volData,
       id: `vol-${Date.now()}`,
+      volunteer_id: volId,
       created_at: new Date().toISOString()
     };
     volunteers.unshift(newVol);
@@ -311,6 +341,30 @@ class GuestVolunteerService {
 
   public findVolunteerById(id: string): VolunteerItem | undefined {
     return this.getAllVolunteers().find(v => v.id === id);
+  }
+
+  public findVolunteerByEmailOrId(identifier: string): VolunteerItem | undefined {
+    if (!identifier) return undefined;
+    const clean = identifier.trim().toLowerCase();
+    return this.getAllVolunteers().find(v => 
+      v.email.toLowerCase() === clean || 
+      (v.volunteer_id && v.volunteer_id.toLowerCase() === clean) ||
+      v.id.toLowerCase() === clean
+    );
+  }
+
+  public verifyVolunteerCredentials(identifier: string, password = ''): VolunteerItem | null {
+    const vol = this.findVolunteerByEmailOrId(identifier);
+    if (!vol) return null;
+    if (vol.password) {
+      if (vol.password === password) return vol;
+      return null;
+    }
+    // Default fallback password if none set by admin
+    if (password === 'volunteer123' || password === 'CrossFire@2026' || !password) {
+      return vol;
+    }
+    return null;
   }
 
   // Summary Metrics for Admin Dashboard

@@ -168,10 +168,12 @@ export type VolunteerAttendance = 'Present / On Duty' | 'On Break' | 'Assigned' 
 
 export interface VolunteerItem {
   id: string;
+  volunteer_id?: string;
   user_id?: string;
   name: string;
   contact_number: string;
   email: string;
+  password?: string;
   assigned_station: VolunteerStation;
   shift: VolunteerShift;
   attendance_status: VolunteerAttendance;
@@ -180,3 +182,4 @@ export interface VolunteerItem {
   notes?: string;
   created_at: string;
 }
+
