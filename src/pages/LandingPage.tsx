@@ -9,7 +9,6 @@ import {
   Sparkles,
   Users,
   MapPin,
-  CheckCircle2,
   ArrowRight,
   ShieldCheck,
   Zap,
@@ -26,7 +25,14 @@ import {
   Building2,
   Coffee,
   HelpCircle,
-  ChevronRight
+  ChevronRight,
+  GraduationCap,
+  Search,
+  Flame,
+  School,
+  FileText,
+  Ticket,
+  Image as ImageIcon
 } from 'lucide-react';
 
 const StaggeredText = ({ text, className }: { text: string, className?: string }) => {
@@ -149,19 +155,143 @@ const SCHEDULE_ITEMS = [
   },
 ];
 
-const TOP_COLLEGES = [
-  'DAV Public School (CSPUR & Unit-8)',
-  'DPS Kalinga',
-  'BJB Autonomous College',
-  'Ravenshaw Higher Secondary School',
-  'KIIT International School',
-  'Mothers Public School',
-  'SAI International School',
-  'Kendriya Vidyalaya (Bhubaneswar & Cuttack)',
-  'Rama Devi Women’s Higher Secondary School',
-  'BJEM School',
-  'St. Xavier’s High School',
-  'Stewart School',
+interface StateInstitution {
+  name: string;
+  shortCode: string;
+  city: string;
+  board: 'CBSE' | 'CHSE' | 'ICSE';
+  tag: string;
+  color: string;
+  badgeBg: string;
+}
+
+const STATE_INSTITUTIONS: StateInstitution[] = [
+  {
+    name: 'DAV Public School (CSPUR & Unit-8)',
+    shortCode: 'DAV',
+    city: 'Bhubaneswar',
+    board: 'CBSE',
+    tag: 'Top Contender',
+    color: 'from-blue-600 to-indigo-600',
+    badgeBg: 'bg-blue-500/10 text-blue-600 border-blue-200'
+  },
+  {
+    name: 'BJB Autonomous College',
+    shortCode: 'BJB',
+    city: 'Bhubaneswar',
+    board: 'CHSE',
+    tag: 'Defending Champs',
+    color: 'from-amber-500 to-orange-600',
+    badgeBg: 'bg-amber-500/10 text-amber-600 border-amber-200'
+  },
+  {
+    name: 'DPS Kalinga',
+    shortCode: 'DPS',
+    city: 'Cuttack',
+    board: 'CBSE',
+    tag: 'Powerhouse',
+    color: 'from-emerald-500 to-teal-700',
+    badgeBg: 'bg-emerald-500/10 text-emerald-600 border-emerald-200'
+  },
+  {
+    name: 'Ravenshaw Higher Secondary School',
+    shortCode: 'RHSS',
+    city: 'Cuttack',
+    board: 'CHSE',
+    tag: 'Legacy Giant',
+    color: 'from-purple-600 to-indigo-800',
+    badgeBg: 'bg-purple-500/10 text-purple-600 border-purple-200'
+  },
+  {
+    name: 'SAI International School',
+    shortCode: 'SAI',
+    city: 'Bhubaneswar',
+    board: 'CBSE',
+    tag: 'Elite Squad',
+    color: 'from-sky-500 to-blue-700',
+    badgeBg: 'bg-sky-500/10 text-sky-600 border-sky-200'
+  },
+  {
+    name: 'KIIT International School',
+    shortCode: 'KIIT',
+    city: 'Bhubaneswar',
+    board: 'CBSE',
+    tag: 'Verified Delegation',
+    color: 'from-rose-500 to-red-700',
+    badgeBg: 'bg-rose-500/10 text-rose-600 border-rose-200'
+  },
+  {
+    name: 'Mothers Public School',
+    shortCode: 'MPS',
+    city: 'Bhubaneswar',
+    board: 'CBSE',
+    tag: 'Power Delegation',
+    color: 'from-cyan-500 to-blue-600',
+    badgeBg: 'bg-cyan-500/10 text-cyan-600 border-cyan-200'
+  },
+  {
+    name: 'Rama Devi Women’s HS School',
+    shortCode: 'RD',
+    city: 'Bhubaneswar',
+    board: 'CHSE',
+    tag: 'Top Contender',
+    color: 'from-fuchsia-500 to-pink-700',
+    badgeBg: 'bg-fuchsia-500/10 text-fuchsia-600 border-fuchsia-200'
+  },
+  {
+    name: 'Kendriya Vidyalaya No. 1',
+    shortCode: 'KV-1',
+    city: 'Bhubaneswar',
+    board: 'CBSE',
+    tag: 'Verified Delegation',
+    color: 'from-blue-500 to-cyan-600',
+    badgeBg: 'bg-blue-500/10 text-blue-600 border-blue-200'
+  },
+  {
+    name: 'BJEM School',
+    shortCode: 'BJEM',
+    city: 'Bhubaneswar',
+    board: 'CBSE',
+    tag: 'Verified Squad',
+    color: 'from-emerald-600 to-teal-800',
+    badgeBg: 'bg-emerald-500/10 text-emerald-600 border-emerald-200'
+  },
+  {
+    name: 'St. Xavier’s High School',
+    shortCode: 'STX',
+    city: 'Bhubaneswar',
+    board: 'ICSE',
+    tag: 'Challenger',
+    color: 'from-amber-600 to-yellow-700',
+    badgeBg: 'bg-amber-500/10 text-amber-600 border-amber-200'
+  },
+  {
+    name: 'Stewart School',
+    shortCode: 'STW',
+    city: 'Cuttack',
+    board: 'ICSE',
+    tag: 'Legacy Squad',
+    color: 'from-violet-600 to-purple-800',
+    badgeBg: 'bg-violet-500/10 text-violet-600 border-violet-200'
+  },
+  {
+    name: 'Loyola School',
+    shortCode: 'LOY',
+    city: 'Bhubaneswar',
+    board: 'ICSE',
+    tag: 'Elite Delegation',
+    color: 'from-sky-600 to-indigo-700',
+    badgeBg: 'bg-sky-500/10 text-sky-600 border-sky-200'
+  },
+  {
+    name: 'Prananath Autonomous College',
+    shortCode: 'PN',
+    city: 'Khordha',
+    board: 'CHSE',
+    tag: 'Regional Power',
+    color: 'from-teal-500 to-emerald-700',
+    badgeBg: 'bg-teal-500/10 text-teal-600 border-teal-200'
+  }
 ];
 
 const FAQS = [
@@ -198,6 +328,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({
 }) => {
   const { events } = useEvents();
   const [openFaq, setOpenFaq] = useState<number | null>(0);
+  const [selectedBoardFilter, setSelectedBoardFilter] = useState<'ALL' | 'CBSE' | 'CHSE' | 'ICSE'>('ALL');
+  const [institutionSearch, setInstitutionSearch] = useState('');
+  const [showDownloadMenu, setShowDownloadMenu] = useState(false);
 
   const getEventIcon = (iconName: string) => {
     switch (iconName) {
@@ -255,18 +388,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({
             </div>
           </motion.div>
 
-          {/* Live Status Pill */}
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 0.1, duration: 0.5 }}
-            className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-cyan-400/40 bg-blue-500/20 mb-4 shadow-[0_0_20px_rgba(56,189,248,0.2)]"
-          >
-            <span className="w-2 h-2 rounded-full bg-cyan-400 animate-ping shrink-0" />
-            <span className="text-cyan-200 text-xs font-black uppercase tracking-wider">
-              State-Level Talent Championship • Srusti Campus
-            </span>
-          </motion.div>
 
           {/* Main Title */}
           <div className="space-y-2 mb-4 perspective-1000">
@@ -306,7 +427,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
             <span className="text-white/40 hidden sm:inline">•</span>
             <span className="flex items-center gap-1.5 bg-white/10 border border-white/20 px-3.5 py-1.5 rounded-full backdrop-blur-sm">
               <MapPin className="w-4 h-4 text-cyan-400 shrink-0" />
-              <span>Srusti Academy, Patia, Bhubaneswar</span>
+              <span>Srusti Academy of Management and Technology</span>
             </span>
           </motion.div>
 
@@ -323,66 +444,165 @@ export const LandingPage: React.FC<LandingPageProps> = ({
             <CountdownTimer targetDate="2026-11-15T09:30:00+05:30" />
           </motion.div>
 
-          {/* Primary Action Buttons (Electric Cobalt + Frost Glass) */}
+          {/* Primary Action Buttons (Electric Cobalt + Frost Glass + Interactive Downloads) */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.5, duration: 0.5 }}
-            className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4 mb-6 w-full max-w-md sm:max-w-none"
+            className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4 mb-7 w-full max-w-md sm:max-w-none relative z-30"
           >
+            {/* Primary Action: Register Free */}
             <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
+              whileHover={{ scale: 1.04 }}
+              whileTap={{ scale: 0.96 }}
               onClick={() => setCurrentView('register')}
-              className="relative overflow-hidden w-full sm:w-auto h-13 px-8 sm:px-10 rounded-2xl bg-[#0062FF] text-white font-black text-sm shadow-[0_0_40px_rgba(0,98,255,0.5)] transition-all flex items-center justify-center gap-2 cursor-pointer group border border-blue-400/50"
+              className="relative overflow-hidden w-full sm:w-auto h-13 px-8 sm:px-9 rounded-2xl bg-gradient-to-r from-[#0062FF] via-[#0084FF] to-[#00D4FF] text-white font-black text-sm shadow-[0_0_35px_rgba(0,132,255,0.45)] hover:shadow-[0_0_45px_rgba(0,212,255,0.6)] transition-all flex items-center justify-center gap-2.5 cursor-pointer group border border-cyan-300/40"
             >
-              <div className="absolute inset-0 bg-gradient-to-r from-cyan-400 to-blue-600 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-              <span className="relative z-10 flex items-center gap-2">
+              <span className="relative z-10 flex items-center gap-2 tracking-wide">
                 Register Free in 60s
                 <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
               </span>
             </motion.button>
 
+            {/* Secondary Action: Explore Tracks */}
             <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
+              whileHover={{ scale: 1.04 }}
+              whileTap={{ scale: 0.96 }}
               onClick={() => setCurrentView('events')}
-              className="w-full sm:w-auto h-13 px-8 sm:px-10 rounded-2xl bg-white/5 hover:bg-white/10 backdrop-blur-md text-white font-bold text-sm border border-white/20 hover:border-cyan-400/50 hover:shadow-[0_0_20px_rgba(56,189,248,0.2)] transition-all flex items-center justify-center gap-2 cursor-pointer"
+              className="w-full sm:w-auto h-13 px-7 sm:px-8 rounded-2xl bg-white/[0.08] hover:bg-white/[0.15] backdrop-blur-xl text-white font-bold text-sm border border-white/20 hover:border-cyan-400/60 hover:shadow-[0_0_25px_rgba(56,189,248,0.25)] transition-all flex items-center justify-center gap-2 cursor-pointer"
             >
+              <Compass className="w-4 h-4 text-cyan-300" />
               <span>Explore All 6 Tracks</span>
             </motion.button>
 
-            <a
-              href="/crossfire-2026-brochure.pdf"
-              download="Crossfire - 2026 Brochure.pdf"
-              target="_blank"
-              rel="noreferrer"
-              className="w-full sm:w-auto h-13 px-6 rounded-2xl bg-white/5 hover:bg-white/15 text-slate-200 hover:text-white font-semibold text-xs border border-white/15 hover:border-white/30 transition-all flex items-center justify-center gap-1.5"
-            >
-              <Download className="w-4 h-4 text-cyan-400" />
-              <span>Brochure (PDF)</span>
-            </a>
+            {/* Tertiary Action: Official Downloads (Brochure & Poster) */}
+            <div className="relative w-full sm:w-auto">
+              <motion.button
+                whileHover={{ scale: 1.04 }}
+                whileTap={{ scale: 0.96 }}
+                onClick={() => setShowDownloadMenu(!showDownloadMenu)}
+                className={`w-full sm:w-auto h-13 px-6 rounded-2xl backdrop-blur-xl font-bold text-xs border transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                  showDownloadMenu
+                    ? 'bg-blue-600/30 text-white border-cyan-400 shadow-[0_0_25px_rgba(56,189,248,0.3)]'
+                    : 'bg-white/[0.06] hover:bg-white/[0.12] text-slate-200 hover:text-white border-white/15 hover:border-cyan-400/40'
+                }`}
+              >
+                <Download className="w-4 h-4 text-cyan-400 shrink-0" />
+                <span>Brochure & Media (PDF)</span>
+                <ChevronDown className={`w-3.5 h-3.5 text-slate-400 transition-transform duration-200 ${showDownloadMenu ? 'rotate-180 text-cyan-300' : ''}`} />
+              </motion.button>
+
+              {/* Floating Download Popover Menu */}
+              <AnimatePresence>
+                {showDownloadMenu && (
+                  <>
+                    {/* Backdrop Click Dismiss */}
+                    <div
+                      className="fixed inset-0 z-40"
+                      onClick={() => setShowDownloadMenu(false)}
+                    />
+
+                    <motion.div
+                      initial={{ opacity: 0, y: 8, scale: 0.95 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: 8, scale: 0.95 }}
+                      transition={{ duration: 0.2 }}
+                      className="absolute left-1/2 -translate-x-1/2 sm:left-auto sm:right-0 sm:translate-x-0 top-full mt-2 w-72 sm:w-80 p-2.5 rounded-2xl bg-[#001428]/95 border border-cyan-500/30 shadow-[0_20px_50px_rgba(0,0,0,0.8)] backdrop-blur-2xl z-50 text-left space-y-1.5"
+                    >
+                      <div className="px-3 py-1.5 border-b border-white/10 mb-1">
+                        <p className="text-[10px] font-black uppercase tracking-widest text-cyan-400">Official Downloads</p>
+                        <p className="text-[11px] text-slate-400">Direct event files & guidelines</p>
+                      </div>
+
+                      {/* 1. Official Brochure */}
+                      <a
+                        href="/Crossfire-2026-Brochure.pdf"
+                        download="Crossfire-2026-Brochure.pdf"
+                        target="_blank"
+                        rel="noreferrer"
+                        onClick={() => setShowDownloadMenu(false)}
+                        className="flex items-center gap-3 p-2.5 rounded-xl hover:bg-white/10 text-white transition-all group"
+                      >
+                        <div className="w-9 h-9 rounded-lg bg-blue-500/20 border border-blue-400/30 flex items-center justify-center shrink-0 group-hover:bg-[#0062FF] transition-colors">
+                          <FileText className="w-4 h-4 text-cyan-300 group-hover:text-white" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs font-bold truncate">Championship Brochure</span>
+                            <span className="text-[10px] font-semibold text-cyan-400/80 bg-cyan-950/60 px-1.5 py-0.5 rounded border border-cyan-800/40">7.4 MB</span>
+                          </div>
+                          <span className="text-[10px] text-slate-400 block truncate">Schedule, rules & cash prize breakdown</span>
+                        </div>
+                      </a>
+
+                      {/* 2. Official Poster */}
+                      <a
+                        href="/A3-Crossfire-2026-Poster.pdf"
+                        download="A3-Crossfire-2026-Poster.pdf"
+                        target="_blank"
+                        rel="noreferrer"
+                        onClick={() => setShowDownloadMenu(false)}
+                        className="flex items-center gap-3 p-2.5 rounded-xl hover:bg-white/10 text-white transition-all group"
+                      >
+                        <div className="w-9 h-9 rounded-lg bg-purple-500/20 border border-purple-400/30 flex items-center justify-center shrink-0 group-hover:bg-purple-600 transition-colors">
+                          <ImageIcon className="w-4 h-4 text-purple-300 group-hover:text-white" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs font-bold truncate">A3 Event Wall Poster</span>
+                            <span className="text-[10px] font-semibold text-purple-400/80 bg-purple-950/60 px-1.5 py-0.5 rounded border border-purple-800/40">8.0 MB</span>
+                          </div>
+                          <span className="text-[10px] text-slate-400 block truncate">High-definition campus poster</span>
+                        </div>
+                      </a>
+
+                      {/* 3. Meal Coupon Format */}
+                      <a
+                        href="/Crossfire-coupon.pdf"
+                        download="Crossfire-coupon.pdf"
+                        target="_blank"
+                        rel="noreferrer"
+                        onClick={() => setShowDownloadMenu(false)}
+                        className="flex items-center gap-3 p-2.5 rounded-xl hover:bg-white/10 text-white transition-all group"
+                      >
+                        <div className="w-9 h-9 rounded-lg bg-emerald-500/20 border border-emerald-400/30 flex items-center justify-center shrink-0 group-hover:bg-emerald-600 transition-colors">
+                          <Ticket className="w-4 h-4 text-emerald-300 group-hover:text-white" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs font-bold truncate">Pass & Meal Voucher</span>
+                            <span className="text-[10px] font-semibold text-emerald-400/80 bg-emerald-950/60 px-1.5 py-0.5 rounded border border-emerald-800/40">1.3 MB</span>
+                          </div>
+                          <span className="text-[10px] text-slate-400 block truncate">Official gate pass & food coupon spec</span>
+                        </div>
+                      </a>
+                    </motion.div>
+                  </>
+                )}
+              </AnimatePresence>
+            </div>
           </motion.div>
 
-          {/* Trust & Eligibility Badges */}
+          {/* Trust & Eligibility Badges (Cyber Frost Aesthetic) */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.6, duration: 0.5 }}
-            className="flex flex-wrap items-center justify-center gap-2 max-w-3xl mx-auto"
+            className="flex flex-wrap items-center justify-center gap-2.5 max-w-4xl mx-auto"
           >
             {[
-              '+2 2nd Year (Class 12) Only',
-              'CBSE / ICSE / CHSE',
-              'Max 2 Events / Student',
-              '100% Free Entry & Refreshments'
-            ].map((item) => (
+              { label: '+2 2nd Year (Class 12) Only', icon: <GraduationCap className="w-3.5 h-3.5 text-cyan-300" /> },
+              { label: 'CBSE / ICSE / CHSE', icon: <Building2 className="w-3.5 h-3.5 text-sky-300" /> },
+              { label: 'Max 2 Events / Student', icon: <Zap className="w-3.5 h-3.5 text-amber-300" /> },
+              { label: '100% Free Entry & Refreshments', icon: <Coffee className="w-3.5 h-3.5 text-emerald-300" /> },
+            ].map(({ label, icon }) => (
               <span
-                key={item}
-                className="inline-flex items-center gap-1.5 text-[11px] font-bold text-cyan-200 bg-blue-500/20 border border-blue-400/30 px-3 py-1 rounded-full backdrop-blur-sm"
+                key={label}
+                className="inline-flex items-center gap-2 text-xs font-bold text-cyan-100 bg-[#001b33]/80 hover:bg-[#002647] border border-cyan-500/30 hover:border-cyan-400/60 px-3.5 py-1.5 rounded-full backdrop-blur-md shadow-[0_0_15px_rgba(56,189,248,0.12)] hover:shadow-[0_0_20px_rgba(56,189,248,0.25)] transition-all cursor-default"
               >
-                <CheckCircle2 className="w-3.5 h-3.5 text-cyan-300 shrink-0" />
-                <span>{item}</span>
+                <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />
+                {icon}
+                <span>{label}</span>
               </span>
             ))}
           </motion.div>
@@ -689,32 +909,263 @@ export const LandingPage: React.FC<LandingPageProps> = ({
       </section>
 
 
-      {/* ─── 6. PARTICIPATING INSTITUTIONS HALL OF FAME ─── */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-        <div className="text-center max-w-2xl mx-auto mb-10 space-y-2">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-50 border border-blue-200 text-[#0062FF] text-xs font-bold uppercase tracking-wider">
-            <Building2 className="w-3.5 h-3.5 text-[#0062FF]" />
-            <span>State Contingents</span>
+      {/* ─── 6. PARTICIPATING INSTITUTIONS & ARENA CONTINGENTS ─── */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-20 overflow-hidden">
+        
+        {/* Section Header */}
+        <div className="text-center max-w-3xl mx-auto mb-10 space-y-3">
+          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-blue-50 border border-blue-200/80 text-[#0062FF] text-xs font-bold uppercase tracking-wider shadow-sm">
+            <GraduationCap className="w-4 h-4 text-[#0062FF]" />
+            <span>Statewide Collegiate Arena</span>
           </div>
-          <h2 className="text-2xl sm:text-3xl font-black text-[#001F3F] tracking-tight">
-            Leading +2 Colleges in the Arena
+          <h2 className="text-3xl sm:text-4xl font-black text-[#001F3F] tracking-tight">
+            Odisha's Top Junior Colleges & Schools
           </h2>
-          <p className="text-xs text-slate-600 font-medium">
-            Top junior colleges and higher secondary schools fielding student contingents.
+          <p className="text-xs sm:text-sm text-slate-600 font-medium leading-relaxed max-w-2xl mx-auto">
+            Delegations from 45+ premier institutions across Bhubaneswar, Cuttack, and beyond clash for the ₹50,000 championship pool and institutional glory.
           </p>
+
+          {/* Quick Metrics Strip */}
+          <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-3 pt-2">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-100 border border-slate-200 text-slate-700 text-xs font-bold">
+              <Building2 className="w-3.5 h-3.5 text-[#0062FF]" />
+              45+ Registered Hubs
+            </span>
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-100 border border-slate-200 text-slate-700 text-xs font-bold">
+              <Users className="w-3.5 h-3.5 text-cyan-600" />
+              1,000+ Aspirants
+            </span>
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-100 border border-slate-200 text-slate-700 text-xs font-bold">
+              <Trophy className="w-3.5 h-3.5 text-amber-500" />
+              ₹50,000 Cash Pool
+            </span>
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-100 border border-slate-200 text-slate-700 text-xs font-bold">
+              <Sparkles className="w-3.5 h-3.5 text-purple-600" />
+              CBSE • CHSE • ICSE
+            </span>
+          </div>
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3.5">
-          {TOP_COLLEGES.map((college, idx) => (
-            <div
-              key={idx}
-              className="p-4 rounded-xl bg-white border border-slate-200 shadow-sm hover:shadow-md hover:border-blue-300 text-xs font-semibold text-slate-700 hover:text-[#001F3F] transition-all flex items-center gap-2.5 group"
-            >
-              <span className="w-2 h-2 rounded-full bg-[#0062FF] group-hover:scale-125 transition-transform shrink-0" />
-              <span className="truncate">{college}</span>
-            </div>
-          ))}
+        {/* Filter & Search Bar */}
+        <div className="max-w-3xl mx-auto mb-8 flex flex-col sm:flex-row items-center gap-3">
+          {/* Search Box */}
+          <div className="relative w-full sm:flex-1">
+            <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+            <input
+              type="text"
+              value={institutionSearch}
+              onChange={(e) => setInstitutionSearch(e.target.value)}
+              placeholder="Search your school or college..."
+              className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-white border border-slate-200 focus:border-[#0062FF] focus:ring-2 focus:ring-blue-100 text-xs font-medium text-slate-800 placeholder-slate-400 outline-none transition-all shadow-sm"
+            />
+            {institutionSearch && (
+              <button
+                onClick={() => setInstitutionSearch('')}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-400 hover:text-slate-600"
+              >
+                ✕
+              </button>
+            )}
+          </div>
+
+          {/* Board Filter Tabs */}
+          <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl border border-slate-200 w-full sm:w-auto justify-center">
+            {(['ALL', 'CBSE', 'CHSE', 'ICSE'] as const).map((board) => (
+              <button
+                key={board}
+                onClick={() => setSelectedBoardFilter(board)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                  selectedBoardFilter === board
+                    ? 'bg-white text-[#0062FF] shadow-sm'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                {board === 'ALL' ? 'All Boards' : board}
+              </button>
+            ))}
+          </div>
         </div>
+
+        {/* Dynamic Display: Filtered Results OR Infinite Dual Marquee */}
+        {institutionSearch.trim() !== '' || selectedBoardFilter !== 'ALL' ? (
+          /* Filtered Grid View */
+          <div className="space-y-4">
+            {(() => {
+              const filtered = STATE_INSTITUTIONS.filter(inst => {
+                const matchesSearch = inst.name.toLowerCase().includes(institutionSearch.toLowerCase()) ||
+                  inst.city.toLowerCase().includes(institutionSearch.toLowerCase()) ||
+                  inst.shortCode.toLowerCase().includes(institutionSearch.toLowerCase());
+                const matchesBoard = selectedBoardFilter === 'ALL' || inst.board === selectedBoardFilter;
+                return matchesSearch && matchesBoard;
+              });
+
+              if (filtered.length === 0) {
+                return (
+                  <div className="text-center py-12 px-4 rounded-2xl bg-white border border-slate-200 shadow-sm">
+                    <School className="w-10 h-10 text-slate-300 mx-auto mb-2" />
+                    <h3 className="text-sm font-bold text-slate-800">No listed institution found for "{institutionSearch}"</h3>
+                    <p className="text-xs text-slate-500 mt-1 max-w-md mx-auto">
+                      Any recognized +2 institution in Odisha is eligible! Be the first to field a delegation from your institution.
+                    </p>
+                    <button
+                      onClick={() => setCurrentView('register')}
+                      className="mt-4 inline-flex items-center gap-2 px-5 py-2 rounded-xl bg-[#0062FF] text-white text-xs font-bold hover:bg-blue-600 transition-all shadow-md shadow-blue-500/20"
+                    >
+                      <span>Register Your College Delegation</span>
+                      <ArrowRight className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                );
+              }
+
+              return (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
+                  {filtered.map((inst, idx) => (
+                    <div
+                      key={idx}
+                      className="p-4 rounded-2xl bg-white border border-slate-200 hover:border-blue-300 shadow-sm hover:shadow-md transition-all flex items-center justify-between gap-3 group"
+                    >
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className={`w-11 h-11 rounded-xl bg-gradient-to-br ${inst.color} text-white font-black text-xs flex items-center justify-center shrink-0 shadow-md group-hover:scale-105 transition-transform`}>
+                          {inst.shortCode}
+                        </div>
+                        <div className="min-w-0">
+                          <h4 className="text-xs font-bold text-[#001F3F] truncate group-hover:text-[#0062FF] transition-colors">
+                            {inst.name}
+                          </h4>
+                          <div className="flex items-center gap-2 mt-1">
+                            <span className="text-[10px] text-slate-500 font-medium">
+                              {inst.city}
+                            </span>
+                            <span className="text-slate-300">•</span>
+                            <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded border ${inst.badgeBg}`}>
+                              {inst.board}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <button
+                        onClick={() => setCurrentView('register')}
+                        className="px-2.5 py-1.5 rounded-lg bg-blue-50 hover:bg-[#0062FF] text-[#0062FF] hover:text-white text-[11px] font-bold transition-all shrink-0 flex items-center gap-1"
+                        title="Register with this college"
+                      >
+                        <span>Join</span>
+                        <ArrowRight className="w-3 h-3" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              );
+            })()}
+          </div>
+        ) : (
+          /* Dual-Row Smooth Marquee */
+          <div className="space-y-3.5 relative">
+            {/* Fade edge overlays for high aesthetic finish */}
+            <div className="pointer-events-none absolute left-0 top-0 bottom-0 w-12 sm:w-24 bg-gradient-to-r from-[#F8FAFC] to-transparent z-10" />
+            <div className="pointer-events-none absolute right-0 top-0 bottom-0 w-12 sm:w-24 bg-gradient-to-l from-[#F8FAFC] to-transparent z-10" />
+
+            {/* Row 1: Sliding Left */}
+            <div className="overflow-hidden py-1">
+              <div className="animate-marquee-left flex gap-3.5">
+                {[...STATE_INSTITUTIONS.slice(0, 7), ...STATE_INSTITUTIONS.slice(0, 7)].map((inst, idx) => (
+                  <div
+                    key={`row1-${idx}`}
+                    className="w-72 sm:w-80 p-3.5 rounded-2xl bg-white border border-slate-200/90 shadow-sm hover:shadow-lg hover:border-blue-400 hover:-translate-y-0.5 transition-all flex items-center gap-3 shrink-0 group cursor-pointer"
+                    onClick={() => setCurrentView('register')}
+                  >
+                    <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${inst.color} text-white font-black text-xs flex items-center justify-center shrink-0 shadow-sm group-hover:scale-110 transition-transform`}>
+                      {inst.shortCode}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center justify-between gap-1 mb-0.5">
+                        <span className={`text-[9px] font-bold px-1.5 py-0.2 rounded border ${inst.badgeBg}`}>
+                          {inst.board}
+                        </span>
+                        <span className="text-[10px] font-bold text-slate-400 flex items-center gap-1">
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                          {inst.tag}
+                        </span>
+                      </div>
+                      <h4 className="text-xs font-bold text-[#001F3F] truncate group-hover:text-[#0062FF] transition-colors">
+                        {inst.name}
+                      </h4>
+                      <p className="text-[10px] text-slate-500 font-medium">
+                        {inst.city}, Odisha
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Row 2: Sliding Right */}
+            <div className="overflow-hidden py-1">
+              <div className="animate-marquee-right flex gap-3.5">
+                {[...STATE_INSTITUTIONS.slice(7), ...STATE_INSTITUTIONS.slice(7)].map((inst, idx) => (
+                  <div
+                    key={`row2-${idx}`}
+                    className="w-72 sm:w-80 p-3.5 rounded-2xl bg-white border border-slate-200/90 shadow-sm hover:shadow-lg hover:border-blue-400 hover:-translate-y-0.5 transition-all flex items-center gap-3 shrink-0 group cursor-pointer"
+                    onClick={() => setCurrentView('register')}
+                  >
+                    <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${inst.color} text-white font-black text-xs flex items-center justify-center shrink-0 shadow-sm group-hover:scale-110 transition-transform`}>
+                      {inst.shortCode}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center justify-between gap-1 mb-0.5">
+                        <span className={`text-[9px] font-bold px-1.5 py-0.2 rounded border ${inst.badgeBg}`}>
+                          {inst.board}
+                        </span>
+                        <span className="text-[10px] font-bold text-slate-400 flex items-center gap-1">
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                          {inst.tag}
+                        </span>
+                      </div>
+                      <h4 className="text-xs font-bold text-[#001F3F] truncate group-hover:text-[#0062FF] transition-colors">
+                        {inst.name}
+                      </h4>
+                      <p className="text-[10px] text-slate-500 font-medium">
+                        {inst.city}, Odisha
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Heroic Delegation Banner (Represent Your College) */}
+        <div className="mt-10 rounded-2xl bg-gradient-to-r from-[#001F3F] via-[#002D5C] to-[#001F3F] p-6 sm:p-8 text-white relative overflow-hidden shadow-xl border border-blue-500/20">
+          <div className="absolute -right-10 -bottom-10 w-60 h-60 bg-blue-500/10 rounded-full blur-2xl pointer-events-none" />
+          
+          <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-6">
+            <div className="space-y-2 text-center md:text-left max-w-xl">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-400/20 border border-amber-400/40 text-amber-300 text-xs font-black uppercase tracking-wider">
+                <Flame className="w-3.5 h-3.5 text-amber-400" />
+                <span>Institutional Rolling Trophy</span>
+              </div>
+              <h3 className="text-xl sm:text-2xl font-black text-white">
+                Field Your College Delegation at CrossFire 2026
+              </h3>
+              <p className="text-xs text-slate-300 leading-relaxed font-medium">
+                Every victory across Quiz, Ramp Walk, Debate, Reels, Poster Making, and Treasure Hunt contributes points to your institution’s State Championship standing.
+              </p>
+            </div>
+
+            <div className="flex flex-col sm:flex-row items-center gap-3 w-full md:w-auto shrink-0">
+              <button
+                onClick={() => setCurrentView('register')}
+                className="w-full sm:w-auto px-6 py-3.5 rounded-xl bg-[#0062FF] hover:bg-blue-600 text-white font-bold text-xs shadow-lg shadow-blue-500/30 transition-all flex items-center justify-center gap-2 group"
+              >
+                <span>Register Your Delegation (Free)</span>
+                <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+              </button>
+            </div>
+          </div>
+        </div>
+
       </section>
 
 
