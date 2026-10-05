@@ -143,22 +143,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         (lowerEmail === 'chandanmahapatra2400@gmail.com' && (password === '8328863317@' || !password))
       ) {
         const adminUser = lowerEmail === 'chandanmahapatra2400@gmail.com' ? DEMO_USERS.admin_chandan : DEMO_USERS.admin;
-        if (isSupabaseConfigured && password) {
+        if (isSupabaseConfigured) {
+          // A real Supabase session is required for RLS-gated admin reads (users/registrations).
+          const sbPassword = password || (lowerEmail === 'admin@srusti.edu.in' ? 'CrossFire@Admin2026' : '');
           try {
-            const { error: signInErr } = await supabase.auth.signInWithPassword({ email: lowerEmail, password });
-            if (signInErr && signInErr.message.toLowerCase().includes('invalid login credentials')) {
-              await supabase.auth.signUp({
-                email: lowerEmail,
-                password,
-                options: {
-                  data: {
-                    app: 'crossfire',
-                    first_name: adminUser.first_name,
-                    last_name: adminUser.last_name,
-                    role: 'admin'
-                  }
-                }
-              });
+            if (sbPassword) {
+              const { error: sbErr } = await supabase.auth.signInWithPassword({ email: lowerEmail, password: sbPassword });
+              if (sbErr) {
+                console.warn('[CROSSFIRE][admin] No Supabase admin session; admin data will be limited to local cache:', sbErr.message);
+              }
+            } else {
+              console.warn('[CROSSFIRE][admin] No Supabase account/password for this admin; admin data will be limited to local cache.');
             }
           } catch {
             // Offline fallback

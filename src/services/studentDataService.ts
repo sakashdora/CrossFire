@@ -1,5 +1,5 @@
 import { UserProfile, CourseStream, FoodPreference, SchoolBoard, LeaderboardEntry } from '../types';
-import { supabase, createIsolatedClient, isSupabaseConfigured } from '../lib/supabase';
+import { supabase, isSupabaseConfigured } from '../lib/supabase';
 
 export interface StudentRegistrationRecord {
   id: string;
@@ -163,14 +163,17 @@ class StudentDataService {
         students.unshift(record);
       }
 
-      this.saveStudents(students);
-
-      // Async sync with Supabase if online
+      // When Supabase is configured it is the source of truth: the registration must be committed
+      // there (auth user -> profile -> registrations) BEFORE reporting success or caching locally.
+      // Offline/demo mode (no credentials) keeps local-only behaviour.
       if (isSupabaseConfigured) {
-        this.syncWithSupabase(record).catch(err => {
-          console.warn('[CROSSFIRE] Supabase async sync note:', err);
-        });
+        const remote = await this.syncWithSupabase(record);
+        if (!remote.success) {
+          return { success: false, student: null as any, error: remote.error };
+        }
       }
+
+      this.saveStudents(students);
 
       return { success: true, student: record };
     } catch (err: any) {
@@ -178,31 +181,54 @@ class StudentDataService {
     }
   }
 
-  // Sync to Supabase in background without polluting current browser sessions
-  public async syncWithSupabase(student: StudentRegistrationRecord): Promise<void> {
-    if (!isSupabaseConfigured) return;
+  // Commit the registration to Supabase and verify it. Never throws; returns the real outcome.
+  public async syncWithSupabase(student: StudentRegistrationRecord): Promise<{ success: boolean; error?: string }> {
+    if (!isSupabaseConfigured) return { success: true };
+    const GENERIC = 'Registration could not be completed. Please try again.';
+    // Safe diagnostics only: never log password, keys or tokens.
+    const diag = (step: string, e: any) =>
+      console.warn(`[CROSSFIRE][registration] ${step} failed:`, { message: e?.message, code: e?.code, status: e?.status });
+
+    const slugMap: Record<string, string> = {
+      'Quiz': 'quiz',
+      'Debate': 'debate',
+      'Poster Making': 'poster-making',
+      'Treasure Hunt': 'treasure-hunt',
+      'Ramp Walk': 'ramp-walk',
+      'Reels': 'reels'
+    };
+    const eventSlugs = student.selected_competitions
+      .map(c => slugMap[c] || c.toLowerCase().replace(/[^a-z0-9]/g, '-'))
+      .filter(Boolean);
+
+    const profilePayload = {
+      first_name: student.first_name,
+      last_name: student.last_name,
+      contact_number: student.contact_number,
+      whatsapp_number: student.whatsapp_number,
+      institute_name: student.institute_name,
+      city_town: student.city_town,
+      course_stream: student.course_stream,
+      board: student.board || 'CBSE',
+      food_preference: student.food_preference,
+      parent_consent: student.parent_consent,
+      terms_accepted: student.terms_accepted,
+    };
+
+    const generatedPassword = `CrossFire@${student.id.replace(/[^a-zA-Z0-9]/g, '')}`;
+    const cleanEmail = student.email.trim().toLowerCase();
+
     try {
-      const slugMap: Record<string, string> = {
-        'Quiz': 'quiz',
-        'Debate': 'debate',
-        'Poster Making': 'poster-making',
-        'Treasure Hunt': 'treasure-hunt',
-        'Ramp Walk': 'ramp-walk',
-        'Reels': 'reels'
-      };
+      // A leftover session (e.g. a staff/admin sign-in in this browser) must never be reused:
+      // otherwise the RPC would be applied to the wrong account.
+      const { data: { session: existing } } = await supabase.auth.getSession();
+      if (existing?.user && (existing.user.email || '').toLowerCase() !== cleanEmail) {
+        await supabase.auth.signOut({ scope: 'local' });
+      }
 
-      const eventSlugs = student.selected_competitions
-        .map(c => slugMap[c] || c.toLowerCase().replace(/[^a-z0-9]/g, '-'))
-        .filter(Boolean);
-
-      const generatedPassword = `CrossFire@${student.id.replace(/[^a-zA-Z0-9]/g, '')}`;
-
-      // Use isolated client so we NEVER alter or overwrite the user's or admin's active session
-      const isolatedClient = createIsolatedClient();
-
-      // Sign up with crossfire app metadata so the user is created in public.users via DB trigger
-      const { error: authError } = await isolatedClient.auth.signUp({
-        email: student.email,
+      // 1. Create the auth identity (profile row is created by the crossfire_on_auth_user_created trigger).
+      let { data: authData, error: authError } = await supabase.auth.signUp({
+        email: cleanEmail,
         password: generatedPassword,
         options: {
           data: {
@@ -223,62 +249,93 @@ class StudentDataService {
         }
       });
 
-      if (authError?.message?.toLowerCase().includes('already registered')) {
-        // If already registered in auth, sign in with the student's password
-        await isolatedClient.auth.signInWithPassword({
-          email: student.email,
-          password: generatedPassword
+      let hasSession = !!authData?.session;
+
+      if (authError) {
+        const already = authError.code === 'user_already_exists' || /already registered/i.test(authError.message || '');
+        if (!already) {
+          diag('auth.signUp', authError);
+          if (authError.status === 429 || authError.code === 'over_email_send_rate_limit') {
+            return { success: false, error: 'Too many attempts right now. Please wait a minute and try again.' };
+          }
+          if (authError.code === 'weak_password') {
+            return { success: false, error: 'The generated password was rejected. Please contact the organisers.' };
+          }
+          if (authError.code === 'email_address_invalid' || authError.code === 'validation_failed') {
+            return { success: false, error: 'Please enter a valid Email Id.' };
+          }
+          return { success: false, error: GENERIC };
+        }
+        // Already registered: allow an idempotent retry only for the same applicant (same generated credential),
+        // e.g. an earlier attempt created the auth user but the registration step failed.
+        const { data: signIn, error: signInErr } = await supabase.auth.signInWithPassword({
+          email: cleanEmail,
+          password: generatedPassword,
         });
+        if (signInErr || !signIn?.session) {
+          return { success: false, error: 'This email is already registered. Please use a different email or contact the organisers.' };
+        }
+        authData = signIn as any;
+        hasSession = true;
       }
 
-      // Submit registration events and profile details via security-definer RPC
-      const { error: rpcError } = await isolatedClient.rpc('submit_registration_form', {
-        p_profile: {
-          first_name: student.first_name,
-          last_name: student.last_name,
-          contact_number: student.contact_number,
-          whatsapp_number: student.whatsapp_number,
-          institute_name: student.institute_name,
-          city_town: student.city_town,
-          course_stream: student.course_stream,
-          board: student.board || 'CBSE',
-          food_preference: student.food_preference,
-          parent_consent: student.parent_consent,
-          terms_accepted: student.terms_accepted,
-        },
+      if (!authData?.user || (authData.user.identities && authData.user.identities.length === 0)) {
+        // Supabase's obfuscated response for an existing email when confirmations are enabled.
+        return { success: false, error: 'This email is already registered. Please use a different email or contact the organisers.' };
+      }
+
+      if (!hasSession) {
+        // Email confirmation is enabled: without a session the registration RPC cannot run (auth.uid() is null).
+        console.warn('[CROSSFIRE][registration] auth user created but no session returned (email confirmation required).');
+        return { success: false, error: 'Registration could not be completed. Email confirmation is enabled on the server; please contact the organisers.' };
+      }
+
+      const uid = authData.user.id;
+
+      // 2. Create/update profile fields and register for events (single transactional RPC).
+      const { error: rpcError } = await supabase.rpc('submit_registration_form', {
+        p_profile: profilePayload,
         p_event_slugs: eventSlugs
       });
-
       if (rpcError) {
-        console.warn('[CROSSFIRE] Registration RPC sync note:', rpcError.message);
+        diag('rpc.submit_registration_form', rpcError);
+        return { success: false, error: GENERIC };
       }
+
+      // 3. Verify that the registration rows really exist before claiming success.
+      const { count, error: verifyError } = await supabase
+        .from('registrations')
+        .select('id', { count: 'exact', head: true })
+        .eq('user_id', uid);
+      if (verifyError || (count ?? 0) < eventSlugs.length) {
+        diag('verify.registrations', verifyError || { message: `expected >= ${eventSlugs.length} rows, found ${count}` });
+        return { success: false, error: GENERIC };
+      }
+
+      return { success: true };
     } catch (err) {
-      console.warn('[CROSSFIRE] Supabase sync notice:', err);
+      diag('unexpected', err);
+      return { success: false, error: GENERIC };
+    } finally {
+      // The student portal is locked during registration; do not leave a live student session in this browser.
+      try { await supabase.auth.signOut({ scope: 'local' }); } catch { /* ignore */ }
     }
   }
+
 
   // Fetch real-time registrations from Supabase into local service
   public async syncFromSupabase(): Promise<StudentRegistrationRecord[]> {
     if (!isSupabaseConfigured) return this.getAllStudents();
     try {
-      // Ensure we have an active session for querying staff-protected tables
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        try {
-          await supabase.auth.signInWithPassword({
-            email: 'admin@srusti.edu.in',
-            password: 'CrossFire@Admin2026'
-          });
-        } catch {
-          // Continue if offline
-        }
-      }
-
       const { data: users, error: userErr } = await supabase
         .from('users')
         .select('*')
         .eq('role', 'student')
         .order('created_at', { ascending: false });
+
+      if (userErr) {
+        console.warn('[CROSSFIRE][admin] users query failed (is the admin signed in with a real Supabase session and role=admin?):', { message: userErr.message, code: userErr.code });
+      }
 
       if (!userErr && Array.isArray(users) && users.length > 0) {
         const { data: registrations } = await supabase
