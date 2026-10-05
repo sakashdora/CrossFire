@@ -1,28 +1,40 @@
 import React, { useState, useMemo } from 'react';
 import { useAdminData } from '../hooks/useAdminData';
 import { studentDataService, StudentRegistrationRecord } from '../services/studentDataService';
+import { guestVolunteerService } from '../services/guestVolunteerService';
+import { useNotifications } from '../hooks/useNotifications';
+import { StudentQRCode } from '../components/StudentQRCode';
+import { GuestCategory, GuestStatus, VolunteerStation, VolunteerShift, VolunteerAttendance, FoodPreference } from '../types';
 import { 
-  ShieldCheck, 
   CheckCircle, 
   Send, 
   Download, 
   Printer,
   Users, 
-  CalendarDays, 
-  FileSpreadsheet, 
   AlertCircle, 
   Search, 
   RefreshCw, 
-  Mail, 
-  MessageCircle, 
   BookOpen,
   X,
   Eye,
-  Award
+  UserPlus,
+  HeartHandshake,
+  Crown,
+  MapPin,
+  Radio,
+  Clock,
+  Plus,
+  Trash2
 } from 'lucide-react';
 
 export const AdminDashboard: React.FC = () => {
   const { stats, isLoading, error, refreshStats } = useAdminData();
+  const { broadcastNotification } = useNotifications();
+
+  // Active top-level admin tab
+  const [activeTab, setActiveTab] = useState<'overview' | 'students' | 'guests' | 'volunteers' | 'broadcast' | 'capacities'>('overview');
+
+  // Student filtering & search state
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedTrackFilter, setSelectedTrackFilter] = useState('all');
   const [selectedStreamFilter, setSelectedStreamFilter] = useState('all');
@@ -31,9 +43,68 @@ export const AdminDashboard: React.FC = () => {
   // Selected student for detail modal
   const [selectedStudent, setSelectedStudent] = useState<StudentRegistrationRecord | null>(null);
 
+  // Guest Management states
+  const [guestSearch, setGuestSearch] = useState('');
+  const [guestCategoryFilter, setGuestCategoryFilter] = useState<string>('all');
+  const [isAddGuestModalOpen, setIsAddGuestModalOpen] = useState(false);
+  const [newGuest, setNewGuest] = useState<{
+    name: string;
+    designation: string;
+    organization: string;
+    category: GuestCategory;
+    contact_number: string;
+    email: string;
+    status: GuestStatus;
+    escort_volunteer: string;
+    arrival_time: string;
+    vehicle_number: string;
+    dietary_preference: FoodPreference;
+    notes: string;
+  }>({
+    name: '',
+    designation: '',
+    organization: '',
+    category: 'VIP Dignitary',
+    contact_number: '',
+    email: '',
+    status: 'Confirmed',
+    escort_volunteer: '',
+    arrival_time: '10:00 AM',
+    vehicle_number: '',
+    dietary_preference: 'Veg',
+    notes: ''
+  });
+
+  // Volunteer Management states
+  const [volunteerSearch, setVolunteerSearch] = useState('');
+  const [volunteerStationFilter, setVolunteerStationFilter] = useState<string>('all');
+  const [isAddVolunteerModalOpen, setIsAddVolunteerModalOpen] = useState(false);
+  const [newVolunteer, setNewVolunteer] = useState<{
+    name: string;
+    contact_number: string;
+    email: string;
+    assigned_station: VolunteerStation;
+    shift: VolunteerShift;
+    attendance_status: VolunteerAttendance;
+    kit_issued: boolean;
+    walkie_channel: string;
+    notes: string;
+  }>({
+    name: '',
+    contact_number: '',
+    email: '',
+    assigned_station: 'Gate 1 Registration & Security',
+    shift: 'Full Day (08:30 AM - 05:30 PM)',
+    attendance_status: 'Present / On Duty',
+    kit_issued: true,
+    walkie_channel: 'CH-1 (Main Security & Entry)',
+    notes: ''
+  });
+
   // Broadcast state
   const [broadcastTarget, setBroadcastTarget] = useState<'all' | 'debate' | 'quiz' | 'judges'>('all');
-  const [broadcastChannel, setBroadcastChannel] = useState<'whatsapp' | 'sms' | 'in_app'>('whatsapp');
+  const [broadcastChannel, setBroadcastChannel] = useState<'whatsapp' | 'sms' | 'in_app'>('in_app');
+  const [broadcastTitle, setBroadcastTitle] = useState('');
   const [broadcastMessage, setBroadcastMessage] = useState('');
   const [broadcastSent, setBroadcastSent] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -49,6 +120,9 @@ export const AdminDashboard: React.FC = () => {
     const newStatus = student.status === 'confirmed' ? 'registered' : 'confirmed';
     studentDataService.updateStudentStatus(student.id, { status: newStatus });
     refreshStats();
+    if (selectedStudent && selectedStudent.id === student.id) {
+      setSelectedStudent(prev => prev ? { ...prev, status: newStatus } : null);
+    }
   };
 
   // Toggle student check-in
@@ -61,22 +135,144 @@ export const AdminDashboard: React.FC = () => {
     }
   };
 
+  // Delete student registration
+  const handleDeleteStudent = (studentId: string) => {
+    if (confirm('Are you sure you want to delete this student registration?')) {
+      studentDataService.deleteStudent(studentId);
+      refreshStats();
+      if (selectedStudent?.id === studentId) {
+        setSelectedStudent(null);
+      }
+    }
+  };
+
+  // Guest actions
+  const handleAddGuestSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newGuest.name.trim() || !newGuest.organization.trim()) return;
+
+    guestVolunteerService.addGuest({
+      ...newGuest,
+      name: newGuest.name.trim(),
+      designation: newGuest.designation.trim(),
+      organization: newGuest.organization.trim(),
+      contact_number: newGuest.contact_number.trim(),
+      email: newGuest.email.trim(),
+      notes: newGuest.notes.trim()
+    });
+
+    setIsAddGuestModalOpen(false);
+    setNewGuest({
+      name: '',
+      designation: '',
+      organization: '',
+      category: 'VIP Dignitary',
+      contact_number: '',
+      email: '',
+      status: 'Confirmed',
+      escort_volunteer: '',
+      arrival_time: '10:00 AM',
+      vehicle_number: '',
+      dietary_preference: 'Veg',
+      notes: ''
+    });
+    refreshStats();
+  };
+
+  const handleToggleGuestStatus = (guestId: string, currentStatus: GuestStatus) => {
+    const nextStatus: Record<GuestStatus, GuestStatus> = {
+      'Invited': 'Confirmed',
+      'Confirmed': 'Arrived',
+      'Arrived': 'Departed',
+      'Departed': 'Confirmed',
+      'Declined': 'Invited'
+    };
+    guestVolunteerService.updateGuestStatus(guestId, nextStatus[currentStatus]);
+    refreshStats();
+  };
+
+  const handleDeleteGuest = (guestId: string) => {
+    if (confirm('Are you sure you want to remove this dignitary from the protocol list?')) {
+      guestVolunteerService.deleteGuest(guestId);
+      refreshStats();
+    }
+  };
+
+  // Volunteer actions
+  const handleAddVolunteerSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newVolunteer.name.trim() || !newVolunteer.contact_number.trim()) return;
+
+    guestVolunteerService.addVolunteer({
+      ...newVolunteer,
+      name: newVolunteer.name.trim(),
+      contact_number: newVolunteer.contact_number.trim(),
+      email: newVolunteer.email.trim(),
+      notes: newVolunteer.notes.trim()
+    });
+
+    setIsAddVolunteerModalOpen(false);
+    setNewVolunteer({
+      name: '',
+      contact_number: '',
+      email: '',
+      assigned_station: 'Gate 1 Registration & Security',
+      shift: 'Full Day (08:30 AM - 05:30 PM)',
+      attendance_status: 'Present / On Duty',
+      kit_issued: true,
+      walkie_channel: 'CH-1 (Main Security & Entry)',
+      notes: ''
+    });
+    refreshStats();
+  };
+
+  const handleToggleVolunteerAttendance = (volId: string, currentStatus: VolunteerAttendance) => {
+    const nextStatus: Record<VolunteerAttendance, VolunteerAttendance> = {
+      'Present / On Duty': 'On Break',
+      'On Break': 'Assigned',
+      'Assigned': 'Present / On Duty',
+      'Absent': 'Present / On Duty'
+    };
+    guestVolunteerService.updateVolunteerAttendance(volId, nextStatus[currentStatus]);
+    refreshStats();
+  };
+
+  const handleToggleKit = (volId: string) => {
+    guestVolunteerService.toggleVolunteerKit(volId);
+    refreshStats();
+  };
+
+  const handleDeleteVolunteer = (volId: string) => {
+    if (confirm('Are you sure you want to remove this volunteer assignment?')) {
+      guestVolunteerService.deleteVolunteer(volId);
+      refreshStats();
+    }
+  };
+
+  // Broadcast send
   const handleSendBroadcast = (e: React.FormEvent) => {
     e.preventDefault();
     if (!broadcastMessage.trim()) return;
 
+    broadcastNotification({
+      type: broadcastTarget === 'debate' ? 'debate_topic' : 'announcement',
+      title: broadcastTitle.trim() || `Announcement for ${broadcastTarget.toUpperCase()}`,
+      message: broadcastMessage.trim(),
+      channel: broadcastChannel
+    });
+
     setBroadcastSent(true);
     setTimeout(() => {
+      setBroadcastTitle('');
       setBroadcastMessage('');
       setBroadcastSent(false);
     }, 2500);
   };
 
-  // Filtered students list
+  // Filtered Students list
   const filteredStudents = useMemo(() => {
     if (!stats?.allStudents) return [];
     return stats.allStudents.filter(student => {
-      // Search filter
       const term = searchTerm.toLowerCase().trim();
       const matchesSearch = !term || 
         student.first_name.toLowerCase().includes(term) ||
@@ -87,21 +283,117 @@ export const AdminDashboard: React.FC = () => {
         student.city_town.toLowerCase().includes(term) ||
         student.id.toLowerCase().includes(term);
 
-      // Track filter
       const matchesTrack = selectedTrackFilter === 'all' || 
         student.selected_competitions.some(c => c.toLowerCase().includes(selectedTrackFilter.toLowerCase()));
 
-      // Stream filter
       const matchesStream = selectedStreamFilter === 'all' || 
         student.course_stream === selectedStreamFilter;
 
-      // Status filter
       const matchesStatus = selectedStatusFilter === 'all' || 
         student.status === selectedStatusFilter;
 
       return matchesSearch && matchesTrack && matchesStream && matchesStatus;
     });
   }, [stats?.allStudents, searchTerm, selectedTrackFilter, selectedStreamFilter, selectedStatusFilter]);
+
+  // Filtered Guests list
+  const filteredGuests = useMemo(() => {
+    if (!stats?.guests) return [];
+    return stats.guests.filter(g => {
+      const term = guestSearch.toLowerCase().trim();
+      const matchesSearch = !term ||
+        g.name.toLowerCase().includes(term) ||
+        g.organization.toLowerCase().includes(term) ||
+        g.designation.toLowerCase().includes(term) ||
+        g.contact_number.includes(term) ||
+        g.email.toLowerCase().includes(term);
+
+      const matchesCategory = guestCategoryFilter === 'all' || g.category === guestCategoryFilter;
+      return matchesSearch && matchesCategory;
+    });
+  }, [stats?.guests, guestSearch, guestCategoryFilter]);
+
+  // Filtered Volunteers list
+  const filteredVolunteers = useMemo(() => {
+    if (!stats?.volunteers) return [];
+    return stats.volunteers.filter(v => {
+      const term = volunteerSearch.toLowerCase().trim();
+      const matchesSearch = !term ||
+        v.name.toLowerCase().includes(term) ||
+        v.contact_number.includes(term) ||
+        v.email.toLowerCase().includes(term) ||
+        v.assigned_station.toLowerCase().includes(term) ||
+        (v.walkie_channel && v.walkie_channel.toLowerCase().includes(term));
+
+      const matchesStation = volunteerStationFilter === 'all' || v.assigned_station === volunteerStationFilter;
+      return matchesSearch && matchesStation;
+    });
+  }, [stats?.volunteers, volunteerSearch, volunteerStationFilter]);
+
+  // Download Guest CSV
+  const handleDownloadGuestCSV = () => {
+    const guests = stats?.guests || [];
+    const lines = [
+      '\uFEFF"Guest ID","Name","Category","Designation","Organization","Contact","Email","Status","Arrival Time","Vehicle No","Dietary","Escort Volunteer","Notes"'
+    ];
+    guests.forEach(g => {
+      lines.push([
+        g.id,
+        g.name,
+        g.category,
+        g.designation,
+        g.organization,
+        g.contact_number,
+        g.email,
+        g.status,
+        g.arrival_time || 'N/A',
+        g.vehicle_number || 'N/A',
+        g.dietary_preference,
+        g.escort_volunteer || 'Unassigned',
+        g.notes || ''
+      ].map(c => `"${String(c).replace(/"/g, '""')}"`).join(','));
+    });
+
+    const blob = new Blob([lines.join('\r\n')], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `CrossFire_2026_VIP_Guest_Protocol_Roster.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  // Download Volunteer CSV
+  const handleDownloadVolunteerCSV = () => {
+    const volunteers = stats?.volunteers || [];
+    const lines = [
+      '\uFEFF"Volunteer ID","Name","Contact","Email","Assigned Station","Duty Shift","Attendance Status","Kit Issued","Walkie Channel","Notes"'
+    ];
+    volunteers.forEach(v => {
+      lines.push([
+        v.id,
+        v.name,
+        v.contact_number,
+        v.email,
+        v.assigned_station,
+        v.shift,
+        v.attendance_status,
+        v.kit_issued ? 'YES' : 'NO',
+        v.walkie_channel || 'N/A',
+        v.notes || ''
+      ].map(c => `"${String(c).replace(/"/g, '""')}"`).join(','));
+    });
+
+    const blob = new Blob([lines.join('\r\n')], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `CrossFire_2026_Volunteer_Deployment_Roster.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
 
   if (isLoading && !stats) {
     return (
@@ -144,665 +436,1197 @@ export const AdminDashboard: React.FC = () => {
       bg: 'bg-purple-50' 
     },
     { 
-      label: "Today's Signups", 
-      value: stats?.todayRegistrations || 0, 
-      trend: 'New Today', 
+      label: 'Gate Checked-In', 
+      value: stats?.checkedInCount || 0, 
+      trend: `${Math.round(((stats?.checkedInCount || 0) / (stats?.totalUsers || 1)) * 100)}% Present on Campus`, 
       color: 'text-emerald-700', 
       bg: 'bg-emerald-50' 
     },
     { 
-      label: 'Checked-in at Gate', 
-      value: stats?.checkedInCount || 0, 
-      trend: 'On-Campus Verified', 
-      color: 'text-orange-600', 
+      label: 'VIP Guests & Jury', 
+      value: stats?.guestMetrics.total || 0, 
+      trend: `${stats?.guestMetrics.confirmed || 0} Confirmed / ${stats?.guestMetrics.arrived || 0} Arrived`, 
+      color: 'text-amber-700', 
+      bg: 'bg-amber-50' 
+    },
+    { 
+      label: 'Volunteer Crew', 
+      value: stats?.volunteerMetrics.total || 0, 
+      trend: `${stats?.volunteerMetrics.onDuty || 0} On Duty / ${stats?.volunteerMetrics.kitsIssued || 0} Kits Issued`, 
+      color: 'text-orange-700', 
       bg: 'bg-orange-50' 
     },
   ];
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8 animate-fadeIn">
-      {/* Header Banner */}
-      <div className="bg-navy p-6 sm:p-8 rounded-3xl text-white shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-6 relative overflow-hidden border border-navy-light/40">
-        <div className="absolute right-0 top-0 bottom-0 w-1/3 bg-gradient-to-l from-orange-500/10 to-transparent pointer-events-none"></div>
-        
-        <div className="relative z-10">
-          <div className="flex items-center gap-2 mb-2">
-            <span className="px-2.5 py-0.5 rounded-full bg-blue-500/20 text-blue-300 text-[10px] font-bold uppercase tracking-wider border border-blue-500/30 flex items-center gap-1">
-              <ShieldCheck className="w-3.5 h-3.5" /> Super Admin Control Center
-            </span>
-            <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 text-[10px] font-bold uppercase tracking-wider border border-emerald-500/30 flex items-center gap-1">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping"></span> Live Real-Time
-            </span>
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6 animate-fadeIn">
+      
+      {/* Top Banner Header */}
+      <div className="bg-gradient-to-r from-navy via-navy-light to-navy rounded-3xl p-6 sm:p-8 text-white shadow-xl relative overflow-hidden border border-white/10">
+        <div className="relative z-10 flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+          <div>
+            <div className="flex items-center gap-2 mb-2">
+              <span className="px-3 py-1 bg-orange-500 text-white rounded-full text-[10px] font-black uppercase tracking-wider">
+                Production Control Center
+              </span>
+              <span className="text-xs text-gray-300 font-bold">
+                Srusti Academy of Graduate Studies
+              </span>
+            </div>
+            <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-white">
+              CrossFire 2026 Admin Headquarters
+            </h1>
+            <p className="text-xs sm:text-sm text-gray-300 mt-1 max-w-2xl">
+              Master control console for student registrations, VIP guest protocol, volunteer crew deployment, emergency broadcasts, and live database sync.
+            </p>
           </div>
-          <h1 className="text-2xl sm:text-3xl font-black text-white flex items-center gap-3">
-            <span>Operations & Master Roster</span>
-          </h1>
-          <p className="text-xs sm:text-sm text-gray-300 mt-1 max-w-2xl">
-            Srusti Academy of Graduate Studies • State-Level +2 Talent Hunt Student Directory & Event Operations
-          </p>
-        </div>
 
-        {/* Action Buttons: CSV & Official Print Roster with Logo */}
-        <div className="flex flex-wrap items-center gap-3 relative z-10">
-          <button
-            onClick={handleRefresh}
-            title="Refresh Live Data"
-            className="p-2.5 bg-white/10 hover:bg-white/20 text-white rounded-xl transition-all border border-white/10 hover:border-white/20"
-          >
-            <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
-          </button>
+          <div className="flex flex-wrap items-center gap-2.5">
+            <button
+              onClick={() => studentDataService.printOfficialReportWithLogo()}
+              className="px-4 py-2.5 bg-white/15 hover:bg-white/25 text-white font-bold text-xs rounded-xl flex items-center gap-1.5 transition-colors cursor-pointer border border-white/20"
+              title="Print official student roster"
+            >
+              <Printer className="w-4 h-4 text-orange-400" />
+              <span>Print Roster</span>
+            </button>
 
-          <button
-            onClick={() => studentDataService.downloadCSV()}
-            className="px-4 py-2.5 bg-white/10 hover:bg-white/20 text-white font-bold text-xs rounded-xl shadow-sm flex items-center gap-2 transition-all border border-white/20 hover:scale-105 active:scale-95"
-            title="Download CSV with CrossFire Logo URL & Full Records"
-          >
-            <Download className="w-4 h-4 text-orange-400" />
-            <span>Export CSV</span>
-          </button>
+            <button
+              onClick={() => studentDataService.downloadCSV()}
+              className="px-4 py-2.5 bg-orange-500 hover:bg-orange-600 text-white font-bold text-xs rounded-xl flex items-center gap-1.5 transition-colors cursor-pointer shadow-lg"
+              title="Export all student registrations to CSV"
+            >
+              <Download className="w-4 h-4" />
+              <span>Export CSV</span>
+            </button>
 
-          <button
-            onClick={() => studentDataService.printOfficialReportWithLogo()}
-            className="px-4 py-2.5 bg-orange-500 hover:bg-orange-600 text-white font-bold text-xs rounded-xl shadow-lg flex items-center gap-2 transition-all hover:scale-105 active:scale-95"
-            title="Open printable official document with CrossFire Logo & Srusti Academy Header"
-          >
-            <Printer className="w-4 h-4" />
-            <span>Download Official Roster (Logo)</span>
-          </button>
+            <button
+              onClick={handleRefresh}
+              disabled={isRefreshing}
+              className="p-2.5 bg-white/10 hover:bg-white/20 text-white rounded-xl transition-colors cursor-pointer"
+              title="Refresh database records"
+            >
+              <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin text-orange-400' : ''}`} />
+            </button>
+          </div>
         </div>
       </div>
 
-      {/* KPI Cards Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      {/* KPI Cards Strip */}
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4">
         {kpis.map((kpi, idx) => (
-          <div key={idx} className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm space-y-2 hover:border-gray-300 transition-all hover:shadow-md">
-            <span className="text-xs font-bold uppercase tracking-wider text-gray-400 block">
-              {kpi.label}
-            </span>
-            <div className={`text-2xl sm:text-3xl font-black ${kpi.color}`}>
-              {kpi.value}
+          <div key={idx} className="bg-white p-4 rounded-2xl border border-gray-200/80 shadow-sm flex flex-col justify-between">
+            <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider block">{kpi.label}</span>
+            <div className="my-2">
+              <span className={`text-2xl sm:text-3xl font-black ${kpi.color}`}>{kpi.value}</span>
             </div>
-            <span className={`text-[11px] font-bold px-2.5 py-0.5 rounded-full ${kpi.bg} ${kpi.color} inline-block`}>
-              {kpi.trend}
-            </span>
+            <span className="text-[10px] font-semibold text-gray-500 truncate block">{kpi.trend}</span>
           </div>
         ))}
       </div>
 
-      {/* Stream Distribution & Track Capacity Overview */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Stream Breakdown */}
-        <div className="bg-white rounded-3xl border border-gray-200 p-6 shadow-sm">
-          <h2 className="text-sm font-black text-navy uppercase tracking-wider mb-4 flex items-center gap-2">
-            <BookOpen className="w-4 h-4 text-orange-500" /> Stream Distribution
-          </h2>
-          <div className="space-y-4">
-            {Object.entries(stats?.streamCounts || {}).map(([stream, count]) => {
-              const total = stats?.totalUsers || 1;
-              const pct = Math.round((count / total) * 100);
-              return (
-                <div key={stream}>
-                  <div className="flex justify-between text-xs font-bold mb-1">
-                    <span className="text-gray-700">{stream}</span>
-                    <span className="text-navy">{count} students ({pct}%)</span>
-                  </div>
-                  <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
-                    <div 
-                      className={`h-full rounded-full transition-all duration-500 ${
-                        stream.includes('Science') ? 'bg-blue-500' :
-                        stream.includes('Commerce') ? 'bg-purple-500' : 'bg-orange-500'
-                      }`} 
-                      style={{ width: `${pct}%` }}
-                    />
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
+      {/* Navigation Tabs */}
+      <div className="flex flex-wrap border-b border-gray-200 bg-white rounded-2xl p-1.5 shadow-sm gap-1">
+        <button
+          onClick={() => setActiveTab('overview')}
+          className={`flex-1 min-w-[120px] py-3 text-xs sm:text-sm font-black rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer ${
+            activeTab === 'overview' ? 'bg-navy text-white shadow-md' : 'text-gray-500 hover:text-navy hover:bg-gray-50'
+          }`}
+        >
+          <BookOpen className="w-4 h-4" />
+          <span>Overview & Tracks</span>
+        </button>
 
-        {/* Event Track Capacity Saturation */}
-        <div className="lg:col-span-2 bg-white rounded-3xl border border-gray-200 p-6 shadow-sm">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-sm font-black text-navy uppercase tracking-wider flex items-center gap-2">
-              <CalendarDays className="w-4 h-4 text-orange-500" /> Event Capacity & Saturation Tracker
-            </h2>
-            <span className="text-xs text-gray-500">6 Competition Tracks</span>
-          </div>
+        <button
+          onClick={() => setActiveTab('students')}
+          className={`flex-1 min-w-[120px] py-3 text-xs sm:text-sm font-black rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer ${
+            activeTab === 'students' ? 'bg-navy text-white shadow-md' : 'text-gray-500 hover:text-navy hover:bg-gray-50'
+          }`}
+        >
+          <Users className="w-4 h-4" />
+          <span>Students ({stats?.totalUsers || 0})</span>
+        </button>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-            {stats?.eventsStats.map((event, idx) => {
-              const pct = Math.min(Math.round((event.registered / event.capacity) * 100), 100);
-              const isFull = event.registered >= event.capacity;
-              return (
-                <div key={idx} className="p-3 rounded-2xl border border-gray-100 bg-gray-50/70 hover:bg-gray-50 transition-colors">
-                  <div className="flex justify-between items-start mb-1.5">
-                    <div>
-                      <span className="text-[10px] font-bold uppercase text-gray-400 block">{event.group}</span>
-                      <h4 className="text-xs font-bold text-gray-900 truncate max-w-[120px]">{event.name}</h4>
-                    </div>
-                    <span className={`text-[10px] font-extrabold px-1.5 py-0.5 rounded ${
-                      isFull ? 'bg-red-100 text-red-700' : 'bg-emerald-100 text-emerald-800'
-                    }`}>
-                      {isFull ? 'FULL' : 'OPEN'}
-                    </span>
-                  </div>
+        <button
+          onClick={() => setActiveTab('guests')}
+          className={`flex-1 min-w-[120px] py-3 text-xs sm:text-sm font-black rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer ${
+            activeTab === 'guests' ? 'bg-navy text-white shadow-md' : 'text-gray-500 hover:text-navy hover:bg-gray-50'
+          }`}
+        >
+          <Crown className="w-4 h-4 text-amber-500" />
+          <span>VIP Guests ({stats?.guestMetrics.total || 0})</span>
+        </button>
 
-                  <div className="flex items-baseline justify-between text-xs font-bold text-gray-600 mb-1">
-                    <span>{event.registered} slots</span>
-                    <span className="text-[10px] text-gray-400">Cap: {event.capacity}</span>
-                  </div>
+        <button
+          onClick={() => setActiveTab('volunteers')}
+          className={`flex-1 min-w-[120px] py-3 text-xs sm:text-sm font-black rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer ${
+            activeTab === 'volunteers' ? 'bg-navy text-white shadow-md' : 'text-gray-500 hover:text-navy hover:bg-gray-50'
+          }`}
+        >
+          <HeartHandshake className="w-4 h-4 text-orange-500" />
+          <span>Volunteers ({stats?.volunteerMetrics.total || 0})</span>
+        </button>
 
-                  <div className="w-full h-1.5 bg-gray-200 rounded-full overflow-hidden">
-                    <div 
-                      className={`h-full rounded-full transition-all duration-500 ${isFull ? 'bg-red-500' : 'bg-orange-500'}`}
-                      style={{ width: `${pct}%` }}
-                    />
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
+        <button
+          onClick={() => setActiveTab('broadcast')}
+          className={`flex-1 min-w-[120px] py-3 text-xs sm:text-sm font-black rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer ${
+            activeTab === 'broadcast' ? 'bg-navy text-white shadow-md' : 'text-gray-500 hover:text-navy hover:bg-gray-50'
+          }`}
+        >
+          <Send className="w-4 h-4 text-emerald-500" />
+          <span>Broadcast Alerts</span>
+        </button>
       </div>
 
-      {/* Main Student Records Section */}
-      <div className="bg-white rounded-3xl border border-gray-200 shadow-sm overflow-hidden">
-        {/* Table Toolbar: Search & Filters */}
-        <div className="p-5 sm:p-6 border-b border-gray-100 space-y-4">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div>
-              <h2 className="text-lg font-black text-navy flex items-center gap-2">
-                <FileSpreadsheet className="w-5 h-5 text-orange-500" />
-                <span>Student Master Roster ({filteredStudents.length})</span>
-              </h2>
-              <p className="text-xs text-gray-500 mt-0.5">
-                Real-time synchronized participant database with contact & competition details
-              </p>
+      {/* ============================================================== */}
+      {/* TAB 1: OVERVIEW & EVENT CAPACITIES */}
+      {/* ============================================================== */}
+      {activeTab === 'overview' && (
+        <div className="space-y-6">
+          {/* 6 Event Tracks Capacities */}
+          <div className="bg-white rounded-3xl p-6 border border-gray-200/80 shadow-sm space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-base font-black text-navy">Competition Tracks & Seat Allocations</h3>
+                <p className="text-xs text-gray-500">Live participant slot registration limits across Group A & Group B events.</p>
+              </div>
+              <span className="text-xs font-mono font-bold text-orange-600 bg-orange-50 px-3 py-1 rounded-full border border-orange-200">
+                ₹50,000 Total Prize Pool
+              </span>
             </div>
 
-            {/* Quick Export from Table Toolbar */}
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => studentDataService.downloadCSV()}
-                className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-bold rounded-xl flex items-center gap-1.5 transition-colors"
-              >
-                <Download className="w-3.5 h-3.5 text-gray-500" />
-                <span>Download CSV</span>
-              </button>
-              <button
-                onClick={() => studentDataService.printOfficialReportWithLogo()}
-                className="px-3 py-1.5 bg-orange-50 hover:bg-orange-100 text-orange-700 border border-orange-200 text-xs font-bold rounded-xl flex items-center gap-1.5 transition-colors"
-              >
-                <Printer className="w-3.5 h-3.5 text-orange-500" />
-                <span>Print Document</span>
-              </button>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pt-2">
+              {stats?.eventsStats.map((ev) => {
+                const pct = Math.min(100, Math.round((ev.registered / (ev.capacity || 1)) * 100));
+                return (
+                  <div key={ev.id} className="p-4 rounded-2xl bg-gray-50 border border-gray-200 space-y-2.5">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <span className="text-[10px] font-black uppercase text-gray-400 block">{ev.group}</span>
+                        <strong className="text-sm font-black text-navy">{ev.name}</strong>
+                      </div>
+                      <span className="text-xs font-mono font-bold text-navy bg-white px-2 py-0.5 rounded border border-gray-200">
+                        {ev.registered} / {ev.capacity} Slots
+                      </span>
+                    </div>
+
+                    <div className="w-full bg-gray-200 h-2.5 rounded-full overflow-hidden">
+                      <div 
+                        className={`h-full transition-all ${pct >= 90 ? 'bg-red-500' : pct >= 70 ? 'bg-orange-500' : 'bg-emerald-500'}`} 
+                        style={{ width: `${pct}%` }}
+                      />
+                    </div>
+
+                    <div className="flex justify-between text-[11px] text-gray-500 font-medium">
+                      <span>{pct}% Capacity Filled</span>
+                      <span>{ev.capacity - ev.registered} Available</span>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
 
-          {/* Search & Filter Controls */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 pt-2">
-            {/* Search Input */}
-            <div className="relative">
-              <Search className="w-4 h-4 text-gray-400 absolute left-3 top-3" />
+          {/* Academic Stream Distribution */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="bg-white p-5 rounded-2xl border border-gray-200 shadow-sm flex items-center justify-between">
+              <div>
+                <span className="text-xs font-bold text-gray-400 uppercase tracking-wider block">+2 Science</span>
+                <span className="text-2xl font-black text-navy mt-1 block">{stats?.streamCounts['12th Science'] || 0} Students</span>
+              </div>
+              <span className="text-xs font-bold text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-lg">CBSE / CHSE</span>
+            </div>
+
+            <div className="bg-white p-5 rounded-2xl border border-gray-200 shadow-sm flex items-center justify-between">
+              <div>
+                <span className="text-xs font-bold text-gray-400 uppercase tracking-wider block">+2 Commerce</span>
+                <span className="text-2xl font-black text-purple-700 mt-1 block">{stats?.streamCounts['12th Commerce'] || 0} Students</span>
+              </div>
+              <span className="text-xs font-bold text-purple-600 bg-purple-50 px-2.5 py-1 rounded-lg">Management Track</span>
+            </div>
+
+            <div className="bg-white p-5 rounded-2xl border border-gray-200 shadow-sm flex items-center justify-between">
+              <div>
+                <span className="text-xs font-bold text-gray-400 uppercase tracking-wider block">+2 Arts</span>
+                <span className="text-2xl font-black text-orange-700 mt-1 block">{stats?.streamCounts['12th Arts'] || 0} Students</span>
+              </div>
+              <span className="text-xs font-bold text-orange-600 bg-orange-50 px-2.5 py-1 rounded-lg">Humanities & Media</span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ============================================================== */}
+      {/* TAB 2: STUDENT REGISTRATIONS DIRECTORY */}
+      {/* ============================================================== */}
+      {activeTab === 'students' && (
+        <div className="bg-white rounded-3xl p-6 border border-gray-200/80 shadow-sm space-y-5">
+          {/* Controls Bar */}
+          <div className="flex flex-col lg:flex-row items-center justify-between gap-4">
+            <div className="relative w-full lg:w-96">
+              <Search className="w-4 h-4 text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
               <input
                 type="text"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                placeholder="Search by name, email, school, phone..."
-                className="w-full pl-9 pr-4 py-2 border border-gray-200 rounded-xl text-xs focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 outline-none"
+                placeholder="Search by Pass ID, Student Name, Mobile or School..."
+                className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs font-bold text-navy placeholder-gray-400 focus:outline-none focus:border-orange-500 focus:bg-white"
               />
-              {searchTerm && (
-                <button 
-                  onClick={() => setSearchTerm('')}
-                  className="absolute right-2.5 top-2.5 text-gray-400 hover:text-gray-600"
-                >
-                  <X className="w-3.5 h-3.5" />
-                </button>
-              )}
             </div>
 
-            {/* Track Filter */}
-            <div>
+            <div className="flex flex-wrap items-center gap-2.5 w-full lg:w-auto">
               <select
                 value={selectedTrackFilter}
                 onChange={(e) => setSelectedTrackFilter(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-200 rounded-xl text-xs font-semibold text-gray-700 focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 outline-none bg-white"
+                className="bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-xs font-bold text-navy"
               >
-                <option value="all">All Competitions (6)</option>
-                <option value="Quiz">Quiz</option>
-                <option value="Debate">Debate</option>
-                <option value="Poster Making">Poster Making</option>
-                <option value="Treasure Hunt">Treasure Hunt</option>
-                <option value="Ramp Walk">Ramp Walk</option>
-                <option value="Reels">Reels</option>
+                <option value="all">All 6 Competition Tracks</option>
+                <option value="quiz">Quiz</option>
+                <option value="debate">Debate</option>
+                <option value="poster">Poster Making</option>
+                <option value="treasure">Treasure Hunt</option>
+                <option value="ramp">Ramp Walk</option>
+                <option value="reels">Reels</option>
               </select>
-            </div>
 
-            {/* Stream Filter */}
-            <div>
               <select
                 value={selectedStreamFilter}
                 onChange={(e) => setSelectedStreamFilter(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-200 rounded-xl text-xs font-semibold text-gray-700 focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 outline-none bg-white"
+                className="bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-xs font-bold text-navy"
               >
-                <option value="all">All Streams</option>
+                <option value="all">All Course Streams</option>
                 <option value="12th Science">12th Science</option>
                 <option value="12th Commerce">12th Commerce</option>
                 <option value="12th Arts">12th Arts</option>
               </select>
-            </div>
 
-            {/* Status Filter */}
-            <div>
               <select
                 value={selectedStatusFilter}
                 onChange={(e) => setSelectedStatusFilter(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-200 rounded-xl text-xs font-semibold text-gray-700 focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 outline-none bg-white"
+                className="bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-xs font-bold text-navy"
               >
                 <option value="all">All Statuses</option>
                 <option value="confirmed">Confirmed</option>
-                <option value="registered">Registered (Pending Review)</option>
+                <option value="registered">Registered</option>
               </select>
             </div>
           </div>
-        </div>
 
-        {/* Student Records Table */}
-        <div className="overflow-x-auto max-h-[580px]">
-          <table className="w-full text-left text-xs">
-            <thead className="bg-gray-50 border-b border-gray-100 text-[10px] font-bold uppercase tracking-wider text-gray-500 sticky top-0 z-10">
-              <tr>
-                <th className="px-4 py-3.5">Pass ID</th>
-                <th className="px-4 py-3.5">Student Details</th>
-                <th className="px-4 py-3.5">Contact Info</th>
-                <th className="px-4 py-3.5">Institution & Stream</th>
-                <th className="px-4 py-3.5">Registered Tracks</th>
-                <th className="px-4 py-3.5">Food</th>
-                <th className="px-4 py-3.5">Date & Time</th>
-                <th className="px-4 py-3.5 text-center">Status</th>
-                <th className="px-4 py-3.5 text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              {filteredStudents.length === 0 ? (
+          {/* Students Table */}
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs">
+              <thead className="bg-gray-50 text-gray-400 font-bold uppercase tracking-wider text-[10px] border-y border-gray-100">
                 <tr>
-                  <td colSpan={9} className="px-4 py-12 text-center text-gray-500">
-                    <p className="font-semibold text-sm">No student registrations found matching your filters.</p>
-                    <p className="text-xs text-gray-400 mt-1">Try clearing your search query or filters.</p>
-                  </td>
+                  <th className="py-3 px-4">Pass ID & Student</th>
+                  <th className="py-3 px-4">Institution & City</th>
+                  <th className="py-3 px-4">Stream & Board</th>
+                  <th className="py-3 px-4">Selected Competitions</th>
+                  <th className="py-3 px-4">Meal</th>
+                  <th className="py-3 px-4 text-center">Status</th>
+                  <th className="py-3 px-4 text-right">Actions</th>
                 </tr>
-              ) : (
-                filteredStudents.map((student) => {
-                  const regDate = new Date(student.created_at).toLocaleString('en-IN', {
-                    dateStyle: 'short',
-                    timeStyle: 'short'
-                  });
-                  const isCheckedIn = Boolean(student.checked_in_at);
-
-                  return (
-                    <tr key={student.id} className="hover:bg-gray-50/80 transition-colors">
-                      {/* Pass ID */}
-                      <td className="px-4 py-3.5 font-black text-navy whitespace-nowrap">
-                        <span className="px-2 py-1 rounded bg-navy-50 text-navy font-mono text-[11px] border border-navy-100">
-                          {student.id}
-                        </span>
-                      </td>
-
-                      {/* Student Details */}
-                      <td className="px-4 py-3.5 min-w-[160px]">
-                        <div className="font-bold text-gray-900 text-xs">
-                          {student.first_name} {student.last_name}
-                        </div>
-                        <div className="text-[11px] text-gray-500 truncate max-w-[180px]">
-                          {student.city_town}
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {filteredStudents.length === 0 ? (
+                  <tr>
+                    <td colSpan={7} className="py-8 text-center text-gray-400 font-medium">
+                      No student records found matching the active filters.
+                    </td>
+                  </tr>
+                ) : (
+                  filteredStudents.map((s) => (
+                    <tr key={s.id} className="hover:bg-gray-50/80 transition-colors">
+                      <td className="py-3.5 px-4">
+                        <div className="flex items-center gap-2">
+                          <span className="font-mono font-black text-orange-600 bg-orange-50 px-2 py-0.5 rounded text-[10px]">
+                            {s.id}
+                          </span>
+                          <div>
+                            <strong className="text-navy font-bold block">{s.first_name} {s.last_name || ''}</strong>
+                            <span className="text-[11px] text-gray-500">{s.contact_number}</span>
+                          </div>
                         </div>
                       </td>
-
-                      {/* Contact Info */}
-                      <td className="px-4 py-3.5 min-w-[180px]">
-                        <div className="flex items-center gap-1.5 text-gray-600">
-                          <Mail className="w-3 h-3 text-gray-400 flex-shrink-0" />
-                          <a href={`mailto:${student.email}`} className="truncate max-w-[150px] hover:text-navy hover:underline">
-                            {student.email}
-                          </a>
-                        </div>
-                        <div className="flex items-center gap-2 mt-1">
-                          <span className="text-[11px] text-gray-500 font-mono">{student.contact_number}</span>
-                          <a
-                            href={`https://wa.me/${(student.whatsapp_number || student.contact_number).replace(/[^0-9]/g, '')}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="inline-flex items-center gap-0.5 text-[10px] text-emerald-600 hover:text-emerald-700 font-bold bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200"
-                            title="Open WhatsApp Chat"
-                          >
-                            <MessageCircle className="w-3 h-3" />
-                            <span>WA</span>
-                          </a>
-                        </div>
+                      <td className="py-3.5 px-4">
+                        <span className="text-gray-800 font-medium block">{s.institute_name}</span>
+                        <span className="text-[11px] text-gray-400">{s.city_town}</span>
                       </td>
-
-                      {/* Institution & Stream */}
-                      <td className="px-4 py-3.5 min-w-[180px]">
-                        <div className="font-semibold text-gray-800 text-[11px] truncate max-w-[190px]" title={student.institute_name}>
-                          {student.institute_name}
-                        </div>
-                        <div className="text-[10px] text-gray-500">
-                          {student.course_stream} • {student.board || 'CBSE'}
-                        </div>
+                      <td className="py-3.5 px-4">
+                        <span className="text-gray-700 font-semibold block">{s.course_stream}</span>
+                        <span className="text-[10px] text-gray-400 font-mono">{s.board || 'CBSE'}</span>
                       </td>
-
-                      {/* Registered Tracks */}
-                      <td className="px-4 py-3.5 min-w-[180px]">
+                      <td className="py-3.5 px-4">
                         <div className="flex flex-wrap gap-1">
-                          {student.selected_competitions.map((comp, i) => (
-                            <span 
-                              key={i} 
-                              className="px-2 py-0.5 rounded text-[10px] font-bold bg-orange-50 text-orange-700 border border-orange-200 whitespace-nowrap"
-                            >
+                          {s.selected_competitions.map((comp, i) => (
+                            <span key={i} className="text-[10px] font-bold text-navy bg-navy-50 px-2 py-0.5 rounded border border-navy-100">
                               {comp}
                             </span>
                           ))}
                         </div>
                       </td>
-
-                      {/* Food */}
-                      <td className="px-4 py-3.5 whitespace-nowrap">
-                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                          student.food_preference === 'Veg' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-amber-50 text-amber-700 border border-amber-200'
+                      <td className="py-3.5 px-4">
+                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${
+                          s.food_preference === 'Veg' ? 'text-emerald-700 bg-emerald-50 border border-emerald-200' : 'text-orange-700 bg-orange-50 border border-orange-200'
                         }`}>
-                          {student.food_preference}
+                          {s.food_preference}
                         </span>
                       </td>
-
-                      {/* Date & Time */}
-                      <td className="px-4 py-3.5 text-gray-500 whitespace-nowrap text-[11px]">
-                        {regDate}
-                      </td>
-
-                      {/* Status */}
-                      <td className="px-4 py-3.5 text-center whitespace-nowrap">
+                      <td className="py-3.5 px-4 text-center">
                         <button
-                          onClick={() => handleToggleStatus(student)}
-                          className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase transition-all ${
-                            student.status === 'confirmed' 
+                          onClick={() => handleToggleStatus(s)}
+                          className={`px-2.5 py-1 rounded-full text-[10px] font-bold cursor-pointer transition-colors ${
+                            s.status === 'confirmed' 
                               ? 'bg-emerald-100 text-emerald-800 hover:bg-emerald-200' 
-                              : 'bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100'
+                              : 'bg-blue-100 text-blue-800 hover:bg-blue-200'
                           }`}
-                          title="Click to toggle status"
                         >
-                          {student.status}
+                          {s.status.toUpperCase()}
                         </button>
-                        {isCheckedIn && (
-                          <span className="block text-[9px] font-bold text-emerald-600 mt-0.5">
-                            Gate Checked-In
-                          </span>
-                        )}
                       </td>
-
-                      {/* Actions */}
-                      <td className="px-4 py-3.5 text-right whitespace-nowrap">
-                        <button
-                          onClick={() => setSelectedStudent(student)}
-                          className="p-1.5 text-navy hover:text-orange-600 bg-gray-100 hover:bg-orange-50 rounded-lg transition-colors"
-                          title="View Full Profile Details"
-                        >
-                          <Eye className="w-3.5 h-3.5" />
-                        </button>
+                      <td className="py-3.5 px-4 text-right">
+                        <div className="flex items-center justify-end gap-1.5">
+                          <button
+                            onClick={() => setSelectedStudent(s)}
+                            className="p-1.5 text-navy hover:bg-navy/10 rounded-lg transition-colors cursor-pointer"
+                            title="View student pass & details"
+                          >
+                            <Eye className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => handleToggleCheckIn(s)}
+                            className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
+                              s.checked_in_at ? 'text-emerald-600 hover:bg-emerald-50' : 'text-gray-400 hover:bg-gray-100'
+                            }`}
+                            title={s.checked_in_at ? 'Checked-in (Click to revert)' : 'Check-in student'}
+                          >
+                            <CheckCircle className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteStudent(s.id)}
+                            className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
+                            title="Delete registration"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
                       </td>
                     </tr>
-                  );
-                })
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      {/* Broadcast Center & Ground Operations Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Mass Broadcast Center */}
-        <div className="lg:col-span-2 bg-white rounded-3xl border border-gray-200 shadow-sm p-6 space-y-4">
-          <div className="flex items-center justify-between">
-            <h3 className="text-base font-black text-navy flex items-center gap-2">
-              <Send className="w-5 h-5 text-orange-500" />
-              <span>CrossFire Mass Broadcast Gateway</span>
-            </h3>
-            <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded bg-orange-50 text-orange-600 border border-orange-200">
-              WhatsApp & In-App Alerts
-            </span>
+                  ))
+                )}
+              </tbody>
+            </table>
           </div>
-          <p className="text-xs text-gray-500 leading-relaxed">
-            Dispatch official schedule updates, debate topics, or venue instructions to all registered participants or specific cohorts.
-          </p>
+        </div>
+      )}
 
-          <form onSubmit={handleSendBroadcast} className="space-y-4">
-            <div className="flex gap-2 p-1 bg-gray-100 rounded-xl overflow-hidden">
-              <button 
-                type="button" 
-                onClick={() => setBroadcastChannel('whatsapp')} 
-                className={`flex-1 py-1.5 text-xs font-bold rounded-lg transition-all ${broadcastChannel === 'whatsapp' ? 'bg-emerald-500 text-white shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
-              >
-                WhatsApp Gateway
-              </button>
-              <button 
-                type="button" 
-                onClick={() => setBroadcastChannel('sms')} 
-                className={`flex-1 py-1.5 text-xs font-bold rounded-lg transition-all ${broadcastChannel === 'sms' ? 'bg-blue-500 text-white shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
-              >
-                SMS Gateway
-              </button>
-              <button 
-                type="button" 
-                onClick={() => setBroadcastChannel('in_app')} 
-                className={`flex-1 py-1.5 text-xs font-bold rounded-lg transition-all ${broadcastChannel === 'in_app' ? 'bg-purple-500 text-white shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
-              >
-                In-App Priority Alert
-              </button>
-            </div>
-
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-              <button 
-                type="button" 
-                onClick={() => setBroadcastTarget('all')} 
-                className={`px-3 py-2 text-xs font-bold rounded-xl transition-colors border ${broadcastTarget === 'all' ? 'bg-orange-50 text-orange-700 border-orange-200' : 'bg-gray-50 text-gray-600 border-gray-200 hover:bg-gray-100'}`}
-              >
-                All Attendees ({stats?.totalUsers})
-              </button>
-              <button 
-                type="button" 
-                onClick={() => setBroadcastTarget('debate')} 
-                className={`px-3 py-2 text-xs font-bold rounded-xl transition-colors border ${broadcastTarget === 'debate' ? 'bg-orange-50 text-orange-700 border-orange-200' : 'bg-gray-50 text-gray-600 border-gray-200 hover:bg-gray-100'}`}
-              >
-                Debate Cohort
-              </button>
-              <button 
-                type="button" 
-                onClick={() => setBroadcastTarget('quiz')} 
-                className={`px-3 py-2 text-xs font-bold rounded-xl transition-colors border ${broadcastTarget === 'quiz' ? 'bg-orange-50 text-orange-700 border-orange-200' : 'bg-gray-50 text-gray-600 border-gray-200 hover:bg-gray-100'}`}
-              >
-                Quiz Finalists
-              </button>
-              <button 
-                type="button" 
-                onClick={() => setBroadcastTarget('judges')} 
-                className={`px-3 py-2 text-xs font-bold rounded-xl transition-colors border ${broadcastTarget === 'judges' ? 'bg-orange-50 text-orange-700 border-orange-200' : 'bg-gray-50 text-gray-600 border-gray-200 hover:bg-gray-100'}`}
-              >
-                All Judges (Staff)
-              </button>
-            </div>
-
+      {/* ============================================================== */}
+      {/* TAB 3: GUEST & VIP DIGNITARY MANAGEMENT */}
+      {/* ============================================================== */}
+      {activeTab === 'guests' && (
+        <div className="bg-white rounded-3xl p-6 border border-gray-200/80 shadow-sm space-y-5">
+          {/* Header & Controls */}
+          <div className="flex flex-col md:flex-row items-center justify-between gap-4">
             <div>
-              <label className="text-xs font-bold text-gray-700 mb-1 block">Broadcast Message</label>
-              <textarea 
-                value={broadcastMessage}
-                onChange={(e) => setBroadcastMessage(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-200 rounded-xl text-xs sm:text-sm focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 resize-none h-24 outline-none"
-                placeholder="e.g. NOTICE: Debate preliminary topic released. Report to Seminar Hall B at 1:15 PM sharp with ID badges."
-                required
+              <h3 className="text-base font-black text-navy flex items-center gap-2">
+                <Crown className="w-5 h-5 text-amber-500" />
+                <span>VIP Dignitary & Jury Protocol Console</span>
+              </h3>
+              <p className="text-xs text-gray-500">Track arrivals, escort volunteers, vehicle passes, and hospitality for Chief Guests.</p>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2.5">
+              <button
+                onClick={handleDownloadGuestCSV}
+                className="px-3.5 py-2 bg-navy/10 hover:bg-navy/20 text-navy font-bold text-xs rounded-xl flex items-center gap-1.5 cursor-pointer"
+              >
+                <Download className="w-3.5 h-3.5" />
+                <span>Export Guest List</span>
+              </button>
+
+              <button
+                onClick={() => setIsAddGuestModalOpen(true)}
+                className="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white font-bold text-xs rounded-xl flex items-center gap-1.5 shadow cursor-pointer"
+              >
+                <Plus className="w-4 h-4" />
+                <span>Add VIP Guest / Jury</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Search & Category Filter */}
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-2">
+            <div className="relative w-full sm:w-80">
+              <Search className="w-4 h-4 text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+              <input
+                type="text"
+                value={guestSearch}
+                onChange={(e) => setGuestSearch(e.target.value)}
+                placeholder="Search VIP name, org or phone..."
+                className="w-full pl-10 pr-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs font-bold text-navy placeholder-gray-400 focus:outline-none focus:border-orange-500"
               />
             </div>
 
-            <button 
-              type="submit"
-              disabled={broadcastSent || !broadcastMessage.trim()}
-              className={`w-full py-2.5 rounded-xl text-xs sm:text-sm font-bold shadow-md transition-all flex items-center justify-center gap-2 ${broadcastSent ? 'bg-emerald-500 text-white' : 'bg-navy hover:bg-navy-light text-white'}`}
+            <select
+              value={guestCategoryFilter}
+              onChange={(e) => setGuestCategoryFilter(e.target.value)}
+              className="bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-xs font-bold text-navy w-full sm:w-auto"
             >
-              {broadcastSent ? (
-                <><CheckCircle className="w-4 h-4" /> Message Delivered Successfully</>
-              ) : (
-                <><Send className="w-4 h-4" /> Transmit Official Broadcast</>
-              )}
-            </button>
-          </form>
-        </div>
-
-        {/* Live Feed & Campus Coordination */}
-        <div className="bg-white rounded-3xl border border-gray-200 shadow-sm p-6 space-y-4">
-          <h3 className="text-sm font-black text-navy uppercase tracking-wider flex items-center gap-2">
-            <Users className="w-4 h-4 text-emerald-500" /> Recent Activity Stream
-          </h3>
-
-          <div className="space-y-3">
-            {stats?.recentRegistrations.slice(0, 5).map((student, i) => (
-              <div key={i} className="flex items-start gap-3 p-3 rounded-2xl bg-gray-50/70 border border-gray-100">
-                <div className="w-8 h-8 rounded-full bg-orange-100 text-orange-600 font-black text-xs flex items-center justify-center shrink-0">
-                  {student.first_name[0]}
-                </div>
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center justify-between">
-                    <p className="text-xs font-bold text-gray-900 truncate">
-                      {student.first_name} {student.last_name}
-                    </p>
-                    <span className="text-[10px] text-gray-400 font-mono">{student.id}</span>
-                  </div>
-                  <p className="text-[11px] text-gray-500 truncate">{student.institute_name}</p>
-                  <p className="text-[10px] text-orange-600 font-semibold mt-0.5">
-                    {student.selected_competitions.join(' • ')}
-                  </p>
-                </div>
-              </div>
-            ))}
+              <option value="all">All VIP Categories</option>
+              <option value="Chief Guest">Chief Guest</option>
+              <option value="Guest of Honour">Guest of Honour</option>
+              <option value="Judge">Judge / Jury</option>
+              <option value="Keynote Speaker">Keynote Speaker</option>
+              <option value="VIP Dignitary">VIP Dignitary</option>
+            </select>
           </div>
 
-          <div className="pt-2 border-t border-gray-100">
-            <div className="bg-blue-50/70 rounded-2xl p-3 border border-blue-100 text-[11px] text-blue-900 space-y-1">
-              <span className="font-bold flex items-center gap-1.5 text-blue-800">
-                <Award className="w-3.5 h-3.5 text-blue-600" /> Srusti Academy Registration Desk
-              </span>
-              <p className="text-blue-700/90 text-[10px] leading-relaxed">
-                Organizers: Mr. N.R. Swain (+91-7008671339) & Mr. A. Meher (+91-8455090984).
-              </p>
-            </div>
+          {/* Guest Cards / Table */}
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs">
+              <thead className="bg-gray-50 text-gray-400 font-bold uppercase tracking-wider text-[10px] border-y border-gray-100">
+                <tr>
+                  <th className="py-3 px-4">Dignitary Name & Role</th>
+                  <th className="py-3 px-4">Category & Organization</th>
+                  <th className="py-3 px-4">Arrival & Parking Permit</th>
+                  <th className="py-3 px-4">Escort Volunteer</th>
+                  <th className="py-3 px-4 text-center">Protocol Status</th>
+                  <th className="py-3 px-4 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {filteredGuests.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} className="py-8 text-center text-gray-400 font-medium">
+                      No VIP guests found. Click "Add VIP Guest" above to add dignitaries.
+                    </td>
+                  </tr>
+                ) : (
+                  filteredGuests.map((g) => (
+                    <tr key={g.id} className="hover:bg-gray-50/80 transition-colors">
+                      <td className="py-3.5 px-4">
+                        <strong className="text-navy font-bold text-sm block">{g.name}</strong>
+                        <span className="text-[11px] text-gray-500">{g.designation}</span>
+                        <span className="text-[10px] text-gray-400 block">{g.contact_number}</span>
+                      </td>
+                      <td className="py-3.5 px-4">
+                        <span className="font-bold text-navy block">{g.organization}</span>
+                        <span className={`inline-block text-[10px] font-black uppercase px-2 py-0.5 rounded mt-0.5 ${
+                          g.category === 'Chief Guest' ? 'bg-amber-100 text-amber-900 border border-amber-300' :
+                          g.category === 'Guest of Honour' ? 'bg-purple-100 text-purple-900 border border-purple-300' :
+                          g.category === 'Judge' ? 'bg-blue-100 text-blue-900 border border-blue-300' :
+                          'bg-gray-100 text-gray-800'
+                        }`}>
+                          {g.category}
+                        </span>
+                      </td>
+                      <td className="py-3.5 px-4">
+                        <div className="flex items-center gap-1 text-gray-700 font-semibold">
+                          <Clock className="w-3.5 h-3.5 text-gray-400" />
+                          <span>{g.arrival_time || '10:00 AM'}</span>
+                        </div>
+                        {g.vehicle_number && (
+                          <span className="text-[10px] font-mono text-gray-500 block">
+                            🚗 {g.vehicle_number}
+                          </span>
+                        )}
+                      </td>
+                      <td className="py-3.5 px-4">
+                        <span className="text-navy font-medium block">
+                          {g.escort_volunteer || 'Unassigned'}
+                        </span>
+                        <span className="text-[10px] text-gray-400">Diet: {g.dietary_preference}</span>
+                      </td>
+                      <td className="py-3.5 px-4 text-center">
+                        <button
+                          onClick={() => handleToggleGuestStatus(g.id, g.status)}
+                          className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider cursor-pointer transition-colors ${
+                            g.status === 'Arrived' ? 'bg-emerald-100 text-emerald-800 border border-emerald-300' :
+                            g.status === 'Confirmed' ? 'bg-blue-100 text-blue-800 border border-blue-300' :
+                            g.status === 'Departed' ? 'bg-gray-100 text-gray-600' :
+                            'bg-amber-100 text-amber-800'
+                          }`}
+                        >
+                          {g.status}
+                        </button>
+                      </td>
+                      <td className="py-3.5 px-4 text-right">
+                        <button
+                          onClick={() => handleDeleteGuest(g.id)}
+                          className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
+                          title="Remove guest"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
           </div>
         </div>
-      </div>
+      )}
 
-      {/* Student Details Modal */}
-      {selectedStudent && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-navy-dark/70 backdrop-blur-sm animate-fadeIn">
-          <div className="bg-white rounded-3xl shadow-2xl max-w-lg w-full overflow-hidden border border-gray-200">
-            {/* Modal Header */}
-            <div className="bg-navy text-white p-6 relative">
-              <button 
-                onClick={() => setSelectedStudent(null)}
-                className="absolute top-5 right-5 text-gray-300 hover:text-white p-1 rounded-full hover:bg-white/10"
-              >
-                <X className="w-5 h-5" />
-              </button>
-              <span className="px-2.5 py-0.5 rounded-full bg-orange-500/20 text-orange-300 text-[10px] font-mono font-bold uppercase tracking-wider border border-orange-500/30">
-                {selectedStudent.id}
-              </span>
-              <h3 className="text-xl font-black text-white mt-2">
-                {selectedStudent.first_name} {selectedStudent.last_name}
+      {/* ============================================================== */}
+      {/* TAB 4: VOLUNTEER CREW DEPLOYMENT */}
+      {/* ============================================================== */}
+      {activeTab === 'volunteers' && (
+        <div className="bg-white rounded-3xl p-6 border border-gray-200/80 shadow-sm space-y-5">
+          {/* Header & Controls */}
+          <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+            <div>
+              <h3 className="text-base font-black text-navy flex items-center gap-2">
+                <HeartHandshake className="w-5 h-5 text-orange-500" />
+                <span>Student Volunteer & Ground Ops Staff Directory</span>
               </h3>
-              <p className="text-xs text-gray-300">{selectedStudent.institute_name}</p>
+              <p className="text-xs text-gray-500">Manage station assignments, duty shifts, walkie-talkie channels, and kit distribution.</p>
             </div>
 
-            {/* Modal Content */}
-            <div className="p-6 space-y-4 max-h-[70vh] overflow-y-auto text-xs">
-              <div className="grid grid-cols-2 gap-3">
-                <div className="bg-gray-50 p-3 rounded-2xl border border-gray-100">
-                  <span className="text-[10px] font-bold uppercase text-gray-400 block mb-0.5">Email</span>
-                  <a href={`mailto:${selectedStudent.email}`} className="font-semibold text-navy hover:underline break-all">
-                    {selectedStudent.email}
-                  </a>
+            <div className="flex flex-wrap items-center gap-2.5">
+              <button
+                onClick={handleDownloadVolunteerCSV}
+                className="px-3.5 py-2 bg-navy/10 hover:bg-navy/20 text-navy font-bold text-xs rounded-xl flex items-center gap-1.5 cursor-pointer"
+              >
+                <Download className="w-3.5 h-3.5" />
+                <span>Export Crew List</span>
+              </button>
+
+              <button
+                onClick={() => setIsAddVolunteerModalOpen(true)}
+                className="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white font-bold text-xs rounded-xl flex items-center gap-1.5 shadow cursor-pointer"
+              >
+                <UserPlus className="w-4 h-4" />
+                <span>Add Volunteer</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Search & Station Filter */}
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-2">
+            <div className="relative w-full sm:w-80">
+              <Search className="w-4 h-4 text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+              <input
+                type="text"
+                value={volunteerSearch}
+                onChange={(e) => setVolunteerSearch(e.target.value)}
+                placeholder="Search volunteer name or walkie channel..."
+                className="w-full pl-10 pr-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs font-bold text-navy placeholder-gray-400 focus:outline-none focus:border-orange-500"
+              />
+            </div>
+
+            <select
+              value={volunteerStationFilter}
+              onChange={(e) => setVolunteerStationFilter(e.target.value)}
+              className="bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-xs font-bold text-navy w-full sm:w-auto"
+            >
+              <option value="all">All Duty Stations</option>
+              <option value="Gate 1 Registration & Security">Gate 1 Registration</option>
+              <option value="Auditorium A (Quiz)">Auditorium A (Quiz)</option>
+              <option value="Amphitheatre (Ramp Walk)">Amphitheatre (Ramp Walk)</option>
+              <option value="Hall B (Debate)">Hall B (Debate)</option>
+              <option value="Art Studio Block C (Poster)">Art Studio (Poster)</option>
+              <option value="Central Quad (Treasure Hunt)">Central Quad (Treasure)</option>
+              <option value="Media Lab (Reels)">Media Lab (Reels)</option>
+              <option value="Food & Dining Courtyard">Food Courtyard</option>
+              <option value="VIP & Guest Escort Protocol">VIP Escort Protocol</option>
+            </select>
+          </div>
+
+          {/* Volunteers Table */}
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs">
+              <thead className="bg-gray-50 text-gray-400 font-bold uppercase tracking-wider text-[10px] border-y border-gray-100">
+                <tr>
+                  <th className="py-3 px-4">Volunteer Name & Contact</th>
+                  <th className="py-3 px-4">Assigned Station</th>
+                  <th className="py-3 px-4">Duty Shift & Walkie</th>
+                  <th className="py-3 px-4 text-center">Kit Issued</th>
+                  <th className="py-3 px-4 text-center">Attendance</th>
+                  <th className="py-3 px-4 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {filteredVolunteers.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} className="py-8 text-center text-gray-400 font-medium">
+                      No volunteers found matching current filter.
+                    </td>
+                  </tr>
+                ) : (
+                  filteredVolunteers.map((v) => (
+                    <tr key={v.id} className="hover:bg-gray-50/80 transition-colors">
+                      <td className="py-3.5 px-4">
+                        <strong className="text-navy font-bold text-sm block">{v.name}</strong>
+                        <span className="text-[11px] text-gray-500">{v.contact_number}</span>
+                        <span className="text-[10px] text-gray-400">{v.email}</span>
+                      </td>
+                      <td className="py-3.5 px-4">
+                        <span className="inline-flex items-center gap-1 font-bold text-navy bg-navy-50 px-2.5 py-1 rounded-lg border border-navy-100">
+                          <MapPin className="w-3.5 h-3.5 text-orange-500" />
+                          <span>{v.assigned_station}</span>
+                        </span>
+                      </td>
+                      <td className="py-3.5 px-4">
+                        <span className="text-gray-700 font-semibold block">{v.shift}</span>
+                        {v.walkie_channel && (
+                          <span className="inline-flex items-center gap-1 text-[10px] font-mono text-purple-700 bg-purple-50 px-2 py-0.5 rounded mt-0.5">
+                            <Radio className="w-3 h-3" />
+                            <span>{v.walkie_channel}</span>
+                          </span>
+                        )}
+                      </td>
+                      <td className="py-3.5 px-4 text-center">
+                        <button
+                          onClick={() => handleToggleKit(v.id)}
+                          className={`px-2.5 py-1 rounded-full text-[10px] font-bold cursor-pointer transition-colors ${
+                            v.kit_issued ? 'bg-emerald-100 text-emerald-800' : 'bg-gray-100 text-gray-500'
+                          }`}
+                        >
+                          {v.kit_issued ? 'Kit Issued ✓' : 'Not Issued'}
+                        </button>
+                      </td>
+                      <td className="py-3.5 px-4 text-center">
+                        <button
+                          onClick={() => handleToggleVolunteerAttendance(v.id, v.attendance_status)}
+                          className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider cursor-pointer transition-colors ${
+                            v.attendance_status === 'Present / On Duty' ? 'bg-emerald-100 text-emerald-800 border border-emerald-300' :
+                            v.attendance_status === 'On Break' ? 'bg-amber-100 text-amber-800 border border-amber-300' :
+                            v.attendance_status === 'Assigned' ? 'bg-blue-100 text-blue-800' :
+                            'bg-red-100 text-red-800'
+                          }`}
+                        >
+                          {v.attendance_status}
+                        </button>
+                      </td>
+                      <td className="py-3.5 px-4 text-right">
+                        <button
+                          onClick={() => handleDeleteVolunteer(v.id)}
+                          className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
+                          title="Remove volunteer"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* ============================================================== */}
+      {/* TAB 5: BROADCAST NOTIFICATIONS */}
+      {/* ============================================================== */}
+      {activeTab === 'broadcast' && (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-2 bg-white rounded-3xl p-6 border border-gray-200/80 shadow-sm space-y-4">
+            <h3 className="text-base font-black text-navy flex items-center gap-2">
+              <Send className="w-5 h-5 text-orange-500" />
+              <span>Broadcast Official Announcement</span>
+            </h3>
+            <p className="text-xs text-gray-500">
+              Send instant push notices, WhatsApp updates, or debate topics directly to registered delegates and volunteers.
+            </p>
+
+            <form onSubmit={handleSendBroadcast} className="space-y-4 pt-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="text-[11px] font-bold text-gray-500 block mb-1 uppercase">Target Audience</label>
+                  <select
+                    value={broadcastTarget}
+                    onChange={(e) => setBroadcastTarget(e.target.value as any)}
+                    className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-xs font-bold text-navy"
+                  >
+                    <option value="all">All Registered Students (State-wide)</option>
+                    <option value="debate">Debate Competitors Only (Topic Release)</option>
+                    <option value="quiz">Quiz Teams Only</option>
+                    <option value="judges">Jury Evaluators & Volunteers</option>
+                  </select>
                 </div>
-                <div className="bg-gray-50 p-3 rounded-2xl border border-gray-100">
-                  <span className="text-[10px] font-bold uppercase text-gray-400 block mb-0.5">Phone Number</span>
-                  <div className="flex items-center justify-between">
-                    <span className="font-semibold font-mono text-gray-800">{selectedStudent.contact_number}</span>
-                    <a
-                      href={`https://wa.me/${selectedStudent.whatsapp_number.replace(/[^0-9]/g, '')}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-[10px] text-emerald-600 font-bold hover:underline"
-                    >
-                      WhatsApp
-                    </a>
-                  </div>
+
+                <div>
+                  <label className="text-[11px] font-bold text-gray-500 block mb-1 uppercase">Delivery Channel</label>
+                  <select
+                    value={broadcastChannel}
+                    onChange={(e) => setBroadcastChannel(e.target.value as any)}
+                    className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-xs font-bold text-navy"
+                  >
+                    <option value="in_app">In-App Notification Bar</option>
+                    <option value="whatsapp">WhatsApp Direct Notice</option>
+                    <option value="sms">SMS Blast</option>
+                  </select>
                 </div>
               </div>
 
-              <div className="grid grid-cols-3 gap-3">
-                <div className="bg-gray-50 p-3 rounded-2xl border border-gray-100">
-                  <span className="text-[10px] font-bold uppercase text-gray-400 block mb-0.5">City / Town</span>
-                  <span className="font-semibold text-gray-800">{selectedStudent.city_town}</span>
-                </div>
-                <div className="bg-gray-50 p-3 rounded-2xl border border-gray-100">
-                  <span className="text-[10px] font-bold uppercase text-gray-400 block mb-0.5">Course Stream</span>
-                  <span className="font-semibold text-gray-800">{selectedStudent.course_stream}</span>
-                </div>
-                <div className="bg-gray-50 p-3 rounded-2xl border border-gray-100">
-                  <span className="text-[10px] font-bold uppercase text-gray-400 block mb-0.5">Board</span>
-                  <span className="font-semibold text-gray-800">{selectedStudent.board || 'CBSE'}</span>
-                </div>
+              <div>
+                <label className="text-[11px] font-bold text-gray-500 block mb-1 uppercase">Title / Subject</label>
+                <input
+                  type="text"
+                  value={broadcastTitle}
+                  onChange={(e) => setBroadcastTitle(e.target.value)}
+                  placeholder="e.g. Official Debate Topic Announced • Round 1 Starting"
+                  className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5 text-xs font-bold text-navy placeholder-gray-400 focus:outline-none focus:border-orange-500 focus:bg-white"
+                />
               </div>
 
-              {/* Selected Tracks */}
-              <div className="bg-gray-50 p-4 rounded-2xl border border-gray-100">
-                <span className="text-[10px] font-bold uppercase text-gray-400 block mb-2">Registered Competition Tracks</span>
-                <div className="flex flex-wrap gap-2">
-                  {selectedStudent.selected_competitions.map((track, i) => (
-                    <span key={i} className="px-3 py-1 rounded-xl text-xs font-bold bg-orange-100 text-orange-800 border border-orange-200">
-                      🏆 {track}
-                    </span>
-                  ))}
-                </div>
+              <div>
+                <label className="text-[11px] font-bold text-gray-500 block mb-1 uppercase">Message Body</label>
+                <textarea
+                  value={broadcastMessage}
+                  onChange={(e) => setBroadcastMessage(e.target.value)}
+                  rows={4}
+                  placeholder="Type official notification message here..."
+                  className="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-xs font-medium text-navy placeholder-gray-400 focus:outline-none focus:border-orange-500 focus:bg-white"
+                />
               </div>
 
-              {/* Preferences & Registration Info */}
-              <div className="grid grid-cols-2 gap-3">
-                <div className="bg-gray-50 p-3 rounded-2xl border border-gray-100">
-                  <span className="text-[10px] font-bold uppercase text-gray-400 block mb-0.5">Food Preference</span>
-                  <span className="font-bold text-gray-800">{selectedStudent.food_preference}</span>
-                </div>
-                <div className="bg-gray-50 p-3 rounded-2xl border border-gray-100">
-                  <span className="text-[10px] font-bold uppercase text-gray-400 block mb-0.5">Registered On</span>
-                  <span className="font-semibold text-gray-800">
-                    {new Date(selectedStudent.created_at).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })}
+              <div className="flex items-center justify-between pt-2">
+                {broadcastSent && (
+                  <span className="text-xs font-bold text-emerald-600 flex items-center gap-1 animate-pulse">
+                    <CheckCircle className="w-4 h-4" />
+                    <span>Broadcast successfully delivered!</span>
                   </span>
-                </div>
+                )}
+                <button
+                  type="submit"
+                  className="ml-auto px-6 py-2.5 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-bold text-xs rounded-xl shadow-lg flex items-center gap-2 cursor-pointer transition-transform hover:scale-105"
+                >
+                  <Send className="w-4 h-4" />
+                  <span>Transmit Broadcast</span>
+                </button>
+              </div>
+            </form>
+          </div>
+
+          <div className="bg-white rounded-3xl p-6 border border-gray-200/80 shadow-sm space-y-4">
+            <h3 className="text-base font-black text-navy">Emergency Protocols</h3>
+            <div className="space-y-3 text-xs">
+              <div className="p-3 bg-amber-50 rounded-2xl border border-amber-200">
+                <strong className="text-amber-900 block font-bold">Debate Topic Release Policy:</strong>
+                <p className="text-amber-800 text-[11px] mt-0.5">
+                  Debate topic will be transmitted at 09:30 AM on event morning. 15 minutes preparation window.
+                </p>
               </div>
 
-              {/* Quick Actions in Modal */}
-              <div className="pt-2 flex gap-3">
-                <button
-                  onClick={() => handleToggleCheckIn(selectedStudent)}
-                  className={`flex-1 py-2.5 rounded-xl font-bold transition-all flex items-center justify-center gap-1.5 ${
-                    selectedStudent.checked_in_at 
-                      ? 'bg-emerald-100 text-emerald-800 hover:bg-emerald-200' 
-                      : 'bg-navy text-white hover:bg-navy-light'
-                  }`}
-                >
-                  <CheckCircle className="w-4 h-4" />
-                  <span>{selectedStudent.checked_in_at ? 'Gate Verified (Check-in Done)' : 'Mark Campus Check-in'}</span>
-                </button>
+              <div className="p-3 bg-blue-50 rounded-2xl border border-blue-200">
+                <strong className="text-blue-900 block font-bold">Reels Studio Upload:</strong>
+                <p className="text-blue-800 text-[11px] mt-0.5">
+                  Reels videos must be filmed inside Srusti Campus and submitted by 02:30 PM.
+                </p>
               </div>
             </div>
           </div>
         </div>
       )}
+
+      {/* ============================================================== */}
+      {/* MODAL: ADD VIP GUEST */}
+      {/* ============================================================== */}
+      {isAddGuestModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-navy-dark/80 backdrop-blur-md animate-fadeIn">
+          <div className="bg-white rounded-3xl shadow-2xl max-w-lg w-full p-6 space-y-4 border border-gray-200 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between border-b border-gray-100 pb-3">
+              <h3 className="text-base font-black text-navy flex items-center gap-2">
+                <Crown className="w-5 h-5 text-amber-500" />
+                <span>Add VIP Guest / Jury Member</span>
+              </h3>
+              <button onClick={() => setIsAddGuestModalOpen(false)} className="p-1 text-gray-400 hover:text-gray-700">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleAddGuestSubmit} className="space-y-3.5 text-xs">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="font-bold text-gray-500 block mb-1">Dignitary Name *</label>
+                  <input
+                    type="text"
+                    required
+                    value={newGuest.name}
+                    onChange={(e) => setNewGuest({ ...newGuest, name: e.target.value })}
+                    placeholder="e.g. Prof. Saroj Choudhury"
+                    className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-navy font-bold"
+                  />
+                </div>
+                <div>
+                  <label className="font-bold text-gray-500 block mb-1">Category *</label>
+                  <select
+                    value={newGuest.category}
+                    onChange={(e) => setNewGuest({ ...newGuest, category: e.target.value as any })}
+                    className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-navy font-bold"
+                  >
+                    <option value="Chief Guest">Chief Guest</option>
+                    <option value="Guest of Honour">Guest of Honour</option>
+                    <option value="Judge">Judge / Jury</option>
+                    <option value="Keynote Speaker">Keynote Speaker</option>
+                    <option value="VIP Dignitary">VIP Dignitary</option>
+                    <option value="Special Invitee">Special Invitee</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="font-bold text-gray-500 block mb-1">Designation</label>
+                  <input
+                    type="text"
+                    value={newGuest.designation}
+                    onChange={(e) => setNewGuest({ ...newGuest, designation: e.target.value })}
+                    placeholder="e.g. Vice Chancellor / General Manager"
+                    className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-navy"
+                  />
+                </div>
+                <div>
+                  <label className="font-bold text-gray-500 block mb-1">Organization *</label>
+                  <input
+                    type="text"
+                    required
+                    value={newGuest.organization}
+                    onChange={(e) => setNewGuest({ ...newGuest, organization: e.target.value })}
+                    placeholder="e.g. Utkal University / TCS"
+                    className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-navy font-bold"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="font-bold text-gray-500 block mb-1">Contact Number</label>
+                  <input
+                    type="text"
+                    value={newGuest.contact_number}
+                    onChange={(e) => setNewGuest({ ...newGuest, contact_number: e.target.value })}
+                    placeholder="+91 9437012345"
+                    className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-navy"
+                  />
+                </div>
+                <div>
+                  <label className="font-bold text-gray-500 block mb-1">Email</label>
+                  <input
+                    type="email"
+                    value={newGuest.email}
+                    onChange={(e) => setNewGuest({ ...newGuest, email: e.target.value })}
+                    placeholder="vip@organization.in"
+                    className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-navy"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-3 gap-3">
+                <div>
+                  <label className="font-bold text-gray-500 block mb-1">Arrival Time</label>
+                  <input
+                    type="text"
+                    value={newGuest.arrival_time}
+                    onChange={(e) => setNewGuest({ ...newGuest, arrival_time: e.target.value })}
+                    placeholder="09:30 AM"
+                    className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-navy"
+                  />
+                </div>
+                <div>
+                  <label className="font-bold text-gray-500 block mb-1">Vehicle No</label>
+                  <input
+                    type="text"
+                    value={newGuest.vehicle_number}
+                    onChange={(e) => setNewGuest({ ...newGuest, vehicle_number: e.target.value })}
+                    placeholder="OD 02 AA 1001"
+                    className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-navy font-mono"
+                  />
+                </div>
+                <div>
+                  <label className="font-bold text-gray-500 block mb-1">Dietary</label>
+                  <select
+                    value={newGuest.dietary_preference}
+                    onChange={(e) => setNewGuest({ ...newGuest, dietary_preference: e.target.value as any })}
+                    className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-navy"
+                  >
+                    <option value="Veg">Veg</option>
+                    <option value="Non-veg">Non-veg</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="font-bold text-gray-500 block mb-1">Escort Volunteer Assigned</label>
+                <input
+                  type="text"
+                  value={newGuest.escort_volunteer}
+                  onChange={(e) => setNewGuest({ ...newGuest, escort_volunteer: e.target.value })}
+                  placeholder="e.g. Subhashree Mohapatra"
+                  className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-navy"
+                />
+              </div>
+
+              <div>
+                <label className="font-bold text-gray-500 block mb-1">Protocol Notes</label>
+                <textarea
+                  value={newGuest.notes}
+                  onChange={(e) => setNewGuest({ ...newGuest, notes: e.target.value })}
+                  rows={2}
+                  placeholder="Inaugural address speaker, special memento presentation..."
+                  className="w-full bg-gray-50 border border-gray-200 rounded-xl p-2.5 text-navy"
+                />
+              </div>
+
+              <div className="pt-2 flex justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setIsAddGuestModalOpen(false)}
+                  className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold rounded-xl"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 bg-orange-500 hover:bg-orange-600 text-white font-bold rounded-xl shadow"
+                >
+                  Save VIP Dignitary
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ============================================================== */}
+      {/* MODAL: ADD VOLUNTEER */}
+      {/* ============================================================== */}
+      {isAddVolunteerModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-navy-dark/80 backdrop-blur-md animate-fadeIn">
+          <div className="bg-white rounded-3xl shadow-2xl max-w-lg w-full p-6 space-y-4 border border-gray-200 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between border-b border-gray-100 pb-3">
+              <h3 className="text-base font-black text-navy flex items-center gap-2">
+                <UserPlus className="w-5 h-5 text-orange-500" />
+                <span>Add Volunteer Crew Member</span>
+              </h3>
+              <button onClick={() => setIsAddVolunteerModalOpen(false)} className="p-1 text-gray-400 hover:text-gray-700">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleAddVolunteerSubmit} className="space-y-3.5 text-xs">
+              <div>
+                <label className="font-bold text-gray-500 block mb-1">Volunteer Full Name *</label>
+                <input
+                  type="text"
+                  required
+                  value={newVolunteer.name}
+                  onChange={(e) => setNewVolunteer({ ...newVolunteer, name: e.target.value })}
+                  placeholder="e.g. Subhashree Mohapatra"
+                  className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-navy font-bold"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="font-bold text-gray-500 block mb-1">Contact Number *</label>
+                  <input
+                    type="text"
+                    required
+                    value={newVolunteer.contact_number}
+                    onChange={(e) => setNewVolunteer({ ...newVolunteer, contact_number: e.target.value })}
+                    placeholder="+91 9437198765"
+                    className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-navy"
+                  />
+                </div>
+                <div>
+                  <label className="font-bold text-gray-500 block mb-1">Email</label>
+                  <input
+                    type="email"
+                    value={newVolunteer.email}
+                    onChange={(e) => setNewVolunteer({ ...newVolunteer, email: e.target.value })}
+                    placeholder="volunteer@srusti.edu.in"
+                    className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-navy"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="font-bold text-gray-500 block mb-1">Assigned Duty Station *</label>
+                <select
+                  value={newVolunteer.assigned_station}
+                  onChange={(e) => setNewVolunteer({ ...newVolunteer, assigned_station: e.target.value as any })}
+                  className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-navy font-bold"
+                >
+                  <option value="Gate 1 Registration & Security">Gate 1 Registration & Security</option>
+                  <option value="Auditorium A (Quiz)">Auditorium A (Quiz)</option>
+                  <option value="Amphitheatre (Ramp Walk)">Amphitheatre (Ramp Walk)</option>
+                  <option value="Hall B (Debate)">Hall B (Debate)</option>
+                  <option value="Art Studio Block C (Poster)">Art Studio Block C (Poster)</option>
+                  <option value="Central Quad (Treasure Hunt)">Central Quad (Treasure Hunt)</option>
+                  <option value="Media Lab (Reels)">Media Lab (Reels)</option>
+                  <option value="Food & Dining Courtyard">Food & Dining Courtyard</option>
+                  <option value="VIP & Guest Escort Protocol">VIP & Guest Escort Protocol</option>
+                  <option value="Technical & Audio/Visual Control">Technical & Audio/Visual Control</option>
+                </select>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="font-bold text-gray-500 block mb-1">Shift</label>
+                  <select
+                    value={newVolunteer.shift}
+                    onChange={(e) => setNewVolunteer({ ...newVolunteer, shift: e.target.value as any })}
+                    className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-navy"
+                  >
+                    <option value="Full Day (08:30 AM - 05:30 PM)">Full Day (08:30 AM - 05:30 PM)</option>
+                    <option value="Morning Shift (08:30 AM - 01:30 PM)">Morning Shift (08:30 AM - 01:30 PM)</option>
+                    <option value="Afternoon Shift (01:00 PM - 05:30 PM)">Afternoon Shift (01:00 PM - 05:30 PM)</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="font-bold text-gray-500 block mb-1">Walkie Channel</label>
+                  <input
+                    type="text"
+                    value={newVolunteer.walkie_channel}
+                    onChange={(e) => setNewVolunteer({ ...newVolunteer, walkie_channel: e.target.value })}
+                    placeholder="CH-1 (Main Security)"
+                    className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-navy font-mono"
+                  />
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 pt-1">
+                <input
+                  type="checkbox"
+                  id="kitIssuedCheckbox"
+                  checked={newVolunteer.kit_issued}
+                  onChange={(e) => setNewVolunteer({ ...newVolunteer, kit_issued: e.target.checked })}
+                  className="rounded border-gray-300 text-orange-600 focus:ring-orange-500"
+                />
+                <label htmlFor="kitIssuedCheckbox" className="font-bold text-gray-700">
+                  Volunteer T-Shirt & Identity Kit Issued
+                </label>
+              </div>
+
+              <div className="pt-2 flex justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setIsAddVolunteerModalOpen(false)}
+                  className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold rounded-xl"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 bg-orange-500 hover:bg-orange-600 text-white font-bold rounded-xl shadow"
+                >
+                  Save Volunteer
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ============================================================== */}
+      {/* MODAL: STUDENT ADMIT PASS & QR DETAIL */}
+      {/* ============================================================== */}
+      {selectedStudent && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-navy-dark/80 backdrop-blur-md animate-fadeIn">
+          <div className="bg-white rounded-3xl shadow-2xl max-w-lg w-full overflow-hidden border border-gray-200 max-h-[90vh] flex flex-col">
+            <div className="px-5 py-3.5 bg-navy text-white flex items-center justify-between">
+              <span className="text-xs font-black uppercase tracking-wider text-orange-400">
+                Candidate Master Record • {selectedStudent.id}
+              </span>
+              <button onClick={() => setSelectedStudent(null)} className="p-1 text-white/60 hover:text-white">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="p-6 overflow-y-auto space-y-4">
+              <div className="flex items-center justify-center py-2">
+                <StudentQRCode
+                  studentId={selectedStudent.id}
+                  name={`${selectedStudent.first_name} ${selectedStudent.last_name || ''}`.trim()}
+                  institute={selectedStudent.institute_name}
+                  events={selectedStudent.selected_competitions}
+                  foodPreference={selectedStudent.food_preference}
+                  size={150}
+                />
+              </div>
+
+              <div className="p-4 bg-gray-50 rounded-2xl border border-gray-200 space-y-2 text-xs">
+                <div className="flex justify-between">
+                  <span className="text-gray-500 font-bold">Student Name:</span>
+                  <strong className="text-navy">{selectedStudent.first_name} {selectedStudent.last_name || ''}</strong>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-500 font-bold">Institution / College:</span>
+                  <strong className="text-navy">{selectedStudent.institute_name}</strong>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-500 font-bold">Contact / WhatsApp:</span>
+                  <strong className="text-navy">{selectedStudent.contact_number}</strong>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-500 font-bold">Class & Stream:</span>
+                  <strong className="text-navy">{selectedStudent.course_stream} ({selectedStudent.board || 'CBSE'})</strong>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-500 font-bold">Food Preference:</span>
+                  <span className="font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded">
+                    {selectedStudent.food_preference}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-500 font-bold">Gate Check-in:</span>
+                  <span className={`font-bold px-2 py-0.5 rounded ${
+                    selectedStudent.checked_in_at ? 'bg-emerald-100 text-emerald-800' : 'bg-gray-200 text-gray-600'
+                  }`}>
+                    {selectedStudent.checked_in_at ? `Checked in at ${new Date(selectedStudent.checked_in_at).toLocaleTimeString()}` : 'Pending Entry'}
+                  </span>
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <span className="text-[10px] font-black uppercase text-gray-400">Registered Events:</span>
+                <div className="flex flex-wrap gap-1.5">
+                  {selectedStudent.selected_competitions.map((c, i) => (
+                    <span key={i} className="text-xs font-bold text-navy bg-navy-50 px-3 py-1 rounded-xl border border-navy-100">
+                      {c}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div className="p-4 bg-gray-50 border-t border-gray-100 flex items-center justify-between text-xs">
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => handleToggleCheckIn(selectedStudent)}
+                  className={`px-4 py-2 rounded-xl font-bold ${
+                    selectedStudent.checked_in_at ? 'bg-red-50 text-red-600' : 'bg-navy text-white'
+                  }`}
+                >
+                  {selectedStudent.checked_in_at ? 'Undo Check-In' : 'Perform Check-In'}
+                </button>
+
+                <button
+                  onClick={() => handleToggleStatus(selectedStudent)}
+                  className={`px-4 py-2 rounded-xl font-bold ${
+                    selectedStudent.status === 'confirmed' 
+                      ? 'bg-amber-50 text-amber-700 border border-amber-200 hover:bg-amber-100' 
+                      : 'bg-emerald-600 text-white hover:bg-emerald-700'
+                  }`}
+                >
+                  {selectedStudent.status === 'confirmed' ? 'Revert to Registered' : 'Confirm Registration'}
+                </button>
+              </div>
+
+              <button
+                onClick={() => setSelectedStudent(null)}
+                className="px-4 py-2 bg-gray-200 hover:bg-gray-300 font-bold text-gray-800 rounded-xl"
+              >
+                Close Pass
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 };

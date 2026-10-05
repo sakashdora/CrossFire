@@ -180,7 +180,14 @@ export const LeaderboardPage: React.FC = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100 text-xs">
-              {filteredEntries.map((entry) => {
+              {filteredEntries.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="py-12 text-center text-gray-400 font-medium">
+                    No leaderboard scores found. Standings will populate live as jury evaluations are submitted.
+                  </td>
+                </tr>
+              ) : (
+                filteredEntries.map((entry) => {
                 const isCurrent = entry.is_current_user || (user && entry.user_id === user.id);
 
                 return (
@@ -235,7 +242,7 @@ export const LeaderboardPage: React.FC = () => {
                     </td>
                   </tr>
                 );
-              })}
+              }))}
             </tbody>
           </table>
         </div>

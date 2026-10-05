@@ -767,18 +767,90 @@ Height: 56px (touch-friendly)
 │ ⚠ You can register for only 2      │
 │   total events. Current: 1/2       │
 │                                    │
-│ [ CONFIRM ]  [ CANCEL ]            │
-│                                    │
-└────────────────────────────────────┘
+### Digital Admit Card Modal (with Cryptographic SVG QR Code)
 
-Specifications:
-- Modal width: 400px (mobile full)
-- Overlay: Semi-transparent gray (#000000 20%)
-- Animation: Fade in + scale up (200ms)
+```
+┌─────────────────────────────────────────────────────────┐
+│ [CROSSFIRE 2026 OFFICIAL ADMIT PASS]            [X]     │
+├─────────────────────────────────────────────────────────┤
+│ Student Name: Rajesh Mohanty                            │
+│ Institute: Ravenshaw Higher Secondary School            │
+│ Pass ID: CF26-A109 | Stream: 12th Science | 🥗 Veg      │
+├─────────────────────────────────────────────────────────┤
+│                                                         │
+│               ┌────────────────────────┐                │
+│               │  ████ ▄▄▄▄▄ █▀  ████   │                │
+│               │  █ █  █   █ █ █ █ █    │                │
+│               │  █▄▄█ █▄▄▄█ █▀  █▄▄█   │                │
+│               │  ▄▄ ▄▄ ▄▄  ▄ ▄  ▄▄ ▄▄  │                │
+│               │  ████ █▄█▄█ █▀█ ████   │                │
+│               └────────────────────────┘                │
+│            [ Cryptographically Signed Pass ]            │
+│                                                         │
+├─────────────────────────────────────────────────────────┤
+│ Registered Tracks:                                      │
+│ • Intelect Odyssey (Quiz) - 09:30 AM (Auditorium A)     │
+│ • Glam 'n' Dazzle (Ramp Walk) - 01:30 PM (Main Stage)   │
+│                                                         │
+│ Food Preference: 🥗 Pure Veg Lunch Token (Token #V-109) │
+│                                                         │
+│ [ ⬇ Download Pass PDF ]          [ ✕ Close Modal ]       │
+└─────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-**Document prepared for:** Wireframe implementation  
-**Next file:** CROSSFIRE_API_SCHEMA.md
+### Live Camera QR Scanner (Volunteer Ground Ops Hub)
+
+```
+┌─────────────────────────────────────────────────────────┐
+│ 📷 REAL-TIME CAMERA GATE SCANNER                        │
+├─────────────────────────────────────────────────────────┤
+│ Camera Selector: [ Rear Camera (Environment) ▼ ]        │
+│                                                         │
+│ ┌─────────────────────────────────────────────────────┐ │
+│ │                                                     │ │
+│ │                ┌─────────────────┐                  │ │
+│ │                │ ⌜             ⌝ │                  │ │
+│ │                │   SCAN QR CODE  │                  │ │
+│ │                │ ⌞             ⌟ │                  │ │
+│ │                └─────────────────┘                  │ │
+│ │                                                     │ │
+│ └─────────────────────────────────────────────────────┘ │
+│                                                         │
+│ [ Upload QR Code Image File ]    [ ✕ Stop Camera ]     │
+├─────────────────────────────────────────────────────────┤
+│ SCAN RESULT: ✅ VERIFIED +2 CANDIDATE                  │
+│ • Student: Priya Pattnaik (BJB Higher Secondary School) │
+│ • Pass ID: CF26-B204 | Stream: 12th Commerce            │
+│ • Registered: Debate (Spontaneity) & Reels (Instaverse) │
+│                                                         │
+│ [ ✔ Confirm Gate Check-in ]   [ 🍱 Redeem Lunch Token ] │
+└─────────────────────────────────────────────────────────┘
+```
+
+---
+
+### VIP Guest Management Console (Admin Command Center)
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ 🎖️ VIP GUEST & DIGNITARY MANAGEMENT                               [+ ADD GUEST]│
+├─────────────────────────────────────────────────────────────────────────────┤
+│ Search: [ Filter by name / organization... ] Category: [ All Categories ▼ ]  │
+├─────────────────────────────────────────────────────────────────────────────┤
+│ NAME / TITLE             ROLE / CATEGORY    ARRIVAL STATUS    ACTIONS       │
+│ Prof. Manoranjan Nayak   Chief Guest        🟢 Arrived (09:15) [Edit] [Del] │
+│ Dr. Subrat Panda         Judge (Quiz)       🟡 En Route        [Edit] [Del] │
+│ Er. Anita Sahoo          Keynote Speaker    ⚪ Expected        [Edit] [Del] │
+├─────────────────────────────────────────────────────────────────────────────┤
+│ Vehicle Passes: 12 Allocated | Dietary: 8 Veg, 4 Non-Veg | Escorts: Assigned│
+│ [ 📥 Export VIP List (CSV) ]                                                │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+**Document prepared for:** Wireframe implementation & Architecture verification  
+**Status:** All Wireframes Implemented & Verified in Production
 

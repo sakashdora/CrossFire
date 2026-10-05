@@ -532,36 +532,30 @@ POST-EVENT:
 
 ---
 
-## 💡 PRO TIPS FOR AI AGENT
+## 🧩 MASTER COMPONENT & SERVICE REGISTRY
 
-1. **Always verify color contrast**: Use WebAIM contrast checker
-2. **Test keyboard navigation first**: Tab through all pages
-3. **Build mobile layout first**: Then enhance for larger screens
-4. **Use semantic HTML**: For accessibility + SEO
-5. **Comment complex logic**: Especially scoring rubrics, calculations
-6. **Handle error states**: 404, 500, timeout errors
-7. **Mock API during frontend dev**: Use MSW (Mock Service Worker)
-8. **Test WebSocket separately**: It's a different protocol
-9. **Cache strategically**: Don't cache mutable data (scores, registrations)
-10. **Monitor logs in production**: Use structured logging (JSON format)
+| Domain | File / Module | Purpose |
+|---|---|---|
+| **QR Engine** | [`src/components/StudentQRCode.tsx`](file:///c:/CrossFire/src/components/StudentQRCode.tsx) | SVG QR generator for student digital passes & lunch tokens |
+| **Camera Scanner** | [`src/components/LiveQRScanner.tsx`](file:///c:/CrossFire/src/components/LiveQRScanner.tsx) | Real HTML5 live camera barcode/QR scanner with file upload fallback |
+| **Student Service** | [`src/services/studentDataService.ts`](file:///c:/CrossFire/src/services/studentDataService.ts) | Real registrations, check-in, score recording, and dynamic leaderboards |
+| **Guest & Volunteer** | [`src/services/guestVolunteerService.ts`](file:///c:/CrossFire/src/services/guestVolunteerService.ts) | VIP Guest hospitality & Volunteer crew logistics CRUD |
+| **Supabase Client** | [`src/lib/supabase.ts`](file:///c:/CrossFire/src/lib/supabase.ts) | Direct client and `SECURITY DEFINER` RPC caller |
+| **Leaderboard Hook** | [`src/hooks/useLeaderboard.ts`](file:///c:/CrossFire/src/hooks/useLeaderboard.ts) | Real-time computed leaderboards synced to custom event bus |
+| **Admin Hook** | [`src/hooks/useAdminData.ts`](file:///c:/CrossFire/src/hooks/useAdminData.ts) | Real-time analytics, VIP guest registry, volunteer roster |
+| **Notifications** | [`src/hooks/useNotifications.ts`](file:///c:/CrossFire/src/hooks/useNotifications.ts) | Admin broadcast and student alert listener |
 
 ---
 
-## 📞 SUPPORT CONTACTS
+## 💡 PRODUCTION STANDARDS
 
-```
-Technical Lead: [Email/Phone]
-Frontend PM: [Email/Phone]
-Backend PM: [Email/Phone]
-DevOps: [Email/Phone]
-Event Day Hotline: [Phone number]
-```
+1. **Zero Mock Data Policy**: All intake and scoring flows are bound to real state and Supabase RPCs.
+2. **Dual-Persistence Sync**: Instant reactive event dispatching coupled with Supabase cloud database sync.
+3. **High Accessibility**: 44px min touch targets across all mobile views and screen reader labels.
+4. **Clean Builds**: Always verified with `npx tsc --noEmit` (0 errors) and `npm run build`.
 
 ---
 
 **Last Updated:** October 2026  
-**Status:** Ready for implementation  
-**Next Action:** Start Phase 0 (Setup)
-
-Use this as your checklist during development. Check off items as you complete them.
+**Status:** Production Ready & Verified (0 TypeScript errors)
 

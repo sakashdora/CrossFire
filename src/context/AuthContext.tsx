@@ -182,20 +182,35 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const lowerEmail = email.toLowerCase().trim();
 
-      // 1. Staff / Role-based Authentication
-      if (lowerEmail.includes('admin')) {
-        setUser(DEMO_USERS.admin);
-        localStorage.setItem('crossfire_mock_user', JSON.stringify(DEMO_USERS.admin));
-        return { success: true };
-      }
-      if (lowerEmail.includes('judge')) {
-        setUser(DEMO_USERS.judge);
-        localStorage.setItem('crossfire_mock_user', JSON.stringify(DEMO_USERS.judge));
-        return { success: true };
-      }
-      if (lowerEmail.includes('volunteer')) {
-        setUser(DEMO_USERS.volunteer);
-        localStorage.setItem('crossfire_mock_user', JSON.stringify(DEMO_USERS.volunteer));
+      // 1. Staff / Role-based Authentication — exact email match required
+      const STAFF_EMAIL_MAP: Record<string, keyof typeof DEMO_USERS> = {
+        [DEMO_USERS.admin.email]: 'admin',
+        [DEMO_USERS.judge.email]: 'judge',
+        [DEMO_USERS.volunteer.email]: 'volunteer',
+      };
+      if (STAFF_EMAIL_MAP[lowerEmail]) {
+        const staffRole = STAFF_EMAIL_MAP[lowerEmail];
+        const staffUser = DEMO_USERS[staffRole];
+        // If Supabase is configured, attempt real Supabase auth with provided password
+        if (isSupabaseConfigured && password) {
+          try {
+            const { data, error } = await supabase.auth.signInWithPassword({ email: lowerEmail, password });
+            if (!error && data.user) {
+              // Supabase auth succeeded — load profile from DB
+              const { data: profile } = await supabase.from('users').select('*').eq('id', data.user.id).single();
+              if (profile) {
+                setUser(profile as UserProfile);
+                localStorage.setItem('crossfire_mock_user', JSON.stringify(profile));
+                return { success: true };
+              }
+            }
+          } catch {
+            // Supabase unavailable — fall through to demo login
+          }
+        }
+        // Fallback: demo / offline staff login
+        setUser(staffUser);
+        localStorage.setItem('crossfire_mock_user', JSON.stringify(staffUser));
         return { success: true };
       }
 
@@ -270,6 +285,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         city_town: formData.city_town,
         course_stream: formData.course_stream,
         board: formData.board || 'CBSE',
+        date_of_birth: formData.date_of_birth,
         food_preference: formData.food_preference,
         selected_competitions: formData.selected_competitions || [],
         parent_consent: formData.parent_consent ?? true,
@@ -301,6 +317,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 city_town: formData.city_town,
                 course_stream: formData.course_stream,
                 board: formData.board || 'CBSE',
+                date_of_birth: formData.date_of_birth,
                 food_preference: formData.food_preference,
                 role: 'student',
                 selected_competitions: formData.selected_competitions || [],

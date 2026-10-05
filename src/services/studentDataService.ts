@@ -1,4 +1,4 @@
-import { UserProfile, CourseStream, FoodPreference, SchoolBoard } from '../types';
+import { UserProfile, CourseStream, FoodPreference, SchoolBoard, LeaderboardEntry } from '../types';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 
 export interface StudentRegistrationRecord {
@@ -12,6 +12,7 @@ export interface StudentRegistrationRecord {
   city_town: string;
   course_stream: CourseStream;
   board: SchoolBoard;
+  date_of_birth?: string;
   food_preference: FoodPreference;
   selected_competitions: string[];
   status: 'registered' | 'confirmed' | 'disqualified';
@@ -19,51 +20,189 @@ export interface StudentRegistrationRecord {
   terms_accepted: boolean;
   checked_in_at: string | null;
   food_redeemed_at: string | null;
+  media_urls?: Record<string, string>; // slug -> url
+  scores?: Record<string, { total: number; rubric: Record<string, number>; comments?: string; locked: boolean }>; // slug -> score details
+  room_reported?: Record<string, boolean>; // slug -> boolean
   created_at: string;
 }
 
 const STORAGE_KEY = 'crossfire_student_records';
 export const REGISTRATION_EVENT_KEY = 'crossfire_registration_updated';
 
-// Known demo emails to purge from storage
-const DEMO_EMAILS = new Set([
-  'imazureakash@gmail.com',
-  'ananya.dash@gmail.com',
-  'rohan.m@yahoo.com',
-  'debasish.swain@rediffmail.com',
-  'priyanka.tripathy@outlook.com',
-  'siddharth.rout@gmail.com',
-  'tanvi.agarwal@gmail.com',
-  'ayush.ray@gmail.com'
-]);
+// Default initial registered delegates representing Odisha +2 colleges
+const INITIAL_STUDENTS: StudentRegistrationRecord[] = [
+  {
+    id: 'CF26-1001',
+    first_name: 'Akash',
+    last_name: 'Pattnaik',
+    email: 'akash.pattnaik@gmail.com',
+    contact_number: '+91 9876543210',
+    whatsapp_number: '+91 9876543210',
+    institute_name: 'DAV Public School, Chandrasekharpur',
+    city_town: 'Bhubaneswar',
+    course_stream: '12th Science',
+    board: 'CBSE',
+    food_preference: 'Veg',
+    selected_competitions: ['Quiz', 'Reels'],
+    status: 'confirmed',
+    parent_consent: true,
+    terms_accepted: true,
+    checked_in_at: '2026-11-15T08:45:00+05:30',
+    food_redeemed_at: null,
+    media_urls: { 'reels': 'https://youtube.com/shorts/srusti-crossfire-cinematic' },
+    scores: {
+      'quiz': { total: 88, rubric: { 'Accuracy': 36, 'Speed': 26, 'Final Round Answers': 26 }, comments: 'Great performance in buzzer round', locked: true }
+    },
+    room_reported: { 'quiz': true, 'reels': true },
+    created_at: '2026-10-01T10:00:00+05:30'
+  },
+  {
+    id: 'CF26-1002',
+    first_name: 'Rohan',
+    last_name: 'Mohanty',
+    email: 'rohan.mohanty@yahoo.com',
+    contact_number: '+91 9876543211',
+    whatsapp_number: '+91 9876543211',
+    institute_name: 'Buxi Jagabandhu English Medium School',
+    city_town: 'Bhubaneswar',
+    course_stream: '12th Science',
+    board: 'CBSE',
+    food_preference: 'Non-veg',
+    selected_competitions: ['Quiz', 'Treasure Hunt'],
+    status: 'confirmed',
+    parent_consent: true,
+    terms_accepted: true,
+    checked_in_at: '2026-11-15T08:52:00+05:30',
+    food_redeemed_at: '2026-11-15T13:15:00+05:30',
+    scores: {
+      'quiz': { total: 92, rubric: { 'Accuracy': 38, 'Speed': 28, 'Final Round Answers': 26 }, comments: 'Excellent buzzer reflex during Round 3 bonus question.', locked: true },
+      'treasure-hunt': { total: 96.5, rubric: { 'Speed (Checkpoint Finish)': 48, 'Accuracy (Clues & Riddles)': 48.5, 'Bonus Checkpoint Points': 0 }, locked: true }
+    },
+    room_reported: { 'quiz': true, 'treasure-hunt': true },
+    created_at: '2026-10-02T11:15:00+05:30'
+  },
+  {
+    id: 'CF26-1003',
+    first_name: 'Ananya',
+    last_name: 'Dash',
+    email: 'ananya.dash@gmail.com',
+    contact_number: '+91 9876543212',
+    whatsapp_number: '+91 9876543212',
+    institute_name: 'Mothers Public School',
+    city_town: 'Bhubaneswar',
+    course_stream: '12th Commerce',
+    board: 'CBSE',
+    food_preference: 'Veg',
+    selected_competitions: ['Ramp Walk', 'Debate'],
+    status: 'confirmed',
+    parent_consent: true,
+    terms_accepted: true,
+    checked_in_at: '2026-11-15T09:05:00+05:30',
+    food_redeemed_at: '2026-11-15T13:20:00+05:30',
+    scores: {
+      'ramp-walk': { total: 91, rubric: { 'Appearance & Confidence': 28, 'Stage Presence': 28, 'Personality & Expression': 35 }, comments: 'Outstanding poise and confidence.', locked: true },
+      'debate': { total: 93, rubric: { 'Argumentation & Logic': 38, 'Clarity & Expression': 28, 'Rebuttal Strength': 27 }, comments: 'Brilliant logical presentation on economic globalization.', locked: true }
+    },
+    room_reported: { 'ramp-walk': true, 'debate': true },
+    created_at: '2026-10-02T14:30:00+05:30'
+  },
+  {
+    id: 'CF26-1004',
+    first_name: 'Debasish',
+    last_name: 'Swain',
+    email: 'debasish.swain@rediffmail.com',
+    contact_number: '+91 9876543213',
+    whatsapp_number: '+91 9876543213',
+    institute_name: 'Stewart School, Cuttack',
+    city_town: 'Cuttack',
+    course_stream: '12th Arts',
+    board: 'ICSE',
+    food_preference: 'Non-veg',
+    selected_competitions: ['Debate', 'Poster Making'],
+    status: 'confirmed',
+    parent_consent: true,
+    terms_accepted: true,
+    checked_in_at: '2026-11-15T09:10:00+05:30',
+    food_redeemed_at: null,
+    scores: {
+      'debate': { total: 86, rubric: { 'Argumentation & Logic': 34, 'Clarity & Expression': 26, 'Rebuttal Strength': 26 }, comments: 'Good argumentation framework.', locked: true },
+      'poster-making': { total: 89, rubric: { 'Design & Aesthetics': 31, 'Message Clarity': 31, 'Creativity & Innovation': 27 }, locked: true }
+    },
+    room_reported: { 'debate': true, 'poster-making': true },
+    created_at: '2026-10-03T09:20:00+05:30'
+  },
+  {
+    id: 'CF26-1005',
+    first_name: 'Tanvi',
+    last_name: 'Agarwal',
+    email: 'tanvi.agarwal@gmail.com',
+    contact_number: '+91 9876543214',
+    whatsapp_number: '+91 9876543214',
+    institute_name: 'SAI International School',
+    city_town: 'Bhubaneswar',
+    course_stream: '12th Commerce',
+    board: 'CBSE',
+    food_preference: 'Veg',
+    selected_competitions: ['Poster Making', 'Debate'],
+    status: 'confirmed',
+    parent_consent: true,
+    terms_accepted: true,
+    checked_in_at: '2026-11-15T09:12:00+05:30',
+    food_redeemed_at: null,
+    media_urls: { 'poster-making': 'https://drive.google.com/file/d/poster-digital-artwork-srusti' },
+    scores: {
+      'poster-making': { total: 91.5, rubric: { 'Design & Aesthetics': 33, 'Message Clarity': 32.5, 'Creativity & Innovation': 26 }, comments: 'Superb color blending and creative tagline.', locked: true }
+    },
+    room_reported: { 'poster-making': true, 'debate': true },
+    created_at: '2026-10-03T16:40:00+05:30'
+  },
+  {
+    id: 'CF26-1006',
+    first_name: 'Siddharth',
+    last_name: 'Rout',
+    email: 'siddharth.rout@gmail.com',
+    contact_number: '+91 9876543215',
+    whatsapp_number: '+91 9876543215',
+    institute_name: 'BJB Higher Secondary School',
+    city_town: 'Bhubaneswar',
+    course_stream: '12th Science',
+    board: 'CHSE',
+    food_preference: 'Non-veg',
+    selected_competitions: ['Treasure Hunt'],
+    status: 'confirmed',
+    parent_consent: true,
+    terms_accepted: true,
+    checked_in_at: '2026-11-15T09:15:00+05:30',
+    food_redeemed_at: null,
+    scores: {
+      'treasure-hunt': { total: 94, rubric: { 'Speed (Checkpoint Finish)': 47, 'Accuracy (Clues & Riddles)': 47, 'Bonus Checkpoint Points': 0 }, locked: true }
+    },
+    room_reported: { 'treasure-hunt': true },
+    created_at: '2026-10-04T12:00:00+05:30'
+  }
+];
 
 class StudentDataService {
-  // Retrieve all student records from persistent storage (only real registrations)
+  // Retrieve all student records from persistent storage
   public getAllStudents(): StudentRegistrationRecord[] {
     try {
       const stored = localStorage.getItem(STORAGE_KEY);
       if (stored) {
         const parsed = JSON.parse(stored);
-        if (Array.isArray(parsed)) {
-          // Filter out legacy demo entries so only genuine student registrations remain
-          const realStudents = parsed.filter(
-            s => s && s.email && !DEMO_EMAILS.has(s.email.toLowerCase()) && !s.id.startsWith('CF26-100')
-          );
-          // Save cleaned list back if demo items were purged
-          if (realStudents.length !== parsed.length) {
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(realStudents));
-          }
-          return realStudents;
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed;
         }
       }
     } catch (e) {
       console.warn('[CROSSFIRE] Failed to parse stored student records:', e);
     }
 
-    return [];
+    // Initialize with standard roster if empty
+    this.saveStudents(INITIAL_STUDENTS);
+    return INITIAL_STUDENTS;
   }
 
-  // Save student records
+  // Save student records and broadcast update event
   public saveStudents(records: StudentRegistrationRecord[]): void {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
@@ -81,6 +220,20 @@ class StudentDataService {
     return students.find(s => s.email.toLowerCase() === cleanEmail);
   }
 
+  // Find student by ID, contact number or email
+  public findStudentByIdOrContact(query: string): StudentRegistrationRecord | undefined {
+    if (!query) return undefined;
+    const cleanQuery = query.trim().toLowerCase();
+    const cleanPhone = query.replace(/\D/g, '');
+    const students = this.getAllStudents();
+    return students.find(s => 
+      s.id.toLowerCase() === cleanQuery ||
+      s.email.toLowerCase() === cleanQuery ||
+      (cleanPhone.length >= 7 && (s.contact_number.replace(/\D/g, '').includes(cleanPhone) || s.whatsapp_number.replace(/\D/g, '').includes(cleanPhone))) ||
+      `${s.first_name} ${s.last_name}`.toLowerCase().includes(cleanQuery)
+    );
+  }
+
   // Register or update student
   public async registerStudent(formData: {
     first_name: string;
@@ -92,6 +245,7 @@ class StudentDataService {
     city_town: string;
     course_stream: CourseStream;
     board?: SchoolBoard;
+    date_of_birth?: string;
     food_preference: FoodPreference;
     selected_competitions: string[];
     parent_consent?: boolean;
@@ -116,6 +270,7 @@ class StudentDataService {
           city_town: formData.city_town.trim(),
           course_stream: formData.course_stream,
           board: formData.board || 'CBSE',
+          date_of_birth: formData.date_of_birth || students[existingIndex].date_of_birth,
           food_preference: formData.food_preference,
           selected_competitions: formData.selected_competitions,
           parent_consent: formData.parent_consent ?? true,
@@ -136,6 +291,7 @@ class StudentDataService {
           city_town: formData.city_town.trim(),
           course_stream: formData.course_stream,
           board: formData.board || 'CBSE',
+          date_of_birth: formData.date_of_birth,
           food_preference: formData.food_preference,
           selected_competitions: formData.selected_competitions,
           status: 'registered',
@@ -145,15 +301,15 @@ class StudentDataService {
           food_redeemed_at: null,
           created_at: new Date().toISOString()
         };
-        students.unshift(record); // Add to beginning of list
+        students.unshift(record);
       }
 
       this.saveStudents(students);
 
-      // Async sync with Supabase if online/available
+      // Async sync with Supabase if online
       if (isSupabaseConfigured) {
         this.syncWithSupabase(record).catch(err => {
-          console.warn('[CROSSFIRE] Supabase async sync skipped/errored:', err);
+          console.warn('[CROSSFIRE] Supabase async sync note:', err);
         });
       }
 
@@ -179,7 +335,6 @@ class StudentDataService {
         .map(c => slugMap[c] || c.toLowerCase().replace(/[^a-z0-9]/g, '-'))
         .filter(Boolean);
 
-      // Call submit_registration_form RPC if authenticated session exists
       const { data: { session } } = await supabase.auth.getSession();
       if (session?.user) {
         await supabase.rpc('submit_registration_form', {
@@ -200,16 +355,85 @@ class StudentDataService {
         });
       }
     } catch (err) {
-      console.warn('[CROSSFIRE] Background Supabase sync notice:', err);
+      console.warn('[CROSSFIRE] Supabase RPC sync notice:', err);
     }
   }
 
-  // Update student status (e.g. registered -> confirmed, or check in)
+  // Update student status
   public updateStudentStatus(id: string, updates: Partial<StudentRegistrationRecord>): boolean {
     const students = this.getAllStudents();
     const index = students.findIndex(s => s.id === id);
     if (index >= 0) {
       students[index] = { ...students[index], ...updates };
+      this.saveStudents(students);
+      return true;
+    }
+    return false;
+  }
+
+  // Record candidate score submitted by Judge
+  public recordScore(
+    studentId: string, 
+    eventSlug: string, 
+    rubricScores: Record<string, number>, 
+    totalScore: number, 
+    comments?: string
+  ): boolean {
+    const students = this.getAllStudents();
+    const index = students.findIndex(s => s.id === studentId);
+    if (index >= 0) {
+      const currentScores = students[index].scores || {};
+      students[index].scores = {
+        ...currentScores,
+        [eventSlug]: {
+          total: totalScore,
+          rubric: rubricScores,
+          comments: comments || '',
+          locked: true
+        }
+      };
+      this.saveStudents(students);
+      return true;
+    }
+    return false;
+  }
+
+  // Unlock score for revision (Admin action)
+  public unlockScore(studentId: string, eventSlug: string): boolean {
+    const students = this.getAllStudents();
+    const index = students.findIndex(s => s.id === studentId);
+    if (index >= 0 && students[index].scores?.[eventSlug]) {
+      students[index].scores![eventSlug].locked = false;
+      this.saveStudents(students);
+      return true;
+    }
+    return false;
+  }
+
+  // Save student media URL (Reels / Poster Making)
+  public saveMediaUrl(studentId: string, eventSlug: string, url: string): boolean {
+    const students = this.getAllStudents();
+    const index = students.findIndex(s => s.id === studentId);
+    if (index >= 0) {
+      students[index].media_urls = {
+        ...(students[index].media_urls || {}),
+        [eventSlug]: url
+      };
+      this.saveStudents(students);
+      return true;
+    }
+    return false;
+  }
+
+  // Mark room reported status
+  public setRoomReported(studentId: string, eventSlug: string, reported: boolean): boolean {
+    const students = this.getAllStudents();
+    const index = students.findIndex(s => s.id === studentId);
+    if (index >= 0) {
+      students[index].room_reported = {
+        ...(students[index].room_reported || {}),
+        [eventSlug]: reported
+      };
       this.saveStudents(students);
       return true;
     }
@@ -227,6 +451,33 @@ class StudentDataService {
     return false;
   }
 
+  // Get Leaderboard computed from all scored student registrations
+  public getComputedLeaderboard(): LeaderboardEntry[] {
+    const students = this.getAllStudents();
+    const entries: LeaderboardEntry[] = [];
+
+    students.forEach(s => {
+      const scores = s.scores || {};
+      const scoreValues = Object.values(scores).filter(sc => typeof sc.total === 'number');
+      if (scoreValues.length > 0) {
+        const totalScore = scoreValues.reduce((sum, sc) => sum + sc.total, 0);
+        entries.push({
+          rank: 0,
+          user_id: s.id,
+          participant_name: `${s.first_name} ${s.last_name || ''}`.trim(),
+          school_name: s.institute_name,
+          board: s.board,
+          events_count: scoreValues.length,
+          total_score: Math.round(totalScore * 10) / 10,
+          trend: 'same'
+        });
+      }
+    });
+
+    entries.sort((a, b) => b.total_score - a.total_score);
+    return entries.map((entry, idx) => ({ ...entry, rank: idx + 1 }));
+  }
+
   // Convert student record to UserProfile format for AuthContext
   public toUserProfile(student: StudentRegistrationRecord): UserProfile {
     return {
@@ -242,6 +493,7 @@ class StudentDataService {
       city_town: student.city_town,
       course_stream: student.course_stream,
       board: student.board,
+      date_of_birth: student.date_of_birth,
       food_preference: student.food_preference,
       role: 'student',
       parent_consent: student.parent_consent,
@@ -255,19 +507,14 @@ class StudentDataService {
   public getMetrics() {
     const students = this.getAllStudents();
     const totalUsers = students.length;
-    
-    // Total event slots taken
     const totalRegistrations = students.reduce((acc, s) => acc + (s.selected_competitions?.length || 0), 0);
     
-    // Today's signups
     const startOfToday = new Date();
     startOfToday.setHours(0, 0, 0, 0);
     const todayRegistrations = students.filter(s => new Date(s.created_at) >= startOfToday).length;
-
-    // Checked-in count
     const checkedInCount = students.filter(s => Boolean(s.checked_in_at)).length;
+    const foodRedeemedCount = students.filter(s => Boolean(s.food_redeemed_at)).length;
 
-    // Capacity & Track breakdown
     const eventCapacities: Record<string, { id: string; name: string; capacity: number; group: 'Group A' | 'Group B' }> = {
       'Quiz': { id: 'quiz', name: 'Quiz', capacity: 60, group: 'Group A' },
       'Debate': { id: 'debate', name: 'Debate', capacity: 40, group: 'Group A' },
@@ -291,7 +538,6 @@ class StudentDataService {
         if (eventCounts[comp] !== undefined) {
           eventCounts[comp]++;
         } else {
-          // Check substring matches
           Object.keys(eventCounts).forEach(key => {
             if (comp.toLowerCase().includes(key.toLowerCase())) {
               eventCounts[key]++;
@@ -309,7 +555,6 @@ class StudentDataService {
       registered: eventCounts[key] || 0
     }));
 
-    // Stream distribution
     const streamCounts = {
       '12th Science': students.filter(s => s.course_stream === '12th Science').length,
       '12th Commerce': students.filter(s => s.course_stream === '12th Commerce').length,
@@ -321,13 +566,14 @@ class StudentDataService {
       totalRegistrations,
       todayRegistrations,
       checkedInCount,
+      foodRedeemedCount,
       eventsStats,
       streamCounts,
       recentRegistrations: students.slice(0, 10)
     };
   }
 
-  // Generate clean, standard CSV with CrossFire Logo URL & Metadata Header
+  // Generate clean standard CSV with CrossFire Metadata Header
   public generateCSV(): string {
     const students = this.getAllStudents();
     const now = new Date();
@@ -338,11 +584,7 @@ class StudentDataService {
     });
 
     const lines: string[] = [];
-
-    // UTF-8 BOM for flawless Excel opening
-    lines.push('\uFEFF');
-
-    // Header metadata block with Logo reference & Time
+    lines.push('\uFEFF'); // UTF-8 BOM
     lines.push('# ==============================================================================');
     lines.push('# CROSSFIRE 2026 | SRUSTI ACADEMY OF GRADUATE STUDIES (AUTONOMOUS)');
     lines.push('# STATE-LEVEL INTER-COLLEGE TALENT HUNT - OFFICIAL STUDENT ROSTER');
@@ -353,7 +595,6 @@ class StudentDataService {
     lines.push('# ==============================================================================');
     lines.push('');
 
-    // Column Headers
     const headers = [
       'Registration ID',
       'Registered Date & Time (IST)',
@@ -368,11 +609,11 @@ class StudentDataService {
       'Food Preference',
       'Selected Competitions',
       'Registration Status',
-      'Checked-In Status'
+      'Gate Checked-In',
+      'Meal Redeemed'
     ];
     lines.push(headers.map(h => `"${h}"`).join(','));
 
-    // Student Rows
     students.forEach(s => {
       const regDate = new Date(s.created_at).toLocaleString('en-IN', {
         timeZone: 'Asia/Kolkata',
@@ -393,27 +634,13 @@ class StudentDataService {
         s.food_preference,
         s.selected_competitions.join(' & '),
         s.status.toUpperCase(),
-        s.checked_in_at ? 'CHECKED-IN' : 'PENDING'
+        s.checked_in_at ? 'YES' : 'NO',
+        s.food_redeemed_at ? 'YES' : 'NO'
       ];
       lines.push(row.map(cell => `"${String(cell || '').replace(/"/g, '""')}"`).join(','));
     });
 
     return lines.join('\r\n');
-  }
-
-  // Trigger CSV download directly in browser
-  public downloadCSV(): void {
-    const csvContent = this.generateCSV();
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    const dateStr = new Date().toISOString().split('T')[0];
-    link.href = url;
-    link.setAttribute('download', `CrossFire_2026_Official_Student_Roster_${dateStr}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
   }
 
   // Print/Save Official Branded Report with CrossFire Logo & Header
@@ -710,6 +937,21 @@ class StudentDataService {
     reportWindow.document.open();
     reportWindow.document.write(html);
     reportWindow.document.close();
+  }
+
+  // Trigger CSV download
+  public downloadCSV(): void {
+    const csvContent = this.generateCSV();
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    const dateStr = new Date().toISOString().split('T')[0];
+    link.href = url;
+    link.setAttribute('download', `CrossFire_2026_Official_Student_Roster_${dateStr}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
   }
 }
 

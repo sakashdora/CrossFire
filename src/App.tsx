@@ -115,7 +115,7 @@ const CrossFireApp: React.FC = () => {
 
 
 
-  const handleGoogleFormRegistrationSuccess = async () => {
+  const handleGoogleFormRegistrationSuccess = async (_selectedEvents?: EventItem[]) => {
     // For real implementation, form submits events to Supabase directly
     // Then we just refresh the registrations
     if (refreshRegistrations) {

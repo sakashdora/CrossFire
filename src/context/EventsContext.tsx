@@ -3,6 +3,7 @@ import { EventItem, Registration } from '../types';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { INITIAL_EVENTS } from '../data/mockData';
 import { useAuth } from './AuthContext';
+import { studentDataService } from '../services/studentDataService';
 
 interface EventsContextType {
   events: EventItem[];
@@ -99,6 +100,7 @@ export const EventsProvider: React.FC<{ children: React.ReactNode }> = ({ childr
           
         if (data && !error && data.length > 0) {
           setUserRegistrations(data as Registration[]);
+          setIsLoading(false);
           return;
         }
       } catch (err) {
@@ -164,6 +166,18 @@ export const EventsProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     const updated = [...userRegistrations, newReg];
     setUserRegistrations(updated);
     localStorage.setItem('crossfire_mock_regs', JSON.stringify(updated));
+
+    if (user?.email) {
+      const student = studentDataService.findStudentByEmail(user.email);
+      if (student) {
+        const curCompetitions = student.selected_competitions || [];
+        if (!curCompetitions.includes(event.name)) {
+          studentDataService.updateStudentStatus(student.id, {
+            selected_competitions: [...curCompetitions, event.name]
+          });
+        }
+      }
+    }
     return true;
   };
 
@@ -182,9 +196,20 @@ export const EventsProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       }
     }
 
+    const regToRemove = userRegistrations.find(r => r.id === registrationId);
     const updated = userRegistrations.filter(r => r.id !== registrationId);
     setUserRegistrations(updated);
     localStorage.setItem('crossfire_mock_regs', JSON.stringify(updated));
+
+    if (user?.email && regToRemove?.event) {
+      const student = studentDataService.findStudentByEmail(user.email);
+      if (student) {
+        const eventName = regToRemove.event.name;
+        studentDataService.updateStudentStatus(student.id, {
+          selected_competitions: (student.selected_competitions || []).filter(c => c !== eventName)
+        });
+      }
+    }
     return true;
   };
 
@@ -204,6 +229,7 @@ export const EventsProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       }
     }
 
+    const targetReg = userRegistrations.find(r => r.id === registrationId);
     const updated = userRegistrations.map(r => 
       r.id === registrationId 
         ? { ...r, media_url: url, media_submitted_at: new Date().toISOString() } 
@@ -211,6 +237,16 @@ export const EventsProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     );
     setUserRegistrations(updated);
     localStorage.setItem('crossfire_mock_regs', JSON.stringify(updated));
+
+    if (user?.email && targetReg?.event) {
+      const student = studentDataService.findStudentByEmail(user.email);
+      if (student) {
+        const slug = targetReg.event.slug || targetReg.event.name.toLowerCase().replace(/[^a-z0-9]/g, '-');
+        studentDataService.updateStudentStatus(student.id, {
+          media_urls: { ...(student.media_urls || {}), [slug]: url }
+        });
+      }
+    }
     return true;
   };
 

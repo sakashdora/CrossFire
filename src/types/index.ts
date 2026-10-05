@@ -129,3 +129,54 @@ export interface NotificationItem {
   created_at: string;
   read_at?: string;
 }
+
+export type GuestCategory = 'Chief Guest' | 'Guest of Honour' | 'Keynote Speaker' | 'VIP Dignitary' | 'Judge' | 'Special Invitee';
+export type GuestStatus = 'Invited' | 'Confirmed' | 'Arrived' | 'Departed' | 'Declined';
+
+export interface GuestItem {
+  id: string;
+  name: string;
+  designation: string;
+  organization: string;
+  category: GuestCategory;
+  contact_number: string;
+  email: string;
+  status: GuestStatus;
+  escort_volunteer?: string;
+  arrival_time?: string;
+  departure_time?: string;
+  vehicle_number?: string;
+  dietary_preference: FoodPreference;
+  notes?: string;
+  created_at: string;
+}
+
+export type VolunteerStation = 
+  | 'Gate 1 Registration & Security' 
+  | 'Auditorium A (Quiz)' 
+  | 'Amphitheatre (Ramp Walk)' 
+  | 'Hall B (Debate)' 
+  | 'Art Studio Block C (Poster)' 
+  | 'Central Quad (Treasure Hunt)' 
+  | 'Media Lab (Reels)' 
+  | 'Food & Dining Courtyard' 
+  | 'VIP & Guest Escort Protocol' 
+  | 'Technical & Audio/Visual Control';
+
+export type VolunteerShift = 'Full Day (08:30 AM - 05:30 PM)' | 'Morning Shift (08:30 AM - 01:30 PM)' | 'Afternoon Shift (01:00 PM - 05:30 PM)';
+export type VolunteerAttendance = 'Present / On Duty' | 'On Break' | 'Assigned' | 'Absent';
+
+export interface VolunteerItem {
+  id: string;
+  user_id?: string;
+  name: string;
+  contact_number: string;
+  email: string;
+  assigned_station: VolunteerStation;
+  shift: VolunteerShift;
+  attendance_status: VolunteerAttendance;
+  kit_issued: boolean;
+  walkie_channel?: string;
+  notes?: string;
+  created_at: string;
+}

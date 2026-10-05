@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { Registration } from '../types';
 import { useNotifications } from '../hooks/useNotifications';
+import { StudentQRCode } from '../components/StudentQRCode';
 import { 
   Trophy, 
   Upload, 
@@ -254,33 +255,22 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
             </div>
           </div>
 
-          {/* QR Code Pass Box (Touch to enlarge) */}
+          {/* Dynamic Scannable QR Code Pass Box (Touch to enlarge) */}
           <div 
             onClick={() => setShowPassModal(true)}
-            className="bg-white text-navy p-4 sm:p-5 rounded-2xl shadow-xl flex flex-col items-center text-center cursor-pointer hover:scale-105 transition-transform group shrink-0"
+            className="bg-white text-navy p-3 sm:p-4 rounded-2xl shadow-xl flex flex-col items-center text-center cursor-pointer hover:scale-105 transition-transform group shrink-0 border border-navy/10"
             title="Tap to open full-screen entry pass badge"
           >
-            <div className="w-24 h-24 sm:w-28 sm:h-28 bg-gray-50 border border-gray-200 rounded-xl p-2 flex items-center justify-center relative">
-              {/* Simulated QR Code with high contrast */}
-              <div className="grid grid-cols-5 gap-1 w-full h-full p-0.5">
-                <div className="bg-navy rounded-sm col-span-2 row-span-2" />
-                <div className="bg-transparent" />
-                <div className="bg-navy rounded-sm col-span-2 row-span-2" />
-                <div className="bg-navy rounded-sm" />
-                <div className="bg-orange-500 rounded-sm" />
-                <div className="bg-navy rounded-sm" />
-                <div className="bg-navy rounded-sm" />
-                <div className="bg-orange-500 rounded-sm" />
-                <div className="bg-navy rounded-sm col-span-2 row-span-2" />
-                <div className="bg-transparent" />
-                <div className="bg-navy rounded-sm col-span-2 row-span-2" />
-              </div>
-              <div className="absolute inset-0 bg-orange-500/10 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center rounded-xl">
-                <QrCode className="w-8 h-8 text-orange-600 drop-shadow" />
-              </div>
-            </div>
-            <span className="text-[10px] uppercase font-black text-gray-400 tracking-wider mt-2 block group-hover:text-orange-600 transition-colors">
-              Tap for Gate QR
+            <StudentQRCode
+              studentId={passId}
+              name={`${user?.first_name || 'Student'} ${user?.last_name || ''}`.trim()}
+              institute={user?.institute_name || user?.school_name || 'DAV Public School'}
+              events={userRegistrations.map(r => r.event?.name || 'Event')}
+              foodPreference={user?.food_preference || 'Veg'}
+              size={90}
+            />
+            <span className="text-[10px] uppercase font-black text-gray-400 tracking-wider mt-1.5 block group-hover:text-orange-600 transition-colors">
+              Tap for Gate Pass QR
             </span>
           </div>
 
@@ -298,7 +288,7 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
               {userRegistrations.length} / 2 Tracks
             </span>
             <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mt-1 block truncate">
-              {userRegistrations.length === 2 ? 'Slots Full' : '1 Slot Left'}
+              {userRegistrations.length >= 2 ? 'Slots Full' : `${2 - userRegistrations.length} Slot${2 - userRegistrations.length !== 1 ? 's' : ''} Left`}
             </span>
           </div>
         </div>
@@ -915,9 +905,23 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
                 ))}
               </div>
 
-              {/* Barcode & Security Stamp */}
-              <div className="pt-2 text-center space-y-2">
-                <div className="flex items-center justify-center gap-1.5 h-10 w-full bg-gray-100 rounded-lg p-1">
+              {/* Scannable Gate Pass QR Code & Barcode Section */}
+              <div className="pt-2 text-center space-y-3 flex flex-col items-center">
+                <div className="bg-white p-3 rounded-2xl border-2 border-navy/20 shadow-md">
+                  <StudentQRCode
+                    studentId={passId}
+                    name={`${user?.first_name || 'Student'} ${user?.last_name || ''}`.trim()}
+                    institute={user?.institute_name || user?.school_name || 'DAV Public School'}
+                    events={userRegistrations.map(r => r.event?.name || 'Event')}
+                    foodPreference={user?.food_preference || 'Veg'}
+                    size={160}
+                  />
+                  <span className="text-[10px] font-black uppercase text-navy/70 tracking-widest mt-1 block">
+                    SCANNABLE GATE PASS • {passId}
+                  </span>
+                </div>
+
+                <div className="flex items-center justify-center gap-1.5 h-8 w-full bg-gray-100 rounded-lg p-1">
                   {[...Array(35)].map((_, i) => (
                     <div 
                       key={i} 
@@ -954,9 +958,9 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
       {/* ============================================================== */}
       {showMealModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-navy-dark/80 backdrop-blur-md animate-fadeIn">
-          <div className="bg-white rounded-3xl shadow-2xl max-w-sm w-full p-6 text-center space-y-5 border border-gray-200">
-            <div className="w-16 h-16 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto shadow-inner">
-              <Utensils className="w-8 h-8" />
+          <div className="bg-white rounded-3xl shadow-2xl max-w-sm w-full p-6 text-center space-y-4 border border-gray-200">
+            <div className="w-14 h-14 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto shadow-inner">
+              <Utensils className="w-7 h-7" />
             </div>
 
             <div>
@@ -967,12 +971,22 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
                 {user?.food_preference || 'Veg'} Buffet Lunch
               </h3>
               <p className="text-xs text-gray-500 mt-1">
-                Scan this voucher at the Dining Courtyard counter between 01:00 PM and 02:00 PM.
+                Scan this voucher at the Dining Courtyard counter between 12:30 PM and 01:30 PM.
               </p>
             </div>
 
-            <div className="p-4 bg-gray-50 rounded-2xl border-2 border-dashed border-gray-200 space-y-2">
-              <div className="text-2xl font-black text-navy font-mono">
+            <div className="flex justify-center my-2">
+              <StudentQRCode
+                studentId={passId}
+                name={`${user?.first_name || 'Student'} ${user?.last_name || ''}`.trim()}
+                institute={user?.institute_name || 'SAGS'}
+                foodPreference={user?.food_preference || 'Veg'}
+                size={130}
+              />
+            </div>
+
+            <div className="p-3 bg-gray-50 rounded-2xl border-2 border-dashed border-gray-200 space-y-1">
+              <div className="text-xl font-black text-navy font-mono">
                 TOKEN #{passId.slice(-4)}
               </div>
               <p className="text-[11px] text-gray-500 font-semibold">

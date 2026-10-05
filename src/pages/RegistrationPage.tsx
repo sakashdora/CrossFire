@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { CourseStream, FoodPreference, EventItem } from '../types';
+import { CourseStream, FoodPreference, EventItem, SchoolBoard } from '../types';
 
 import { 
   CheckCircle, 
@@ -19,7 +19,8 @@ import {
   Utensils, 
   BookOpen, 
   User,
-  ArrowRight
+  ArrowRight,
+  Calendar
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { useEvents } from '../context/EventsContext';
@@ -46,6 +47,8 @@ export const RegistrationPage: React.FC<RegistrationPageProps> = ({
   const [instituteName, setInstituteName] = useState(isExistingStudent && user ? (user.institute_name || user.school_name || '') : '');
   const [cityTown, setCityTown] = useState(isExistingStudent && user ? (user.city_town || '') : '');
   const [courseStream, setCourseStream] = useState<CourseStream>(isExistingStudent && user ? user.course_stream : '12th Science');
+  const [board, setBoard] = useState<SchoolBoard>(isExistingStudent && user ? (user.board || 'CBSE') : 'CBSE');
+  const [dateOfBirth, setDateOfBirth] = useState(isExistingStudent && user ? (user.date_of_birth || '') : '');
   const [foodPreference, setFoodPreference] = useState<FoodPreference>(isExistingStudent && user ? user.food_preference : 'Veg');
   const [sendCopy, setSendCopy] = useState(true);
 
@@ -94,6 +97,14 @@ export const RegistrationPage: React.FC<RegistrationPageProps> = ({
       setErrorMessage('Please enter a valid Email Id.');
       return;
     }
+    if (!contactNo.trim()) {
+      setErrorMessage('Please enter your Contact Number.');
+      return;
+    }
+    if (!dateOfBirth) {
+      setErrorMessage('Please provide your Date of Birth.');
+      return;
+    }
     if (!instituteName.trim()) {
       setErrorMessage('Please provide the Name of the Institute.');
       return;
@@ -126,6 +137,8 @@ export const RegistrationPage: React.FC<RegistrationPageProps> = ({
         institute_name: instituteName.trim(),
         city_town: cityTown.trim(),
         course_stream: courseStream,
+        board: board,
+        date_of_birth: dateOfBirth,
         food_preference: foodPreference,
         selected_competitions: selectedCompetitions,
         parent_consent: true,
@@ -377,6 +390,26 @@ export const RegistrationPage: React.FC<RegistrationPageProps> = ({
                 Debate topics and emergency campus alerts will be transmitted directly via WhatsApp.
               </span>
             </div>
+
+            {/* Date of Birth */}
+            <div>
+              <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
+                Date of Birth (+2 Eligibility: Ages 16–18) *
+              </label>
+              <div className="relative">
+                <Calendar className="w-4 h-4 text-gray-400 absolute left-3.5 top-3.5" />
+                <input
+                  type="date"
+                  required
+                  value={dateOfBirth}
+                  onChange={(e) => setDateOfBirth(e.target.value)}
+                  className="w-full pl-10 pr-4 py-3 text-sm border border-gray-300 rounded-xl focus:ring-2 focus:ring-navy focus:border-navy transition-all"
+                />
+              </div>
+              <span className="text-[10px] text-gray-400 mt-1 block">
+                As per festival regulations, only candidates aged 16 to 18 (+2 Final Year) are eligible to participate.
+              </span>
+            </div>
           </div>
         </div>
 
@@ -449,6 +482,29 @@ export const RegistrationPage: React.FC<RegistrationPageProps> = ({
                     }`}
                   >
                     {course}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* 7. Affiliation Board */}
+            <div>
+              <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">
+                7. Affiliation Board *
+              </label>
+              <div className="grid grid-cols-3 gap-3">
+                {(['CBSE', 'ICSE', 'CHSE'] as SchoolBoard[]).map((b) => (
+                  <button
+                    key={b}
+                    type="button"
+                    onClick={() => setBoard(b)}
+                    className={`py-3 px-3 rounded-xl border text-xs sm:text-sm font-bold text-center transition-all ${
+                      board === b
+                        ? 'bg-navy text-white border-navy shadow-md ring-2 ring-navy/10'
+                        : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'
+                    }`}
+                  >
+                    {b}
                   </button>
                 ))}
               </div>

@@ -225,20 +225,27 @@ Following the design alignment, the platform features **4 distinct, dedicated da
 |---|---|---|---|---|
 | **Phase 0: Core Architecture & Setup** | Project scaffold, Tailwind tokens, Supabase schema, Git origin setup | **COMPLETED & PUSHED** | Oct 3, 2026 | Synchronized with `https://github.com/sakashdora/CrossFire.git` |
 | **Phase 1: Google Form Registration & Branding** | Authentic intake form (10+ fields), dual college & Crossfire logos | **COMPLETED** | Oct 3, 2026 | Srusti Academy logo & Crossfire emblem rendered, 2-event rule enforced |
-| **Phase 2: 4 Dedicated Role Dashboards** | Student, Judge, Volunteer Ground Ops, Admin Command Center | **COMPLETED & VERIFIED** | Oct 3, 2026 | 0 TS errors, production build passes, browser subagent verified all 4 portals |
-| **Phase 3: Real-Time Sync & Live Operations** | Supabase Live WebSockets, Twilio WhatsApp alerts, final polish | **NEXT IN QUEUE** | - | Awaiting user sign-off on Phase 2 dashboards |
+| **Phase 2: 4 Dedicated Role Dashboards** | Student, Judge, Volunteer Ground Ops, Admin Command Center | **COMPLETED & VERIFIED** | Oct 3, 2026 | 0 TS errors, production build passes, verified all 4 portals |
+| **Phase 3: Real-Time Sync & Live Operations** | Supabase RPCs, Dual-Persistence Event Bus, Live Computed Leaderboards | **COMPLETED & VERIFIED** | Oct 5, 2026 | Real-time synchronization across Student, Volunteer, Judge, Admin |
+| **Phase 4: Production Hardening & Hardware Integration** | Dynamic SVG QR codes, HTML5 Camera QR Scanner, VIP Guest & Volunteer Crew Consoles | **COMPLETED & PRODUCTION READY** | Oct 5, 2026 | Zero demo data, real database intake, camera scanning, full CSV exports |
 
 ---
 
-## 🤖 8. Guidelines for Collaborating AI Agents
+## 🚀 8. Production Architecture Highlights
 
-If you are an AI agent continuing this project:
-1. **Always read this file first** to determine the current active phase.
-2. **Do not skip ahead** to subsequent phases without user confirmation.
-3. Keep the color tokens consistent:
-   - Navy: `#001F3F`
-   - Orange: `#FF6B35`
-   - Light Orange: `#FFA500`
-   - Backgrounds: `#FFFFFF` and `#F9FAFB`
-4. When writing code, ensure high accessibility standards, 44px min touch targets for mobile, and comprehensive error handling.
-5. Whenever a phase is completed, update the **Current Project Progress Tracker** table in this document.
+1. **Dynamic SVG QR Pass (`qrcode.react`):** Real-time generation of student Admit Cards and Lunch Vouchers encoding student ID, track choices, food preference, and verification signatures.
+2. **Live Camera Scanner (`html5-qrcode`):** Hardware camera integration with device selection, image upload decoder, audio feedback, and 1-tap check-in/meal token redemption.
+3. **VIP Guest Management Console:** Dedicated hospitality module for Dignitaries, Chief Guests, and Judges with arrival tracking, vehicle permits, dietary preferences, and 1-click CSV exports.
+4. **Volunteer Crew Hub:** Duty station assignments (Gate, Stage, Help Desk, Refreshments), shift tracking, walkie-talkie channel allocations, and kit distribution logger.
+5. **Dynamic Computed Leaderboard:** Live calculation of candidate and college rolling trophy points directly from judge submissions without mock fallbacks.
+6. **Security & RLS:** Complete compliance with PostgreSQL RLS and `SECURITY DEFINER` RPCs (`submit_registration_form`, `register_for_event`, `get_leaderboard`, `admin_overview`).
+
+---
+
+## 🤖 9. Guidelines for Collaborating AI Agents
+
+If you are an AI agent maintaining this project:
+1. **Always reference `README.md` and `AGENT_HANDOFF.md`** for architecture standards.
+2. Maintain color tokens: Navy `#001F3F`, Orange `#FF6B35`, Light Orange `#FFA500`, Backgrounds `#FFFFFF` and `#F9FAFB`.
+3. Ensure all user operations maintain dual-persistence (reactive custom event bus + Supabase RPC backend).
+4. Run `npx tsc --noEmit` and `npm run build` after any modifications to verify zero compilation regressions.
