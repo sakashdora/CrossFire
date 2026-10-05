@@ -178,7 +178,7 @@ const CrossFireApp: React.FC = () => {
         )}
 
         {currentView === 'dashboard' && (
-          <ProtectedRoute allowedRoles={['student']}>
+          <ProtectedRoute allowedRoles={['student', 'admin', 'super_admin']}>
             <StudentDashboard
               userRegistrations={userRegistrations}
               onWithdrawEvent={handleWithdrawEvent}
@@ -189,19 +189,19 @@ const CrossFireApp: React.FC = () => {
         )}
 
         {currentView === 'judge' && (
-          <ProtectedRoute allowedRoles={['judge', 'admin']}>
+          <ProtectedRoute allowedRoles={['judge', 'admin', 'super_admin']}>
             <JudgePanel />
           </ProtectedRoute>
         )}
 
         {currentView === 'volunteer' && (
-          <ProtectedRoute allowedRoles={['volunteer', 'admin']}>
+          <ProtectedRoute allowedRoles={['volunteer', 'admin', 'super_admin']}>
             <VolunteerDashboard />
           </ProtectedRoute>
         )}
 
         {currentView === 'admin' && (
-          <ProtectedRoute allowedRoles={['admin']}>
+          <ProtectedRoute allowedRoles={['admin', 'super_admin']}>
             <AdminDashboard />
           </ProtectedRoute>
         )}
@@ -261,7 +261,7 @@ const CrossFireApp: React.FC = () => {
         <button
           onClick={() => {
             setCurrentView(
-              role === 'admin' ? 'admin' : 
+              (role === 'admin' || role === 'super_admin') ? 'admin' : 
               role === 'judge' ? 'judge' : 
               role === 'volunteer' ? 'volunteer' : 
               'dashboard'
@@ -273,7 +273,7 @@ const CrossFireApp: React.FC = () => {
               : 'text-gray-400'
           }`}
         >
-          {role === 'admin' ? (
+          {(role === 'admin' || role === 'super_admin') ? (
             <ShieldCheck className="w-4 h-4" />
           ) : role === 'judge' ? (
             <Gavel className="w-4 h-4" />
@@ -283,7 +283,8 @@ const CrossFireApp: React.FC = () => {
             <User className="w-4 h-4" />
           )}
           <span>
-            {role === 'admin' ? 'Admin' : 
+            {role === 'super_admin' ? 'Super Admin' :
+             role === 'admin' ? 'Admin' : 
              role === 'judge' ? 'Judge' : 
              role === 'volunteer' ? 'Volunteer' : 
              'Portal'}

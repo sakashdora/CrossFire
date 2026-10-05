@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CountdownTimer } from '../components/CountdownTimer';
 import { HeroParticlesBackground } from '../components/HeroParticlesBackground';
@@ -331,6 +331,22 @@ export const LandingPage: React.FC<LandingPageProps> = ({
   const [selectedBoardFilter, setSelectedBoardFilter] = useState<'ALL' | 'CBSE' | 'CHSE' | 'ICSE'>('ALL');
   const [institutionSearch, setInstitutionSearch] = useState('');
   const [showDownloadMenu, setShowDownloadMenu] = useState(false);
+  const [showFloatingCta, setShowFloatingCta] = useState(false);
+
+  useEffect(() => {
+    let ticking = false;
+    const handleScroll = () => {
+      if (!ticking) {
+        window.requestAnimationFrame(() => {
+          setShowFloatingCta(window.scrollY > 450);
+          ticking = false;
+        });
+        ticking = true;
+      }
+    };
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   const getEventIcon = (iconName: string) => {
     switch (iconName) {
@@ -356,35 +372,44 @@ export const LandingPage: React.FC<LandingPageProps> = ({
         {/* Central Content */}
         <div className="relative z-10 flex-1 flex flex-col items-center justify-center text-center px-4 sm:px-6 pt-16 sm:pt-20 md:pt-24 pb-12 max-w-5xl mx-auto w-full">
           
-          {/* Dual Institutional Emblem Badges */}
+          {/* Dual Institutional Emblem Badges: CrossFire Center & Enlarged, College Logo on Right Side */}
           <motion.div
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
-            className="flex items-center justify-center gap-3 sm:gap-4 mb-6"
+            className="flex items-center justify-center gap-4 sm:gap-6 mb-6 flex-wrap"
           >
-            {/* Srusti SAGS College Emblem */}
-            <div className="h-14 sm:h-16 px-3 py-1 rounded-2xl bg-white shadow-2xl shadow-black/40 border border-white/40 flex items-center justify-center hover:scale-105 transition-transform">
-              <img
-                src="/sagslogo.png"
-                alt="Srusti Academy of Graduate Studies"
-                className="h-full object-contain"
-              />
+            {/* CrossFire Logo (Center & Prominent Large Size) */}
+            <div className="relative group">
+              <div className="w-20 h-20 sm:w-24 sm:h-24 md:w-28 md:h-28 rounded-3xl bg-white p-2 sm:p-2.5 shadow-[0_0_45px_rgba(0,132,255,0.55)] border-2 border-cyan-400 flex items-center justify-center hover:scale-105 transition-all duration-300">
+                <img
+                  src="/Logo.png"
+                  alt="CrossFire 2026"
+                  className="w-full h-full object-contain filter drop-shadow"
+                />
+              </div>
+              <span className="absolute -bottom-2 left-1/2 -translate-x-1/2 px-2.5 py-0.5 bg-gradient-to-r from-blue-600 to-cyan-500 text-white text-[10px] sm:text-xs font-black uppercase rounded-full shadow-md tracking-wider border border-white/30 whitespace-nowrap">
+                CROSSFIRE 2026
+              </span>
             </div>
 
-            <div className="flex flex-col items-center px-0.5">
-              <div className="w-px h-5 bg-gradient-to-b from-transparent via-white/50 to-transparent" />
-              <span className="text-cyan-300 text-xs font-black uppercase my-0.5">✕</span>
-              <div className="w-px h-5 bg-gradient-to-b from-transparent via-white/50 to-transparent" />
+            {/* Connecting Subtle Divider */}
+            <div className="hidden sm:flex flex-col items-center px-1">
+              <div className="w-px h-8 bg-gradient-to-b from-transparent via-cyan-400/50 to-transparent" />
             </div>
 
-            {/* CrossFire Logo */}
-            <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-white p-1.5 shadow-2xl shadow-blue-500/30 border border-blue-400/50 flex items-center justify-center hover:scale-105 transition-transform">
-              <img
-                src="/Logo.png"
-                alt="CrossFire 2026"
-                className="w-full h-full object-contain"
-              />
+            {/* Srusti SAGS College Emblem (Right Side with 'Organized by SAGS' label) */}
+            <div className="flex flex-col items-center sm:items-start text-left">
+              <span className="text-[10px] sm:text-xs uppercase tracking-widest text-cyan-300 font-extrabold mb-1">
+                Organized by SAGS
+              </span>
+              <div className="h-14 sm:h-16 px-4 py-1.5 rounded-2xl bg-white/95 backdrop-blur-md shadow-2xl shadow-black/50 border border-white/50 flex items-center justify-center hover:scale-105 transition-transform">
+                <img
+                  src="/sagslogo.png"
+                  alt="Srusti Academy of Graduate Studies"
+                  className="h-full object-contain max-h-12"
+                />
+              </div>
             </div>
           </motion.div>
 
@@ -451,16 +476,16 @@ export const LandingPage: React.FC<LandingPageProps> = ({
             transition={{ delay: 0.5, duration: 0.5 }}
             className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4 mb-7 w-full max-w-md sm:max-w-none relative z-30"
           >
-            {/* Primary Action: Register Free */}
+            {/* Primary Action: Register Free (Enlarged, no 60s) */}
             <motion.button
               whileHover={{ scale: 1.04 }}
               whileTap={{ scale: 0.96 }}
               onClick={() => setCurrentView('register')}
-              className="relative overflow-hidden w-full sm:w-auto h-13 px-8 sm:px-9 rounded-2xl bg-gradient-to-r from-[#0062FF] via-[#0084FF] to-[#00D4FF] text-white font-black text-sm shadow-[0_0_35px_rgba(0,132,255,0.45)] hover:shadow-[0_0_45px_rgba(0,212,255,0.6)] transition-all flex items-center justify-center gap-2.5 cursor-pointer group border border-cyan-300/40"
+              className="relative overflow-hidden w-full sm:w-auto h-15 sm:h-16 px-10 sm:px-12 rounded-2xl bg-gradient-to-r from-[#0062FF] via-[#0084FF] to-[#00D4FF] text-white font-black text-base sm:text-lg shadow-[0_0_40px_rgba(0,132,255,0.55)] hover:shadow-[0_0_55px_rgba(0,212,255,0.7)] transition-all flex items-center justify-center gap-3 cursor-pointer group border-2 border-cyan-300/50"
             >
-              <span className="relative z-10 flex items-center gap-2 tracking-wide">
-                Register Free in 60s
-                <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+              <span className="relative z-10 flex items-center gap-2.5 tracking-wide">
+                Register Free
+                <ArrowRight className="w-5 h-5 group-hover:translate-x-1.5 transition-transform" />
               </span>
             </motion.button>
 
@@ -1235,7 +1260,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               Ready to Claim State Glory?
             </h2>
             <p className="text-xs sm:text-sm text-sky-100 leading-relaxed font-medium">
-              Join hundreds of top +2 students across Odisha. Free registration takes less than 60 seconds.
+              Join hundreds of top +2 students across Odisha. Free registration with instant entry pass generation.
             </p>
 
             <div className="pt-4 flex flex-wrap items-center justify-center gap-3.5">
@@ -1243,7 +1268,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                 onClick={() => setCurrentView('register')}
                 className="px-8 py-3.5 rounded-xl bg-white hover:bg-sky-50 text-[#001F3F] font-black text-sm shadow-2xl hover:scale-105 active:scale-95 transition-all"
               >
-                Register Now for Free
+                Register Free
               </button>
 
               <button
@@ -1258,6 +1283,36 @@ export const LandingPage: React.FC<LandingPageProps> = ({
         </div>
       </section>
       </div>
+
+      {/* Floating Mobile Register Quick-Action Pill (When Scrolled Past Hero) */}
+      <AnimatePresence>
+        {showFloatingCta && (
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 30 }}
+            transition={{ duration: 0.2 }}
+            className="lg:hidden fixed bottom-16 left-3 right-3 z-40 flex items-center justify-between p-2 pl-3 rounded-2xl bg-[#000d1a]/95 backdrop-blur-xl border border-cyan-400/40 shadow-[0_4px_30px_rgba(0,132,255,0.45)]"
+          >
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-lg bg-white p-0.5 shrink-0 border border-cyan-400/30">
+                <img src="/Logo.png" alt="Crossfire Logo" className="w-full h-full object-contain" />
+              </div>
+              <div className="flex flex-col text-left">
+                <span className="text-xs font-black text-white leading-tight">CROSSFIRE 2026</span>
+                <span className="text-[10px] font-bold text-cyan-300 leading-tight">₹50,000 Prizes • Nov 15</span>
+              </div>
+            </div>
+            <button
+              onClick={() => setCurrentView('register')}
+              className="px-4 py-2 rounded-xl bg-gradient-to-r from-[#0062FF] via-[#0084FF] to-[#00D4FF] text-white font-black text-xs shadow-lg shadow-blue-500/40 flex items-center gap-1.5 active:scale-95 transition-transform border border-cyan-300/50 cursor-pointer"
+            >
+              <span>Register Free</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
     </div>
   );

@@ -54,7 +54,7 @@ export const RegistrationPage: React.FC<RegistrationPageProps> = ({
   const [foodPreference, setFoodPreference] = useState<FoodPreference>(isExistingStudent && user ? user.food_preference : 'Veg');
   const [sendCopy, setSendCopy] = useState(true);
 
-  // Group A & Group B Selections (Combined Max 2 Limit) - Start empty
+  // Group A & Group B Selections: Choose any two from Group A & any two from Group B
   const [selectedCompetitions, setSelectedCompetitions] = useState<string[]>(
     isExistingStudent && user ? (user.selected_competitions || []) : []
   );
@@ -67,13 +67,20 @@ export const RegistrationPage: React.FC<RegistrationPageProps> = ({
   const groupAEvents = events.filter(e => e.group === 'Group A');
   const groupBEvents = events.filter(e => e.group === 'Group B');
 
-  const handleCompetitionToggle = (eventName: string) => {
+  const groupASelectedCount = selectedCompetitions.filter(name => groupAEvents.some(e => e.name === name)).length;
+  const groupBSelectedCount = selectedCompetitions.filter(name => groupBEvents.some(e => e.name === name)).length;
+
+  const handleCompetitionToggle = (eventName: string, group: 'Group A' | 'Group B') => {
     setErrorMessage(null);
     if (selectedCompetitions.includes(eventName)) {
       setSelectedCompetitions(prev => prev.filter(name => name !== eventName));
     } else {
-      if (selectedCompetitions.length >= 2) {
-        setErrorMessage('Quota Limit: You may select a maximum of 2 competitions across Group A & Group B.');
+      if (group === 'Group A' && groupASelectedCount >= 2) {
+        setErrorMessage('Quota Limit: You can select a maximum of 2 competitions from Group A.');
+        return;
+      }
+      if (group === 'Group B' && groupBSelectedCount >= 2) {
+        setErrorMessage('Quota Limit: You can select a maximum of 2 competitions from Group B.');
         return;
       }
       setSelectedCompetitions(prev => [...prev, eventName]);
@@ -116,8 +123,12 @@ export const RegistrationPage: React.FC<RegistrationPageProps> = ({
       setErrorMessage('Please select at least 1 competition to participate.');
       return;
     }
-    if (selectedCompetitions.length > 2) {
-      setErrorMessage('You can select a maximum of 2 competitions only.');
+    if (groupASelectedCount > 2) {
+      setErrorMessage('You can select a maximum of 2 competitions from Group A.');
+      return;
+    }
+    if (groupBSelectedCount > 2) {
+      setErrorMessage('You can select a maximum of 2 competitions from Group B.');
       return;
     }
 
@@ -321,7 +332,7 @@ export const RegistrationPage: React.FC<RegistrationPageProps> = ({
             <span>* Indicates required question. Exclusively for +2 2nd Year (Class 12) students.</span>
           </div>
           <span className="text-[10px] sm:text-[11px] font-bold text-amber-800 bg-amber-200/60 px-2.5 py-0.5 rounded-full self-start sm:self-auto shrink-0">
-            Max 2 Competitions
+            Group A (Any Two) • Group B (Any Two)
           </span>
         </div>
       </div>
@@ -641,32 +652,49 @@ export const RegistrationPage: React.FC<RegistrationPageProps> = ({
                 <span>Competitions in Which to Participate</span>
               </h2>
               <p className="text-xs text-gray-500 mt-0.5">
-                Select your preferred competitive events from Group A and Group B (Max 2 total).
+                Select your preferred competitive events: Group A (any two) &amp; Group B (any two).
               </p>
             </div>
 
-            {/* Real-time selection counter badge */}
-            <div className={`self-start sm:self-auto px-3.5 py-1.5 rounded-full text-xs font-black border ${
-              selectedCompetitions.length === 2
-                ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
-                : 'bg-orange-50 text-orange-700 border-orange-200'
-            }`}>
-              {selectedCompetitions.length} of 2 Competitions Chosen
+            {/* Real-time selection counter badges */}
+            <div className="flex flex-wrap gap-2 items-center">
+              <span className={`px-3 py-1.5 rounded-full text-xs font-black border ${
+                groupASelectedCount > 0
+                  ? 'bg-orange-50 text-orange-700 border-orange-200'
+                  : 'bg-gray-100 text-gray-600 border-gray-200'
+              }`}>
+                Group A: {groupASelectedCount}/2 Selected
+              </span>
+              <span className={`px-3 py-1.5 rounded-full text-xs font-black border ${
+                groupBSelectedCount > 0
+                  ? 'bg-purple-50 text-purple-700 border-purple-200'
+                  : 'bg-gray-100 text-gray-600 border-gray-200'
+              }`}>
+                Group B: {groupBSelectedCount}/2 Selected
+              </span>
+              <span className="px-3 py-1.5 rounded-full text-xs font-black bg-navy text-white shadow-sm">
+                Total: {selectedCompetitions.length} Selected
+              </span>
             </div>
           </div>
 
           {/* 7. Group A Competitions */}
           <div className="space-y-3">
-            <span className="text-xs font-black uppercase tracking-wider text-orange-600 block">
-              7. Group A Competitions (Choose Any)
-            </span>
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-black uppercase tracking-wider text-orange-600 block">
+                7. Group A Competitions (Choose Any Two)
+              </span>
+              <span className="text-[11px] font-bold text-gray-500">
+                {groupASelectedCount} of 2 Selected
+              </span>
+            </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
               {groupAEvents.map((event) => {
                 const isChecked = selectedCompetitions.includes(event.name);
                 return (
                   <div
                     key={event.id}
-                    onClick={() => handleCompetitionToggle(event.name)}
+                    onClick={() => handleCompetitionToggle(event.name, 'Group A')}
                     className={`p-4 rounded-xl border cursor-pointer transition-all flex flex-col justify-between ${
                       isChecked
                         ? 'bg-orange-50 border-orange-500 ring-2 ring-orange-500/20 shadow-sm'
@@ -701,16 +729,21 @@ export const RegistrationPage: React.FC<RegistrationPageProps> = ({
 
           {/* 8. Group B Competitions */}
           <div className="space-y-3 pt-2">
-            <span className="text-xs font-black uppercase tracking-wider text-orange-600 block">
-              8. Group B Competitions (Choose Any)
-            </span>
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-black uppercase tracking-wider text-orange-600 block">
+                8. Group B Competitions (Choose Any Two)
+              </span>
+              <span className="text-[11px] font-bold text-gray-500">
+                {groupBSelectedCount} of 2 Selected
+              </span>
+            </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
               {groupBEvents.map((event) => {
                 const isChecked = selectedCompetitions.includes(event.name);
                 return (
                   <div
                     key={event.id}
-                    onClick={() => handleCompetitionToggle(event.name)}
+                    onClick={() => handleCompetitionToggle(event.name, 'Group B')}
                     className={`p-4 rounded-xl border cursor-pointer transition-all flex flex-col justify-between ${
                       isChecked
                         ? 'bg-orange-50 border-orange-500 ring-2 ring-orange-500/20 shadow-sm'

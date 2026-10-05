@@ -1,4 +1,4 @@
-export type UserRole = 'student' | 'judge' | 'volunteer' | 'organizer' | 'admin';
+export type UserRole = 'student' | 'judge' | 'volunteer' | 'organizer' | 'admin' | 'super_admin';
 export type SchoolBoard = 'CBSE' | 'ICSE' | 'CHSE';
 export type CourseStream = '12th Science' | '12th Commerce' | '12th Arts';
 export type FoodPreference = 'Veg' | 'Non-veg';
@@ -85,6 +85,7 @@ export interface Registration {
   team_name?: string;
   team_members?: TeamMember[];
   status: RegistrationStatus;
+  is_overflow?: boolean;
   media_url?: string;
   media_type?: 'video' | 'image' | 'document';
   media_submitted_at?: string;

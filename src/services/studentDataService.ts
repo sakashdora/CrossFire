@@ -16,6 +16,7 @@ export interface StudentRegistrationRecord {
   food_preference: FoodPreference;
   selected_competitions: string[];
   status: 'registered' | 'confirmed' | 'disqualified';
+  is_overflow?: boolean;
   parent_consent: boolean;
   terms_accepted: boolean;
   checked_in_at: string | null;
@@ -251,9 +252,57 @@ class StudentDataService {
 
       let hasSession = !!authData?.session;
 
-      if (authError) {
-        const already = authError.code === 'user_already_exists' || /already registered/i.test(authError.message || '');
-        if (!already) {
+      if (authError || (authData?.user?.identities && authData.user.identities.length === 0)) {
+        const isDuplicate = authError?.code === 'user_already_exists' || 
+          /already registered/i.test(authError?.message || '') ||
+          (authData?.user?.identities && authData.user.identities.length === 0);
+
+        if (isDuplicate) {
+          // Shared parent email support: create a distinct auth identity using sub-addressing
+          // so siblings/classmates sharing an email can each have their own independent pass and registrations.
+          const siblingAuthEmail = cleanEmail.replace('@', `+cf${Date.now().toString().slice(-5)}@`);
+          const siblingSignUp = await supabase.auth.signUp({
+            email: siblingAuthEmail,
+            password: generatedPassword,
+            options: {
+              data: {
+                app: 'crossfire',
+                first_name: student.first_name,
+                last_name: student.last_name,
+                email: cleanEmail,
+                contact_number: student.contact_number,
+                whatsapp_number: student.whatsapp_number,
+                institute_name: student.institute_name,
+                city_town: student.city_town,
+                course_stream: student.course_stream,
+                board: student.board || 'CBSE',
+                food_preference: student.food_preference,
+                parent_consent: student.parent_consent,
+                terms_accepted: student.terms_accepted,
+                role: 'student'
+              }
+            }
+          });
+
+          if (siblingSignUp.data?.user && siblingSignUp.data.session) {
+            authData = siblingSignUp.data;
+            hasSession = true;
+            authError = null;
+          } else {
+            // Fallback: try signing in with generated password if it was an idempotent re-try
+            const { data: signIn, error: signInErr } = await supabase.auth.signInWithPassword({
+              email: cleanEmail,
+              password: generatedPassword,
+            });
+            if (!signInErr && signIn?.session) {
+              authData = signIn as any;
+              hasSession = true;
+              authError = null;
+            }
+          }
+        }
+
+        if (authError && !hasSession) {
           diag('auth.signUp', authError);
           if (authError.status === 429 || authError.code === 'over_email_send_rate_limit') {
             return { success: false, error: 'Too many attempts right now. Please wait a minute and try again.' };
@@ -266,25 +315,9 @@ class StudentDataService {
           }
           return { success: false, error: GENERIC };
         }
-        // Already registered: allow an idempotent retry only for the same applicant (same generated credential),
-        // e.g. an earlier attempt created the auth user but the registration step failed.
-        const { data: signIn, error: signInErr } = await supabase.auth.signInWithPassword({
-          email: cleanEmail,
-          password: generatedPassword,
-        });
-        if (signInErr || !signIn?.session) {
-          return { success: false, error: 'This email is already registered. Please use a different email or contact the organisers.' };
-        }
-        authData = signIn as any;
-        hasSession = true;
       }
 
-      if (!authData?.user || (authData.user.identities && authData.user.identities.length === 0)) {
-        // Supabase's obfuscated response for an existing email when confirmations are enabled.
-        return { success: false, error: 'This email is already registered. Please use a different email or contact the organisers.' };
-      }
-
-      if (!hasSession) {
+      if (!hasSession || !authData?.user) {
         // Email confirmation is enabled: without a session the registration RPC cannot run (auth.uid() is null).
         console.warn('[CROSSFIRE][registration] auth user created but no session returned (email confirmation required).');
         return { success: false, error: 'Registration could not be completed. Email confirmation is enabled on the server; please contact the organisers.' };
@@ -340,7 +373,7 @@ class StudentDataService {
       if (!userErr && Array.isArray(users) && users.length > 0) {
         const { data: registrations } = await supabase
           .from('registrations')
-          .select('user_id, status, event:events(name, slug)');
+          .select('user_id, status, is_overflow, event:events(name, slug)');
 
         const currentLocal = this.getAllStudents();
         const localMap = new Map(currentLocal.map(s => [s.email.toLowerCase(), s]));
@@ -349,6 +382,7 @@ class StudentDataService {
           const existing = localMap.get(u.email?.toLowerCase());
           const userRegs = (registrations || []).filter((r: any) => r.user_id === u.id);
           const eventNames = userRegs.map((r: any) => r.event?.name).filter(Boolean);
+          const hasOverflow = userRegs.some((r: any) => Boolean(r.is_overflow));
 
           return {
             id: existing?.id || (u.pass_number ? `CF26-${u.pass_number}` : `CF26-${u.id.slice(0, 4).toUpperCase()}`),
@@ -364,6 +398,7 @@ class StudentDataService {
             food_preference: u.food_preference || existing?.food_preference || 'Veg',
             selected_competitions: eventNames.length > 0 ? eventNames : (existing?.selected_competitions || []),
             status: (u.status || existing?.status || 'registered') as any,
+            is_overflow: hasOverflow || existing?.is_overflow || false,
             parent_consent: u.parent_consent ?? true,
             terms_accepted: u.terms_accepted ?? true,
             checked_in_at: u.checked_in_at || existing?.checked_in_at || null,
@@ -471,6 +506,33 @@ class StudentDataService {
       return true;
     }
     return false;
+  }
+
+  // Delete student registration in Supabase and local cache
+  public async deleteStudentAsync(id: string): Promise<boolean> {
+    const student = this.getAllStudents().find(s => s.id === id || s.email?.toLowerCase() === id.toLowerCase());
+    const identifier = student?.email || id;
+
+    // 1. Remove from local cache
+    this.deleteStudent(id);
+    if (student?.id) this.deleteStudent(student.id);
+
+    // 2. Remove permanently from Supabase
+    if (isSupabaseConfigured) {
+      try {
+        const { data, error } = await supabase.rpc('admin_delete_student', {
+          p_student_id: identifier
+        });
+        if (error) {
+          console.warn('[CROSSFIRE] Supabase student deletion error:', error);
+        } else {
+          console.log('[CROSSFIRE] Supabase student deleted successfully:', data);
+        }
+      } catch (e) {
+        console.warn('[CROSSFIRE] Online student delete error:', e);
+      }
+    }
+    return true;
   }
 
   // Get Leaderboard computed from all scored student registrations

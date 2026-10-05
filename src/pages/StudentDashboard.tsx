@@ -182,6 +182,21 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10 space-y-6 sm:space-y-8">
+      {/* Admin Preview Mode Notice */}
+      {(user?.role === 'super_admin' || user?.role === 'admin') && (
+        <div className="p-3 sm:p-4 bg-purple-900/60 border border-purple-500/40 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-purple-200 shadow-lg">
+          <span className="flex items-center gap-2">
+            <ShieldCheck className="w-5 h-5 text-purple-300 shrink-0" />
+            <span>You are viewing the Student Portal preview as <strong>{user?.role === 'super_admin' ? 'Super Admin' : 'College Admin'}</strong> ({user?.email}).</span>
+          </span>
+          <button
+            onClick={() => setCurrentView('admin')}
+            className="px-4 py-2 bg-purple-600 hover:bg-purple-500 text-white font-bold rounded-xl shadow-md transition-all shrink-0 text-center"
+          >
+            Open Admin Headquarters →
+          </button>
+        </div>
+      )}
 
       {/* SECTION 1: DIGITAL EVENT PASS & QUICK ID CARD */}
       <div className="bg-gradient-to-br from-[#00142B] via-[#0A2540] to-[#001020] rounded-3xl p-5 sm:p-8 text-white shadow-2xl relative overflow-hidden border border-white/10">

@@ -9,7 +9,7 @@ const env = Object.fromEntries(
     .map(l => { const i = l.indexOf('='); return [l.slice(0, i).trim(), l.slice(i + 1).trim().replace(/^"|"$/g, '')]; })
 );
 const sb = createClient(env.VITE_SUPABASE_URL, env.VITE_SUPABASE_ANON_KEY, { auth: { persistSession: false } });
-const email = `cf_probe_${Date.now()}@example.com`;
+const email = `cf_probe_${Date.now()}@gmail.com`;
 const password = `CrossFire@Probe${Date.now()}`;
 
 const { data, error } = await sb.auth.signUp({

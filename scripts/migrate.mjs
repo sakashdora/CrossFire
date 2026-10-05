@@ -11,6 +11,12 @@ const sql = await readFile(path.join(dir, '..', 'supabase', 'schema.sql'), 'utf8
 const client = getClient();
 try {
   await client.connect();
+  // Postgres requirement: ALTER TYPE ... ADD VALUE must run outside a transaction block before the value is used
+  try {
+    await client.query("ALTER TYPE public.user_role ADD VALUE IF NOT EXISTS 'super_admin'");
+  } catch (e) {
+    // Ignore if type does not exist yet or already added
+  }
   await client.query('begin');
   await client.query(sql);
   await client.query('commit');

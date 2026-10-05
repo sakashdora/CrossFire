@@ -1,4 +1,5 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
+import { useAuth } from '../context/AuthContext';
 import { useAdminData } from '../hooks/useAdminData';
 import { studentDataService, StudentRegistrationRecord } from '../services/studentDataService';
 import { guestVolunteerService } from '../services/guestVolunteerService';
@@ -27,12 +28,58 @@ import {
   Trash2,
   FileSpreadsheet,
   ClipboardList,
-  Key
+  Key,
+  Lock,
+  Unlock,
+  ShieldCheck
 } from 'lucide-react';
 
 export const AdminDashboard: React.FC = () => {
   const { stats, isLoading, error, refreshStats } = useAdminData();
+  const { user, role, isStudentPortalOpen, setStudentPortalStatus } = useAuth();
   const { broadcastNotification } = useNotifications();
+  const [isTogglingPortal, setIsTogglingPortal] = useState(false);
+  const [portalToggleFeedback, setPortalToggleFeedback] = useState<string | null>(null);
+
+  // Auto-sync Supabase data on mount
+  useEffect(() => {
+    const syncAll = async () => {
+      try {
+        await Promise.allSettled([
+          studentDataService.syncFromSupabase(),
+          guestVolunteerService.syncVolunteersFromSupabase(),
+          guestVolunteerService.syncGuestsFromSupabase()
+        ]);
+        await refreshStats();
+      } catch (e) {
+        console.warn('[CROSSFIRE] Admin mount sync warning:', e);
+      }
+    };
+    syncAll();
+  }, []);
+
+  const handleTogglePortal = async () => {
+    setIsTogglingPortal(true);
+    setPortalToggleFeedback(null);
+    const targetState = !isStudentPortalOpen;
+    try {
+      const res = await setStudentPortalStatus(targetState);
+      if (res.success) {
+        setPortalToggleFeedback(
+          targetState 
+            ? 'Student Portal is now UNLOCKED! Registered students can now log in with their email and Pass ID.'
+            : 'Student Portal is now LOCKED! Student registrations are active.'
+        );
+        setTimeout(() => setPortalToggleFeedback(null), 5000);
+      } else {
+        setPortalToggleFeedback(`Error updating portal state: ${res.error}`);
+      }
+    } catch (err: any) {
+      setPortalToggleFeedback(`Failed to update portal: ${err.message}`);
+    } finally {
+      setIsTogglingPortal(false);
+    }
+  };
 
   // Active top-level admin tab
   const [activeTab, setActiveTab] = useState<'overview' | 'students' | 'guests' | 'volunteers' | 'broadcast' | 'capacities'>('overview');
@@ -164,11 +211,11 @@ export const AdminDashboard: React.FC = () => {
     }
   };
 
-  // Delete student registration
-  const handleDeleteStudent = (studentId: string) => {
-    if (confirm('Are you sure you want to delete this student registration?')) {
-      studentDataService.deleteStudent(studentId);
-      refreshStats();
+  // Delete student registration permanently from Supabase & local cache
+  const handleDeleteStudent = async (studentId: string) => {
+    if (confirm('Are you sure you want to permanently delete this student registration? This will delete the student from both the application and the Supabase database.')) {
+      await studentDataService.deleteStudentAsync(studentId);
+      await refreshStats();
       if (selectedStudent?.id === studentId) {
         setSelectedStudent(null);
       }
@@ -176,11 +223,11 @@ export const AdminDashboard: React.FC = () => {
   };
 
   // Guest actions
-  const handleAddGuestSubmit = (e: React.FormEvent) => {
+  const handleAddGuestSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newGuest.name.trim() || !newGuest.organization.trim()) return;
 
-    guestVolunteerService.addGuest({
+    await guestVolunteerService.addGuestAsync({
       ...newGuest,
       name: newGuest.name.trim(),
       designation: newGuest.designation.trim(),
@@ -220,15 +267,15 @@ export const AdminDashboard: React.FC = () => {
     refreshStats();
   };
 
-  const handleDeleteGuest = (guestId: string) => {
+  const handleDeleteGuest = async (guestId: string) => {
     if (confirm('Are you sure you want to remove this dignitary from the protocol list?')) {
-      guestVolunteerService.deleteGuest(guestId);
+      await guestVolunteerService.deleteGuestAsync(guestId);
       refreshStats();
     }
   };
 
   // Volunteer actions
-  const handleAddVolunteerSubmit = (e: React.FormEvent) => {
+  const handleAddVolunteerSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newVolunteer.name.trim() || !newVolunteer.contact_number.trim()) return;
 
@@ -236,7 +283,7 @@ export const AdminDashboard: React.FC = () => {
     const finalVolId = newVolunteer.volunteer_id.trim() || `VOL-${100 + count}`;
     const finalPass = newVolunteer.password.trim() || 'volunteer123';
 
-    const created = guestVolunteerService.addVolunteer({
+    const created = await guestVolunteerService.addVolunteerAsync({
       ...newVolunteer,
       name: newVolunteer.name.trim(),
       contact_number: newVolunteer.contact_number.trim(),
@@ -287,9 +334,9 @@ export const AdminDashboard: React.FC = () => {
     refreshStats();
   };
 
-  const handleDeleteVolunteer = (volId: string) => {
+  const handleDeleteVolunteer = async (volId: string) => {
     if (confirm('Are you sure you want to remove this volunteer assignment?')) {
-      guestVolunteerService.deleteVolunteer(volId);
+      await guestVolunteerService.deleteVolunteerAsync(volId);
       refreshStats();
     }
   };
@@ -510,11 +557,22 @@ export const AdminDashboard: React.FC = () => {
       <div className="bg-gradient-to-r from-navy via-navy-light to-navy rounded-3xl p-6 sm:p-8 text-white shadow-xl relative overflow-hidden border border-white/10">
         <div className="relative z-10 flex flex-col md:flex-row md:items-center md:justify-between gap-6">
           <div>
-            <div className="flex items-center gap-2 mb-2">
+            <div className="flex flex-wrap items-center gap-2 mb-2">
               <span className="px-3 py-1 bg-orange-500 text-white rounded-full text-[10px] font-black uppercase tracking-wider">
                 Production Control Center
               </span>
-              <span className="text-xs text-gray-300 font-bold">
+              {role === 'super_admin' || user?.email === 'trueinspire@gmail.com' || user?.email === 'chandanmahapatra2400@gmail.com' ? (
+                <span className="px-3 py-1 bg-purple-600/90 text-purple-100 rounded-full text-[10px] font-black uppercase tracking-wider flex items-center gap-1 border border-purple-400/40">
+                  <Crown className="w-3 h-3 text-amber-300" />
+                  <span>Super Admin (Tech Team &amp; DB Master)</span>
+                </span>
+              ) : (
+                <span className="px-3 py-1 bg-blue-600/90 text-blue-100 rounded-full text-[10px] font-black uppercase tracking-wider flex items-center gap-1 border border-blue-400/40">
+                  <ShieldCheck className="w-3 h-3 text-blue-200" />
+                  <span>College Admin (Srusti Official)</span>
+                </span>
+              )}
+              <span className="text-xs text-gray-300 font-bold hidden sm:inline">
                 Srusti Academy of Graduate Studies
               </span>
             </div>
@@ -646,6 +704,97 @@ export const AdminDashboard: React.FC = () => {
       {/* ============================================================== */}
       {activeTab === 'overview' && (
         <div className="space-y-6">
+          {/* MASTER STUDENT PORTAL ACCESS CONTROLLER */}
+          <div className={`rounded-3xl p-6 sm:p-7 border shadow-lg transition-all ${
+            isStudentPortalOpen 
+              ? 'bg-gradient-to-br from-emerald-950/90 via-navy to-emerald-900 text-white border-emerald-500/40' 
+              : 'bg-gradient-to-br from-amber-950/80 via-navy to-navy-dark text-white border-amber-500/30'
+          }`}>
+            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+              <div className="space-y-2 max-w-3xl">
+                <div className="flex flex-wrap items-center gap-2.5">
+                  <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider flex items-center gap-1.5 shadow ${
+                    isStudentPortalOpen 
+                      ? 'bg-emerald-500 text-white' 
+                      : 'bg-amber-500 text-navy-dark font-black'
+                  }`}>
+                    {isStudentPortalOpen ? (
+                      <>
+                        <span className="w-2 h-2 rounded-full bg-white animate-ping"></span>
+                        <span>STUDENT PORTAL LIVE • LOGIN UNLOCKED</span>
+                      </>
+                    ) : (
+                      <>
+                        <Lock className="w-3 h-3" />
+                        <span>REGISTRATION ACTIVE • PORTAL LOGIN LOCKED</span>
+                      </>
+                    )}
+                  </span>
+                  <span className="text-[11px] font-semibold text-gray-300">
+                    Synced with Supabase <code className="text-orange-300 bg-white/10 px-1.5 py-0.5 rounded font-mono text-[10px]">system_settings.student_portal_open</code>
+                  </span>
+                </div>
+
+                <h3 className="text-xl sm:text-2xl font-black text-white tracking-tight">
+                  {isStudentPortalOpen ? 'Candidate Access Portal is Live & Unlocked' : 'Public Student Registration is Currently Active'}
+                </h3>
+
+                <p className="text-xs sm:text-sm text-gray-200 leading-relaxed">
+                  {isStudentPortalOpen ? (
+                    <>
+                      Registrations are closed and the candidate portal is <strong>OPEN</strong>. Registered students can now log in using their <strong>Registered Email</strong> and <strong>Pass ID</strong> (e.g. <span className="font-mono text-orange-300 font-bold">CF26-1001</span>) to access their official digital pass, track schedule, and gate check-in barcode.
+                    </>
+                  ) : (
+                    <>
+                      Public student registration is active. Candidates can submit their registration forms on the site. Candidate portal login is <strong>temporarily locked</strong> to prevent early tampering. When registration officially concludes, click the button below to grant all registered students immediate portal login access.
+                    </>
+                  )}
+                </p>
+
+                {portalToggleFeedback && (
+                  <div className="p-3 rounded-xl bg-white/15 border border-white/20 text-xs font-bold text-white flex items-center gap-2 animate-fadeIn">
+                    <CheckCircle className="w-4 h-4 text-emerald-400 shrink-0" />
+                    <span>{portalToggleFeedback}</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Action Toggle Button */}
+              <div className="shrink-0 flex flex-col items-start lg:items-end gap-2">
+                <button
+                  onClick={handleTogglePortal}
+                  disabled={isTogglingPortal}
+                  className={`px-6 py-4 rounded-2xl font-black text-xs sm:text-sm tracking-wide transition-all shadow-xl flex items-center gap-2.5 cursor-pointer disabled:opacity-60 hover:scale-[1.02] active:scale-[0.98] ${
+                    isStudentPortalOpen
+                      ? 'bg-amber-500 hover:bg-amber-600 text-navy-dark'
+                      : 'bg-emerald-500 hover:bg-emerald-600 text-white'
+                  }`}
+                  title={isStudentPortalOpen ? 'Lock student portal and reopen registration' : 'Close registration and unlock student portal for logins'}
+                >
+                  {isTogglingPortal ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
+                      <span>Updating Database...</span>
+                    </>
+                  ) : isStudentPortalOpen ? (
+                    <>
+                      <Lock className="w-4 h-4" />
+                      <span>Lock Portal &amp; Reopen Registration</span>
+                    </>
+                  ) : (
+                    <>
+                      <Unlock className="w-4 h-4" />
+                      <span>Close Registration &amp; Unlock Student Portal</span>
+                    </>
+                  )}
+                </button>
+                <span className="text-[10px] text-gray-400 font-medium">
+                  {role === 'super_admin' ? 'Super Admin Override Authority' : 'College Executive Authority'}
+                </span>
+              </div>
+            </div>
+          </div>
+
           {/* 6 Event Tracks Capacities */}
           <div className="bg-white rounded-3xl p-6 border border-gray-200/80 shadow-sm space-y-4">
             <div className="flex items-center justify-between">
@@ -841,6 +990,14 @@ export const AdminDashboard: React.FC = () => {
                           <span className="font-mono font-black text-orange-600 bg-orange-50 px-2 py-0.5 rounded text-[10px]">
                             {s.id}
                           </span>
+                          {s.is_overflow && (
+                            <span 
+                              className="font-bold text-[9px] text-amber-800 bg-amber-100 border border-amber-300 px-1.5 py-0.5 rounded flex items-center gap-1"
+                              title="Registered after track capacity reached - needs seating/slot review"
+                            >
+                              ⚠️ OVERFLOW
+                            </span>
+                          )}
                           <div>
                             <strong className="text-navy font-bold block">{s.first_name} {s.last_name || ''}</strong>
                             <span className="text-[11px] text-gray-500">{s.contact_number}</span>

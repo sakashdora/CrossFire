@@ -276,7 +276,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                           <button
                             onClick={() => {
                               setUserDropdownOpen(false);
-                              setCurrentView(role === 'admin' ? 'admin' : role === 'judge' ? 'judge' : role === 'volunteer' ? 'volunteer' : 'dashboard');
+                              setCurrentView((role === 'admin' || role === 'super_admin') ? 'admin' : role === 'judge' ? 'judge' : role === 'volunteer' ? 'volunteer' : 'dashboard');
                             }}
                             className="w-full text-left px-5 py-2.5 text-sm font-bold text-gray-700 hover:bg-orange-50 hover:text-orange-600 flex items-center gap-3 transition-colors"
                           >
@@ -365,7 +365,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                   className="flex items-center justify-center gap-2 w-full py-3.5 mt-2 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 text-white font-black text-sm shadow-lg shadow-blue-500/30 active:scale-98 transition-transform border border-cyan-400/40"
                 >
                   <UserPlus className="w-4 h-4" />
-                  <span>Register Free in 60s</span>
+                  <span>Register Free</span>
                 </button>
 
 

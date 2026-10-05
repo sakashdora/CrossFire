@@ -274,9 +274,9 @@ export const DEMO_USERS: Record<string, UserProfile> = {
   },
   admin: {
     id: 'user-admin-demo',
-    email: 'admin@srusti.edu.in',
-    first_name: 'Mr. N.R.',
-    last_name: 'Swain',
+    email: 'crossfire@gmail.com',
+    first_name: 'CrossFire',
+    last_name: 'Admin',
     contact_number: '+91 7008671339',
     whatsapp_number: '+91 7008671339',
     mobile_number: '+91 7008671339',
@@ -293,10 +293,10 @@ export const DEMO_USERS: Record<string, UserProfile> = {
     created_at: new Date().toISOString()
   },
   admin_chandan: {
-    id: 'user-admin-chandan',
-    email: 'chandanmahapatra2400@gmail.com',
-    first_name: 'Chandan',
-    last_name: 'Mahapatra',
+    id: 'user-admin-super',
+    email: 'trueinspire@gmail.com',
+    first_name: 'TrueInspire',
+    last_name: 'SuperAdmin',
     contact_number: '+91 8328863317',
     whatsapp_number: '+91 8328863317',
     mobile_number: '+91 8328863317',
@@ -307,7 +307,7 @@ export const DEMO_USERS: Record<string, UserProfile> = {
     course_stream: '12th Science',
     board: 'CHSE',
     food_preference: 'Veg',
-    role: 'admin',
+    role: 'super_admin',
     parent_consent: true,
     terms_accepted: true,
     created_at: new Date().toISOString()

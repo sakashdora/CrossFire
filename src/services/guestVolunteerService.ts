@@ -1,4 +1,5 @@
 import { GuestItem, VolunteerItem, GuestStatus, VolunteerAttendance } from '../types';
+import { supabase, isSupabaseConfigured } from '../lib/supabase';
 
 const GUESTS_STORAGE_KEY = 'crossfire_guests_records';
 const VOLUNTEERS_STORAGE_KEY = 'crossfire_volunteers_records';
@@ -365,6 +366,204 @@ class GuestVolunteerService {
       return vol;
     }
     return null;
+  }
+
+  // ==========================================
+  // SUPABASE REAL-TIME ASYNC SYNC & PERSISTENCE
+  // ==========================================
+
+  public async syncVolunteersFromSupabase(): Promise<VolunteerItem[]> {
+    if (!isSupabaseConfigured) return this.getAllVolunteers();
+    try {
+      const { data, error } = await supabase
+        .from('volunteers')
+        .select('*')
+        .order('created_at', { ascending: false });
+      if (!error && Array.isArray(data) && data.length > 0) {
+        const mapped: VolunteerItem[] = data.map((v: any) => ({
+          id: v.id,
+          volunteer_id: v.volunteer_id,
+          name: v.name,
+          contact_number: v.contact_number,
+          email: v.email,
+          password: v.password,
+          assigned_station: v.assigned_station,
+          shift: v.shift,
+          attendance_status: v.attendance_status,
+          kit_issued: v.kit_issued,
+          walkie_channel: v.walkie_channel,
+          notes: v.notes,
+          created_at: v.created_at
+        }));
+        this.saveVolunteers(mapped);
+        return mapped;
+      }
+    } catch (e) {
+      console.warn('[CROSSFIRE] Could not sync volunteers from Supabase:', e);
+    }
+    return this.getAllVolunteers();
+  }
+
+  public async syncGuestsFromSupabase(): Promise<GuestItem[]> {
+    if (!isSupabaseConfigured) return this.getAllGuests();
+    try {
+      const { data, error } = await supabase
+        .from('guests')
+        .select('*, escort:volunteers(name)')
+        .order('created_at', { ascending: false });
+      if (!error && Array.isArray(data) && data.length > 0) {
+        const mapped: GuestItem[] = data.map((g: any) => ({
+          id: g.id,
+          name: g.name,
+          designation: g.designation,
+          organization: g.organization,
+          category: g.category,
+          contact_number: g.contact_number || '',
+          email: g.email || '',
+          status: g.status,
+          escort_volunteer: g.escort?.name || '',
+          arrival_time: g.arrival_time,
+          departure_time: g.departure_time,
+          vehicle_number: g.vehicle_number,
+          dietary_preference: g.dietary_preference,
+          notes: g.notes,
+          created_at: g.created_at
+        }));
+        this.saveGuests(mapped);
+        return mapped;
+      }
+    } catch (e) {
+      console.warn('[CROSSFIRE] Could not sync guests from Supabase:', e);
+    }
+    return this.getAllGuests();
+  }
+
+  public async addVolunteerAsync(volData: Omit<VolunteerItem, 'id' | 'created_at'>): Promise<VolunteerItem> {
+    const local = this.addVolunteer(volData);
+    if (isSupabaseConfigured) {
+      try {
+        const { data, error } = await supabase.rpc('admin_upsert_volunteer', {
+          p_data: {
+            volunteer_id: local.volunteer_id,
+            name: local.name,
+            contact_number: local.contact_number,
+            email: local.email,
+            password: local.password,
+            assigned_station: local.assigned_station,
+            shift: local.shift,
+            attendance_status: local.attendance_status,
+            kit_issued: local.kit_issued,
+            walkie_channel: local.walkie_channel,
+            notes: local.notes
+          }
+        });
+        if (data && !error) {
+          local.id = data;
+          this.updateVolunteer(local.id, { id: data });
+        }
+      } catch (e) {
+        console.warn('[CROSSFIRE] Error upserting volunteer to Supabase:', e);
+      }
+    }
+    return local;
+  }
+
+  public async deleteVolunteerAsync(id: string): Promise<boolean> {
+    const vol = this.findVolunteerById(id) || this.findVolunteerByEmailOrId(id);
+    const identifier = vol?.volunteer_id || vol?.email || id;
+    const res = this.deleteVolunteer(id);
+    if (vol?.id) this.deleteVolunteer(vol.id);
+
+    if (isSupabaseConfigured) {
+      try {
+        const { data, error } = await supabase.rpc('admin_delete_volunteer', { p_identifier: identifier });
+        if (error) console.warn('[CROSSFIRE] Error deleting volunteer in Supabase:', error);
+        else console.log('[CROSSFIRE] Deleted volunteer from Supabase:', data);
+      } catch (e) {
+        console.warn('[CROSSFIRE] Error deleting volunteer in Supabase:', e);
+      }
+    }
+    return res;
+  }
+
+  public async addGuestAsync(guestData: Omit<GuestItem, 'id' | 'created_at'>): Promise<GuestItem> {
+    const local = this.addGuest(guestData);
+    if (isSupabaseConfigured) {
+      try {
+        const { data, error } = await supabase.rpc('admin_upsert_guest', {
+          p_data: {
+            name: local.name,
+            designation: local.designation,
+            organization: local.organization,
+            category: local.category,
+            contact_number: local.contact_number,
+            email: local.email,
+            status: local.status,
+            arrival_time: local.arrival_time,
+            departure_time: local.departure_time,
+            vehicle_number: local.vehicle_number,
+            dietary_preference: local.dietary_preference,
+            notes: local.notes
+          }
+        });
+        if (data && !error) {
+          local.id = data;
+          this.updateGuest(local.id, { id: data });
+        }
+      } catch (e) {
+        console.warn('[CROSSFIRE] Error upserting guest to Supabase:', e);
+      }
+    }
+    return local;
+  }
+
+  public async deleteGuestAsync(id: string): Promise<boolean> {
+    const guest = this.findGuestById(id);
+    const identifier = guest?.name || id;
+    const res = this.deleteGuest(id);
+    if (guest?.id) this.deleteGuest(guest.id);
+
+    if (isSupabaseConfigured) {
+      try {
+        const { data, error } = await supabase.rpc('admin_delete_guest', { p_identifier: identifier });
+        if (error) console.warn('[CROSSFIRE] Error deleting guest in Supabase:', error);
+        else console.log('[CROSSFIRE] Deleted guest from Supabase:', data);
+      } catch (e) {
+        console.warn('[CROSSFIRE] Error deleting guest in Supabase:', e);
+      }
+    }
+    return res;
+  }
+
+  public async verifyVolunteerCredentialsAsync(identifier: string, password = ''): Promise<VolunteerItem | null> {
+    if (isSupabaseConfigured) {
+      try {
+        const { data, error } = await supabase.rpc('verify_volunteer_login', {
+          p_identifier: identifier.trim(),
+          p_password: password.trim()
+        });
+        if (!error && data) {
+          return {
+            id: data.id,
+            volunteer_id: data.volunteer_id,
+            name: data.name,
+            email: data.email,
+            contact_number: data.contact_number,
+            password: password,
+            assigned_station: data.assigned_station,
+            shift: data.shift,
+            attendance_status: data.attendance_status,
+            kit_issued: data.kit_issued,
+            walkie_channel: data.walkie_channel,
+            notes: data.notes,
+            created_at: new Date().toISOString()
+          };
+        }
+      } catch (e) {
+        console.warn('[CROSSFIRE] Supabase volunteer verify failed, checking local:', e);
+      }
+    }
+    return this.verifyVolunteerCredentials(identifier, password);
   }
 
   // Summary Metrics for Admin Dashboard
