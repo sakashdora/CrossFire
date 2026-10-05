@@ -18,8 +18,23 @@ if (!isSupabaseConfigured) {
   );
 }
 
-// Initialized Supabase client
+// Initialized Supabase client for main app session
 export const supabase = createClient(
   supabaseUrl || 'https://mock-crossfire.supabase.co',
   supabaseAnonKey || 'mock-anon-key'
 );
+
+// Factory for isolated Supabase client that will never contaminate or mutate the main browser session
+export const createIsolatedClient = () => {
+  return createClient(
+    supabaseUrl || 'https://mock-crossfire.supabase.co',
+    supabaseAnonKey || 'mock-anon-key',
+    {
+      auth: {
+        persistSession: false,
+        autoRefreshToken: false,
+        detectSessionInUrl: false
+      }
+    }
+  );
+};

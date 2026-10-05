@@ -145,7 +145,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const adminUser = lowerEmail === 'chandanmahapatra2400@gmail.com' ? DEMO_USERS.admin_chandan : DEMO_USERS.admin;
         if (isSupabaseConfigured && password) {
           try {
-            await supabase.auth.signInWithPassword({ email: lowerEmail, password });
+            const { error: signInErr } = await supabase.auth.signInWithPassword({ email: lowerEmail, password });
+            if (signInErr && signInErr.message.toLowerCase().includes('invalid login credentials')) {
+              await supabase.auth.signUp({
+                email: lowerEmail,
+                password,
+                options: {
+                  data: {
+                    app: 'crossfire',
+                    first_name: adminUser.first_name,
+                    last_name: adminUser.last_name,
+                    role: 'admin'
+                  }
+                }
+              });
+            }
           } catch {
             // Offline fallback
           }

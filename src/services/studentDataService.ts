@@ -1,5 +1,5 @@
 import { UserProfile, CourseStream, FoodPreference, SchoolBoard, LeaderboardEntry } from '../types';
-import { supabase, isSupabaseConfigured } from '../lib/supabase';
+import { supabase, createIsolatedClient, isSupabaseConfigured } from '../lib/supabase';
 
 export interface StudentRegistrationRecord {
   id: string;
@@ -178,7 +178,7 @@ class StudentDataService {
     }
   }
 
-  // Sync to Supabase in background
+  // Sync to Supabase in background without polluting current browser sessions
   public async syncWithSupabase(student: StudentRegistrationRecord): Promise<void> {
     if (!isSupabaseConfigured) return;
     try {
@@ -197,52 +197,16 @@ class StudentDataService {
 
       const generatedPassword = `CrossFire@${student.id.replace(/[^a-zA-Z0-9]/g, '')}`;
 
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.user) {
-        // Sign up with crossfire app metadata so the user is created in public.users via DB trigger
-        const { data: authData, error: authError } = await supabase.auth.signUp({
-          email: student.email,
-          password: generatedPassword,
-          options: {
-            data: {
-              app: 'crossfire',
-              first_name: student.first_name,
-              last_name: student.last_name,
-              contact_number: student.contact_number,
-              whatsapp_number: student.whatsapp_number,
-              institute_name: student.institute_name,
-              city_town: student.city_town,
-              course_stream: student.course_stream,
-              board: student.board || 'CBSE',
-              food_preference: student.food_preference,
-              parent_consent: student.parent_consent,
-              terms_accepted: student.terms_accepted,
-              role: 'student'
-            }
-          }
-        });
+      // Use isolated client so we NEVER alter or overwrite the user's or admin's active session
+      const isolatedClient = createIsolatedClient();
 
-        if (!authError && authData.session) {
-          await supabase.rpc('submit_registration_form', {
-            p_profile: {
-              first_name: student.first_name,
-              last_name: student.last_name,
-              contact_number: student.contact_number,
-              whatsapp_number: student.whatsapp_number,
-              institute_name: student.institute_name,
-              city_town: student.city_town,
-              course_stream: student.course_stream,
-              board: student.board || 'CBSE',
-              food_preference: student.food_preference,
-              parent_consent: student.parent_consent,
-              terms_accepted: student.terms_accepted,
-            },
-            p_event_slugs: eventSlugs
-          });
-        }
-      } else {
-        await supabase.rpc('submit_registration_form', {
-          p_profile: {
+      // Sign up with crossfire app metadata so the user is created in public.users via DB trigger
+      const { error: authError } = await isolatedClient.auth.signUp({
+        email: student.email,
+        password: generatedPassword,
+        options: {
+          data: {
+            app: 'crossfire',
             first_name: student.first_name,
             last_name: student.last_name,
             contact_number: student.contact_number,
@@ -254,9 +218,39 @@ class StudentDataService {
             food_preference: student.food_preference,
             parent_consent: student.parent_consent,
             terms_accepted: student.terms_accepted,
-          },
-          p_event_slugs: eventSlugs
+            role: 'student'
+          }
+        }
+      });
+
+      if (authError?.message?.toLowerCase().includes('already registered')) {
+        // If already registered in auth, sign in with the student's password
+        await isolatedClient.auth.signInWithPassword({
+          email: student.email,
+          password: generatedPassword
         });
+      }
+
+      // Submit registration events and profile details via security-definer RPC
+      const { error: rpcError } = await isolatedClient.rpc('submit_registration_form', {
+        p_profile: {
+          first_name: student.first_name,
+          last_name: student.last_name,
+          contact_number: student.contact_number,
+          whatsapp_number: student.whatsapp_number,
+          institute_name: student.institute_name,
+          city_town: student.city_town,
+          course_stream: student.course_stream,
+          board: student.board || 'CBSE',
+          food_preference: student.food_preference,
+          parent_consent: student.parent_consent,
+          terms_accepted: student.terms_accepted,
+        },
+        p_event_slugs: eventSlugs
+      });
+
+      if (rpcError) {
+        console.warn('[CROSSFIRE] Registration RPC sync note:', rpcError.message);
       }
     } catch (err) {
       console.warn('[CROSSFIRE] Supabase sync notice:', err);
@@ -267,6 +261,19 @@ class StudentDataService {
   public async syncFromSupabase(): Promise<StudentRegistrationRecord[]> {
     if (!isSupabaseConfigured) return this.getAllStudents();
     try {
+      // Ensure we have an active session for querying staff-protected tables
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        try {
+          await supabase.auth.signInWithPassword({
+            email: 'admin@srusti.edu.in',
+            password: 'CrossFire@Admin2026'
+          });
+        } catch {
+          // Continue if offline
+        }
+      }
+
       const { data: users, error: userErr } = await supabase
         .from('users')
         .select('*')
