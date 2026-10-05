@@ -353,7 +353,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({
             </motion.button>
 
             <a
-              href="/Crossfire - 2026 Brochure.pdf"
+              href="/crossfire-2026-brochure.pdf"
+              download="Crossfire - 2026 Brochure.pdf"
               target="_blank"
               rel="noreferrer"
               className="w-full sm:w-auto h-13 px-6 rounded-2xl bg-white/5 hover:bg-white/15 text-slate-200 hover:text-white font-semibold text-xs border border-white/15 hover:border-white/30 transition-all flex items-center justify-center gap-1.5"

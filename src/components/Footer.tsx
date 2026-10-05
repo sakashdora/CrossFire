@@ -54,7 +54,8 @@ export const Footer: React.FC<FooterProps> = ({ setCurrentView }) => {
 
             <div className="flex flex-wrap gap-3 text-xs">
               <a
-                href="/Crossfire - 2026 Brochure.pdf"
+                href="/crossfire-2026-brochure.pdf"
+                download="Crossfire - 2026 Brochure.pdf"
                 target="_blank"
                 rel="noreferrer"
                 className="inline-flex items-center gap-1.5 text-slate-400 hover:text-orange-400 transition-colors"
@@ -63,7 +64,8 @@ export const Footer: React.FC<FooterProps> = ({ setCurrentView }) => {
                 Brochure (PDF)
               </a>
               <a
-                href="/A3 Crossfire -2026 Poster.pdf"
+                href="/crossfire-2026-poster.pdf"
+                download="A3 Crossfire - 2026 Poster.pdf"
                 target="_blank"
                 rel="noreferrer"
                 className="inline-flex items-center gap-1.5 text-slate-400 hover:text-orange-400 transition-colors"
