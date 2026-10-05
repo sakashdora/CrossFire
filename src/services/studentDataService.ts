@@ -29,7 +29,7 @@ export interface StudentRegistrationRecord {
 const STORAGE_KEY = 'crossfire_student_records';
 export const REGISTRATION_EVENT_KEY = 'crossfire_registration_updated';
 
-// Default initial registered delegates representing Odisha +2 colleges
+// Default initial registered delegates representing Odisha +2 colleges (Program not started yet — scores pending jury evaluation)
 const INITIAL_STUDENTS: StudentRegistrationRecord[] = [
   {
     id: 'CF26-1001',
@@ -47,13 +47,11 @@ const INITIAL_STUDENTS: StudentRegistrationRecord[] = [
     status: 'confirmed',
     parent_consent: true,
     terms_accepted: true,
-    checked_in_at: '2026-11-15T08:45:00+05:30',
+    checked_in_at: null,
     food_redeemed_at: null,
-    media_urls: { 'reels': 'https://youtube.com/shorts/srusti-crossfire-cinematic' },
-    scores: {
-      'quiz': { total: 88, rubric: { 'Accuracy': 36, 'Speed': 26, 'Final Round Answers': 26 }, comments: 'Great performance in buzzer round', locked: true }
-    },
-    room_reported: { 'quiz': true, 'reels': true },
+    media_urls: {},
+    scores: {},
+    room_reported: {},
     created_at: '2026-10-01T10:00:00+05:30'
   },
   {
@@ -72,13 +70,10 @@ const INITIAL_STUDENTS: StudentRegistrationRecord[] = [
     status: 'confirmed',
     parent_consent: true,
     terms_accepted: true,
-    checked_in_at: '2026-11-15T08:52:00+05:30',
-    food_redeemed_at: '2026-11-15T13:15:00+05:30',
-    scores: {
-      'quiz': { total: 92, rubric: { 'Accuracy': 38, 'Speed': 28, 'Final Round Answers': 26 }, comments: 'Excellent buzzer reflex during Round 3 bonus question.', locked: true },
-      'treasure-hunt': { total: 96.5, rubric: { 'Speed (Checkpoint Finish)': 48, 'Accuracy (Clues & Riddles)': 48.5, 'Bonus Checkpoint Points': 0 }, locked: true }
-    },
-    room_reported: { 'quiz': true, 'treasure-hunt': true },
+    checked_in_at: null,
+    food_redeemed_at: null,
+    scores: {},
+    room_reported: {},
     created_at: '2026-10-02T11:15:00+05:30'
   },
   {
@@ -97,13 +92,10 @@ const INITIAL_STUDENTS: StudentRegistrationRecord[] = [
     status: 'confirmed',
     parent_consent: true,
     terms_accepted: true,
-    checked_in_at: '2026-11-15T09:05:00+05:30',
-    food_redeemed_at: '2026-11-15T13:20:00+05:30',
-    scores: {
-      'ramp-walk': { total: 91, rubric: { 'Appearance & Confidence': 28, 'Stage Presence': 28, 'Personality & Expression': 35 }, comments: 'Outstanding poise and confidence.', locked: true },
-      'debate': { total: 93, rubric: { 'Argumentation & Logic': 38, 'Clarity & Expression': 28, 'Rebuttal Strength': 27 }, comments: 'Brilliant logical presentation on economic globalization.', locked: true }
-    },
-    room_reported: { 'ramp-walk': true, 'debate': true },
+    checked_in_at: null,
+    food_redeemed_at: null,
+    scores: {},
+    room_reported: {},
     created_at: '2026-10-02T14:30:00+05:30'
   },
   {
@@ -122,13 +114,10 @@ const INITIAL_STUDENTS: StudentRegistrationRecord[] = [
     status: 'confirmed',
     parent_consent: true,
     terms_accepted: true,
-    checked_in_at: '2026-11-15T09:10:00+05:30',
+    checked_in_at: null,
     food_redeemed_at: null,
-    scores: {
-      'debate': { total: 86, rubric: { 'Argumentation & Logic': 34, 'Clarity & Expression': 26, 'Rebuttal Strength': 26 }, comments: 'Good argumentation framework.', locked: true },
-      'poster-making': { total: 89, rubric: { 'Design & Aesthetics': 31, 'Message Clarity': 31, 'Creativity & Innovation': 27 }, locked: true }
-    },
-    room_reported: { 'debate': true, 'poster-making': true },
+    scores: {},
+    room_reported: {},
     created_at: '2026-10-03T09:20:00+05:30'
   },
   {
@@ -147,13 +136,10 @@ const INITIAL_STUDENTS: StudentRegistrationRecord[] = [
     status: 'confirmed',
     parent_consent: true,
     terms_accepted: true,
-    checked_in_at: '2026-11-15T09:12:00+05:30',
+    checked_in_at: null,
     food_redeemed_at: null,
-    media_urls: { 'poster-making': 'https://drive.google.com/file/d/poster-digital-artwork-srusti' },
-    scores: {
-      'poster-making': { total: 91.5, rubric: { 'Design & Aesthetics': 33, 'Message Clarity': 32.5, 'Creativity & Innovation': 26 }, comments: 'Superb color blending and creative tagline.', locked: true }
-    },
-    room_reported: { 'poster-making': true, 'debate': true },
+    scores: {},
+    room_reported: {},
     created_at: '2026-10-03T16:40:00+05:30'
   },
   {
@@ -172,12 +158,10 @@ const INITIAL_STUDENTS: StudentRegistrationRecord[] = [
     status: 'confirmed',
     parent_consent: true,
     terms_accepted: true,
-    checked_in_at: '2026-11-15T09:15:00+05:30',
+    checked_in_at: null,
     food_redeemed_at: null,
-    scores: {
-      'treasure-hunt': { total: 94, rubric: { 'Speed (Checkpoint Finish)': 47, 'Accuracy (Clues & Riddles)': 47, 'Bonus Checkpoint Points': 0 }, locked: true }
-    },
-    room_reported: { 'treasure-hunt': true },
+    scores: {},
+    room_reported: {},
     created_at: '2026-10-04T12:00:00+05:30'
   }
 ];
@@ -187,9 +171,22 @@ class StudentDataService {
   public getAllStudents(): StudentRegistrationRecord[] {
     try {
       const stored = localStorage.getItem(STORAGE_KEY);
+      const isSanitized = localStorage.getItem('crossfire_pre_event_scores_purged_v2');
       if (stored) {
-        const parsed = JSON.parse(stored);
+        let parsed = JSON.parse(stored);
         if (Array.isArray(parsed) && parsed.length > 0) {
+          if (!isSanitized) {
+            // Program has not started yet — purge fake pre-event scores, room statuses, and mock check-in timestamps
+            parsed = parsed.map((s: StudentRegistrationRecord) => ({
+              ...s,
+              scores: {},
+              checked_in_at: null,
+              food_redeemed_at: null,
+              room_reported: {},
+            }));
+            this.saveStudents(parsed);
+            localStorage.setItem('crossfire_pre_event_scores_purged_v2', 'true');
+          }
           return parsed;
         }
       }

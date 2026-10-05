@@ -314,16 +314,7 @@ export const DEMO_USERS: Record<string, UserProfile> = {
   }
 };
 
-export const INITIAL_LEADERBOARD: LeaderboardEntry[] = [
-  { rank: 1, user_id: 'u-1', participant_name: 'Rohan Mohanty & Team', school_name: 'Buxi Jagabandhu English Medium School', board: 'CBSE', events_count: 2, total_score: 188.5, trend: 'up' },
-  { rank: 2, user_id: 'u-2', participant_name: 'Ananya Dash', school_name: 'Mothers Public School', board: 'CBSE', events_count: 2, total_score: 184.0, trend: 'same' },
-  { rank: 3, user_id: 'u-3', participant_name: 'Pooja Das', school_name: 'DAV Public School, Chandrasekharpur', board: 'CBSE', events_count: 2, total_score: 179.5, trend: 'up' },
-  { rank: 4, user_id: 'u-4', participant_name: 'Debasish Swain', school_name: 'Stewart School, Cuttack', board: 'ICSE', events_count: 2, total_score: 175.0, trend: 'down' },
-  { rank: 5, user_id: 'u-5', participant_name: 'Priyanka Tripathy & Team', school_name: 'KIIT International School', board: 'CBSE', events_count: 2, total_score: 172.5, trend: 'same' },
-  { rank: 6, user_id: 'u-6', participant_name: 'Siddharth Rout', school_name: 'BJB Higher Secondary School', board: 'CHSE', events_count: 1, total_score: 94.0, trend: 'up' },
-  { rank: 7, user_id: 'u-7', participant_name: 'Tanvi Agarwal', school_name: 'SAI International School', board: 'CBSE', events_count: 1, total_score: 91.5, trend: 'down' },
-  { rank: 8, user_id: 'u-8', participant_name: 'Ayush Ray & Team', school_name: 'Ravenshaw Higher Secondary School', board: 'CHSE', events_count: 1, total_score: 89.0, trend: 'same' }
-];
+export const INITIAL_LEADERBOARD: LeaderboardEntry[] = [];
 
 export const INITIAL_NOTIFICATIONS: NotificationItem[] = [
   {
