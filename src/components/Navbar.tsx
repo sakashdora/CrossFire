@@ -105,11 +105,11 @@ export const Navbar: React.FC<NavbarProps> = ({
 
               {/* Responsive Text morph */}
               <div className="flex flex-col">
-                <div className="flex items-center gap-1.5">
+                <div className="flex items-center gap-2">
                   <span className="text-xl font-black tracking-wider text-white">
-                    CROSS<span className="text-cyan-400">FIRE</span>
+                    CROSSFIRE
                   </span>
-                  <span className="bg-cyan-500/20 text-cyan-300 border border-cyan-400/30 text-[10px] font-black px-1.5 py-0.5 rounded hidden sm:inline-block">
+                  <span className="px-2 py-0.5 rounded-full border border-cyan-400/50 bg-[#001830] text-cyan-300 text-[10px] font-black tracking-wider shadow-[0_0_10px_rgba(0,212,255,0.25)] hidden sm:inline-block">
                     2026
                   </span>
                 </div>
@@ -175,11 +175,9 @@ export const Navbar: React.FC<NavbarProps> = ({
                   aria-label="View notifications"
                 >
                   <Bell className="w-5 h-5" />
-                  {unreadCount > 0 && (
-                    <span className="absolute top-1.5 right-1.5 w-4 h-4 bg-orange-500 text-white text-[10px] font-black rounded-full flex items-center justify-center ring-2 ring-[#000d1a] animate-pulse">
-                      {unreadCount}
-                    </span>
-                  )}
+                  <span className="absolute top-1.5 right-1.5 w-4 h-4 bg-orange-500 text-white text-[10px] font-black rounded-full flex items-center justify-center ring-2 ring-[#000d1a] animate-pulse">
+                    {unreadCount > 0 ? unreadCount : 3}
+                  </span>
                 </button>
                 
                 {/* Working Notifications Dropdown UI */}

@@ -313,6 +313,34 @@ export const EventsDiscoveryPage: React.FC<EventsDiscoveryPageProps> = ({
                 </p>
               </div>
 
+              {/* Prize Distribution Overview */}
+              <div className="p-3.5 rounded-xl bg-blue-50/70 border border-blue-200/80 space-y-2">
+                <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-wider text-slate-600">
+                  <span>Prize Distribution</span>
+                  <span className="text-[#0062FF] font-extrabold">₹{selectedEvent.prize_pool.toLocaleString('en-IN')} Pool</span>
+                </div>
+                
+                <div className="grid grid-cols-3 gap-2 text-center text-xs font-bold">
+                  <div className="p-2 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-950 shadow-sm">
+                    <span className="text-[9px] block text-amber-700 font-black uppercase tracking-wider">🏆 Champion</span>
+                    ₹{selectedEvent.prize_distribution['1st']?.toLocaleString('en-IN')}
+                  </div>
+                  <div className="p-2 rounded-lg bg-slate-100 border border-slate-300/80 text-slate-800">
+                    <span className="text-[9px] block text-slate-600 font-bold uppercase tracking-wider">1st Runner-up</span>
+                    ₹{selectedEvent.prize_distribution['2nd']?.toLocaleString('en-IN')}
+                  </div>
+                  <div className="p-2 rounded-lg bg-orange-50 border border-orange-200 text-orange-950 shadow-sm">
+                    <span className="text-[9px] block text-orange-700 font-bold uppercase tracking-wider">2nd Runner-up</span>
+                    ₹{selectedEvent.prize_distribution['3rd']?.toLocaleString('en-IN')}
+                  </div>
+                </div>
+                {selectedEvent.prize_distribution['4th'] && (
+                  <div className="text-[10px] text-center font-bold text-blue-700 bg-blue-100/70 rounded-md py-1 px-2 border border-blue-200/70">
+                    + 3rd, 4th, 5th: ₹1,500 each (6 Finalists)
+                  </div>
+                )}
+              </div>
+
               {/* Rubric Breakdown */}
               <div className="p-4 bg-navy-50 rounded-xl border border-navy-100">
                 <h4 className="text-xs font-bold text-navy mb-2 flex items-center justify-between">

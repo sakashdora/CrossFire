@@ -35,23 +35,26 @@ export const CountdownTimer: React.FC<CountdownTimerProps> = ({
   }, [targetDate]);
 
   const units = [
-    { label: 'Days', value: timeLeft.days },
-    { label: 'Hours', value: timeLeft.hours },
-    { label: 'Minutes', value: timeLeft.minutes },
-    { label: 'Seconds', value: timeLeft.seconds },
+    { label: 'DAYS', value: timeLeft.days },
+    { label: 'HOURS', value: timeLeft.hours },
+    { label: 'MINUTES', value: timeLeft.minutes },
+    { label: 'SECONDS', value: timeLeft.seconds },
   ];
 
   return (
-    <div className="flex items-center justify-center gap-2 sm:gap-3.5 md:gap-4 select-none">
+    <div className="flex items-center justify-center gap-2.5 sm:gap-4 md:gap-5 select-none">
       {units.map((unit, idx) => (
-        <div key={idx} className="flex flex-col items-center">
-          <div className="w-[62px] h-[62px] sm:w-[76px] sm:h-[76px] md:w-20 md:h-20 bg-navy-dark/90 text-white rounded-2xl border border-white/15 flex items-center justify-center shadow-lg shadow-black/40 relative overflow-hidden backdrop-blur-sm group">
-            <span className="text-2xl sm:text-3xl md:text-4xl font-black text-orange-400 font-mono tracking-tight">
-              {String(unit.value).padStart(2, '0')}
-            </span>
-            <div className="absolute inset-0 bg-gradient-to-t from-orange-500/15 via-transparent to-white/5 pointer-events-none" />
-          </div>
-          <span className="text-[10px] sm:text-[11px] font-bold text-white/50 uppercase tracking-widest mt-1.5">
+        <div
+          key={idx}
+          className="w-16 h-20 sm:w-20 sm:h-24 md:w-24 md:h-26 rounded-2xl bg-[#001428]/85 backdrop-blur-md border border-cyan-500/40 hover:border-cyan-400 shadow-[0_0_20px_rgba(0,140,255,0.18)] flex flex-col items-center justify-center p-2 transition-all duration-300 hover:scale-105 group relative overflow-hidden"
+        >
+          {/* Subtle top glare reflection */}
+          <div className="absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-cyan-400/10 to-transparent pointer-events-none" />
+          
+          <span className="text-2xl sm:text-3xl md:text-4xl font-black text-cyan-400 font-sans tracking-tight drop-shadow-[0_0_12px_rgba(0,212,255,0.45)]">
+            {String(unit.value).padStart(2, '0')}
+          </span>
+          <span className="text-[9px] sm:text-[10px] font-bold text-slate-300 uppercase tracking-[0.2em] mt-1 sm:mt-1.5">
             {unit.label}
           </span>
         </div>

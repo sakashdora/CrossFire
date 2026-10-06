@@ -75,7 +75,7 @@ export const INITIAL_EVENTS: EventItem[] = [
     team_size: 2,
     max_participants: 60,
     current_participants: 44,
-    prize_pool: 24500,
+    prize_pool: 18000,
     prize_distribution: {
       "1st": 6000,
       "2nd": 4000,
@@ -170,7 +170,7 @@ export const INITIAL_EVENTS: EventItem[] = [
     team_size: 3,
     max_participants: 90,
     current_participants: 66,
-    prize_pool: 8000,
+    prize_pool: 6000,
     prize_distribution: {
       "1st": 3000,
       "2nd": 2000,
@@ -200,7 +200,7 @@ export const INITIAL_EVENTS: EventItem[] = [
     team_size: 1,
     max_participants: 50,
     current_participants: 38,
-    prize_pool: 9000,
+    prize_pool: 6000,
     prize_distribution: {
       "1st": 3000,
       "2nd": 2000,
@@ -230,7 +230,7 @@ export const INITIAL_EVENTS: EventItem[] = [
     team_size: 1,
     max_participants: 80,
     current_participants: 52,
-    prize_pool: 9000,
+    prize_pool: 6000,
     prize_distribution: {
       "1st": 3000,
       "2nd": 2000,

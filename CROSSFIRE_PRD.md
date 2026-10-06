@@ -13,7 +13,19 @@
 CROSSFIRE is a state-level talent hunt platform enabling +2 Final Year students to participate in 6 competitive events (Quiz, Ramp Walk, Reels, Debate, Poster Making, Treasure Hunt). The platform manages registration, real-time scoring, leaderboard management, and post-event analytics.
 
 **Scope:** MVP for November 15, 2026 event at Srusti Campus  
-**Scalability:** Designed for future recurring events and multi-institution expansion
+**Scalability:** Designed for future recurring events and multi-institution expansion  
+**Total Prize Pool:** ₹50,000 INR (100% Free Entry / ₹0 Registration Fee)
+
+### Official Event Prize & Team Matrix
+| Event | Team size | Champion | 1st Runner-up | 2nd Runner-up | 3rd | 4th | 5th | Event total |
+| :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| **Quiz** | 2 | ₹6,000 | ₹4,000 | ₹3,500 | ₹1,500 | ₹1,500 | ₹1,500 | **₹18,000** |
+| **Treasure Hunt** | 3 | ₹3,000 | ₹2,000 | ₹1,000 | – | – | – | **₹6,000** |
+| **Ramp Walk** | 1 | ₹3,000 | ₹2,000 | ₹1,000 | – | – | – | **₹6,000** |
+| **Reels** | 1 | ₹3,000 | ₹2,000 | ₹1,000 | – | – | – | **₹6,000** |
+| **Debate** | 1 | ₹4,000 | ₹2,000 | ₹1,000 | – | – | – | **₹7,000** |
+| **Poster Making** | 1 | ₹4,000 | ₹2,000 | ₹1,000 | – | – | – | **₹7,000** |
+| **Grand Total** | — | **₹23,000** | **₹14,000** | **₹8,500** | **₹1,500** | **₹1,500** | **₹1,500** | **₹50,000** |
 
 ---
 

@@ -71,6 +71,18 @@ Students may participate in **up to 2 competitions from Group A** and **up to 2 
    - *Venue:* Media Lab & Studio Block | *Prize:* 1st ₹3k, 2nd ₹2k, 3rd ₹1k.
    - *Rubric:* Creativity (35), Content Quality (35), Execution & Editing (30).
 
+### Official Prize & Team Size Distribution Matrix:
+
+| Event | Team size | Champion | 1st Runner-up | 2nd Runner-up | 3rd | 4th | 5th | Event total |
+| :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| **Quiz** | 2 | ₹6,000 | ₹4,000 | ₹3,500 | ₹1,500 | ₹1,500 | ₹1,500 | **₹18,000** |
+| **Treasure Hunt** | 3 | ₹3,000 | ₹2,000 | ₹1,000 | – | – | – | **₹6,000** |
+| **Ramp Walk** | 1 | ₹3,000 | ₹2,000 | ₹1,000 | – | – | – | **₹6,000** |
+| **Reels** | 1 | ₹3,000 | ₹2,000 | ₹1,000 | – | – | – | **₹6,000** |
+| **Debate** | 1 | ₹4,000 | ₹2,000 | ₹1,000 | – | – | – | **₹7,000** |
+| **Poster Making** | 1 | ₹4,000 | ₹2,000 | ₹1,000 | – | – | – | **₹7,000** |
+| **Grand Total** | — | **₹23,000** | **₹14,000** | **₹8,500** | **₹1,500** | **₹1,500** | **₹1,500** | **₹50,000** |
+
 ---
 
 ## 🛠️ 3. TECHNOLOGY STACK & SYSTEM ARCHITECTURE

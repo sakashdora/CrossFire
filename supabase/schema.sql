@@ -1505,7 +1505,7 @@ values
 (
     'Quiz', 'quiz', 'Group A',
     'Written test preliminary round followed by campus buzzer final round. Top 6 teams qualify for the final round. Trophy & cash awards for Champion & Runners-ups.',
-    'Brain', 'team', 2, 60, 24500, '{"1st": 6000, "2nd": 4000, "3rd": 3500, "4th": 1500, "5th": 1500, "6th": 1500}',
+    'Brain', 'team', 2, 60, 18000, '{"1st": 6000, "2nd": 4000, "3rd": 3500, "4th": 1500, "5th": 1500, "6th": 1500}',
     '{"criteria": [{"name": "Accuracy", "weight": 40, "max": 40, "description": "Correct answers and factual precision in written & buzzer rounds"}, {"name": "Speed", "weight": 30, "max": 30, "description": "Reaction time during direct buzzer questions"}, {"name": "Final Round Answers", "weight": 30, "max": 30, "description": "Performance in campus buzzer finals"}]}',
     '2026-11-15 10:30:00+05:30', '2026-11-15 12:00:00+05:30', '2026-11-14 23:59:59+05:30', 'Srusti Campus - Main Auditorium A'
 ),
@@ -1526,21 +1526,21 @@ values
 (
     'Treasure Hunt', 'treasure-hunt', 'Group B',
     'Physical puzzle solving across campus in teams of 3 students. Multi-station treasure hunt decoding cryptic clues, riddle trails, and racing against time.',
-    'Compass', 'team', 3, 90, 8000, '{"1st": 3000, "2nd": 2000, "3rd": 1000}',
+    'Compass', 'team', 3, 90, 6000, '{"1st": 3000, "2nd": 2000, "3rd": 1000}',
     '{"criteria": [{"name": "Speed (Checkpoint Finish)", "weight": 50, "max": 50, "description": "Overall race completion time across all stations"}, {"name": "Accuracy (Clues & Riddles)", "weight": 50, "max": 50, "description": "Solving riddles and clues without hints or penalties"}, {"name": "Bonus Checkpoint Points", "weight": 10, "max": 10, "description": "Bonus points for first 3 completing teams"}]}',
     '2026-11-15 15:00:00+05:30', '2026-11-15 16:00:00+05:30', '2026-11-14 23:59:59+05:30', 'Srusti Campus - Central Campus Quadrangle'
 ),
 (
     'Ramp Walk', 'ramp-walk', 'Group B',
     'Fashion & personality showcase. Live performance on stage (2 mins per participant). Celebrate confidence, poise, styling, and charismatic stage presence.',
-    'Sparkles', 'solo', 1, 50, 9000, '{"1st": 3000, "2nd": 2000, "3rd": 1000}',
+    'Sparkles', 'solo', 1, 50, 6000, '{"1st": 3000, "2nd": 2000, "3rd": 1000}',
     '{"criteria": [{"name": "Appearance & Confidence", "weight": 30, "max": 30, "description": "Attire elegance, styling, grooming, and self-assurance"}, {"name": "Stage Presence", "weight": 30, "max": 30, "description": "Walk posture, stride confidence, and stage connection"}, {"name": "Personality & Expression", "weight": 40, "max": 40, "description": "Charisma, aura, authenticity, and spontaneous charm"}]}',
     '2026-11-15 11:30:00+05:30', '2026-11-15 12:30:00+05:30', '2026-11-14 23:59:59+05:30', 'Srusti Campus - Central Open Air Amphitheatre'
 ),
 (
     'Reels', 'reels', 'Group B',
     'Short video content creation (30-60 seconds). Reels to be shot in Srusti Campus on the same day. Showcase creative visual storytelling and youth dynamism.',
-    'Video', 'solo', 1, 80, 9000, '{"1st": 3000, "2nd": 2000, "3rd": 1000}',
+    'Video', 'solo', 1, 80, 6000, '{"1st": 3000, "2nd": 2000, "3rd": 1000}',
     '{"criteria": [{"name": "Creativity", "weight": 35, "max": 35, "description": "Fresh perspective, concept originality, and storytelling"}, {"name": "Content Quality", "weight": 35, "max": 35, "description": "Visual framing, theme resonance, and engagement"}, {"name": "Execution", "weight": 30, "max": 30, "description": "Editing cuts, rhythm, color grading, and audio sync"}]}',
     '2026-11-15 10:00:00+05:30', '2026-11-15 14:30:00+05:30', '2026-11-14 18:00:00+05:30', 'Srusti Campus - Media Lab & Studio Block'
 )

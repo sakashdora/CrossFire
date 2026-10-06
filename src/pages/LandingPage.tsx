@@ -17,7 +17,7 @@ import {
   MessageSquareQuote,
   Palette,
   Compass,
-  CalendarDays,
+  Calendar,
   Clock,
   Download,
   ChevronDown,
@@ -32,56 +32,12 @@ import {
   School,
   FileText,
   Ticket,
-  Image as ImageIcon
+  Image as ImageIcon,
+  X,
+  Bot,
+  Send,
+  Star
 } from 'lucide-react';
-
-const StaggeredText = ({ text, className }: { text: string, className?: string }) => {
-  const letters = Array.from(text);
-  
-  const container = {
-    hidden: { opacity: 0 },
-    visible: (i = 1) => ({
-      opacity: 1,
-      transition: { staggerChildren: 0.08, delayChildren: 0.1 * i }
-    })
-  };
-  
-  const child = {
-    visible: {
-      opacity: 1,
-      y: 0,
-      rotateX: 0,
-      transition: { type: "spring", damping: 12, stiffness: 200 } as any
-    },
-    hidden: {
-      opacity: 0,
-      y: 40,
-      rotateX: 90,
-      transition: { type: "spring", damping: 12, stiffness: 200 } as any
-    }
-  };
-
-  return (
-    <motion.div
-      style={{ display: 'inline-flex', overflow: 'visible', perspective: 1000 }}
-      variants={container}
-      initial="hidden"
-      animate="visible"
-      className={className}
-    >
-      {letters.map((letter, index) => (
-        <motion.span
-          key={index}
-          variants={child}
-          style={{ display: 'inline-block' }}
-          className="hover:text-cyan-300 hover:drop-shadow-[0_0_15px_rgba(56,189,248,0.8)] transition-all duration-300 cursor-default"
-        >
-          {letter === " " ? "\u00A0" : letter}
-        </motion.span>
-      ))}
-    </motion.div>
-  );
-};
 
 interface LandingPageProps {
   onSelectEvent: (event: EventItem) => void;
@@ -309,7 +265,7 @@ const FAQS = [
   },
   {
     q: 'What is the cash prize structure for each track?',
-    a: 'The total cash prize pool is ₹50,000 distributed across 6 events: Quiz has a ₹24,500 prize pool (1st: ₹6,000, 2nd: ₹4,000, 3rd: ₹3,500, plus ₹1,500 each for 4th, 5th, and 6th positions). Ramp Walk and Reels feature ₹9,000 each (1st: ₹3,000, 2nd: ₹2,000, 3rd: ₹1,000). Debate and Poster Making feature ₹7,000 each (1st: ₹4,000, 2nd: ₹2,000, 3rd: ₹1,000), and Treasure Hunt features ₹8,000 (1st: ₹3,000, 2nd: ₹2,000, 3rd: ₹1,000). Winners also receive championship trophies and state certificates.'
+    a: 'The total cash prize pool is ₹50,000 distributed across 6 events: Quiz has an ₹18,000 prize pool (Champion: ₹6,000, 1st Runner-up: ₹4,000, 2nd Runner-up: ₹3,500, plus ₹1,500 each for 3rd, 4th, and 5th finalists). Debate and Poster Making feature ₹7,000 each (Champion: ₹4,000, 1st Runner-up: ₹2,000, 2nd Runner-up: ₹1,000). Treasure Hunt, Ramp Walk, and Reels feature ₹6,000 each (Champion: ₹3,000, 1st Runner-up: ₹2,000, 2nd Runner-up: ₹1,000). Winners also receive championship trophies, medals, and official state certificates of merit.'
   },
   {
     q: 'Can students from the same college form a team?',
@@ -332,6 +288,33 @@ export const LandingPage: React.FC<LandingPageProps> = ({
   const [institutionSearch, setInstitutionSearch] = useState('');
   const [showDownloadMenu, setShowDownloadMenu] = useState(false);
   const [showFloatingCta, setShowFloatingCta] = useState(false);
+  const [showAiModal, setShowAiModal] = useState(false);
+  const [aiQuestion, setAiQuestion] = useState('');
+  const [aiAnswer, setAiAnswer] = useState<string | null>(null);
+  const [aiLoading, setAiLoading] = useState(false);
+
+  const handleAiAsk = (query: string) => {
+    if (!query.trim()) return;
+    setAiLoading(true);
+    setAiAnswer(null);
+    setTimeout(() => {
+      const q = query.toLowerCase();
+      if (q.includes('event') || q.includes('track') || q.includes('competition')) {
+        setAiAnswer('🏆 CROSSFIRE 2026 features 6 competitive tracks: Quiz (Team of 2, ₹18k pool), Treasure Hunt (Team of 3, ₹6k pool), Ramp Walk (Solo, ₹6k pool), Reels (Solo, ₹6k pool), Debate (Solo, ₹7k pool), and Poster Making (Solo, ₹7k pool). Each student can register for up to 2 events!');
+      } else if (q.includes('prize') || q.includes('cash') || q.includes('pool') || q.includes('money')) {
+        setAiAnswer('💰 Total Cash Pool: ₹50,000 INR! Quiz ₹18,000 (Champion ₹6k, 1st Runner-up ₹4k, 2nd Runner-up ₹3.5k, 3rd-5th finalists ₹1.5k each); Debate & Poster Making ₹7,000 each (Champion ₹4k, 1st Runner-up ₹2k, 2nd Runner-up ₹1k); Treasure Hunt, Ramp Walk & Reels ₹6,000 each (Champion ₹3k, 1st Runner-up ₹2k, 2nd Runner-up ₹1k).');
+      } else if (q.includes('team') || q.includes('partner') || q.includes('group')) {
+        setAiAnswer('👥 Team Tracks: Quiz requires a 2-student team. Treasure Hunt requires a 3-student team. Both teammates must belong to the same institution. Ramp Walk, Reels, Debate, and Poster Making are solo individual events.');
+      } else if (q.includes('fee') || q.includes('free') || q.includes('food') || q.includes('lunch') || q.includes('refresh')) {
+        setAiAnswer('✨ 100% Free Entry! There is ₹0 registration fee. All registered +2 students receive complimentary morning breakfast, lunch, and hospitality at Srusti Campus dining courtyard.');
+      } else if (q.includes('time') || q.includes('date') || q.includes('schedule') || q.includes('venue')) {
+        setAiAnswer('📅 Date: Sunday, November 15, 2026 at Srusti Academy of Management and Technology, Bhubaneswar. Gate check-in begins at 08:30 AM, events start at 10:00 AM, and the Grand Valedictory Ceremony is at 04:00 PM.');
+      } else {
+        setAiAnswer(`🤖 CROSSFIRE 2026 is Odisha's premier State-Level talent hunt for +2 12th students (CBSE, ICSE, CHSE) held at Srusti Academy on Nov 15, 2026. Max 2 events per student. All events are 100% free with cash prizes, championship trophies, and state certificates!`);
+      }
+      setAiLoading(false);
+    }, 400);
+  };
 
   useEffect(() => {
     let ticking = false;
@@ -366,150 +349,161 @@ export const LandingPage: React.FC<LandingPageProps> = ({
       {/* ─── 1. HERO ARENA SECTION (Deep Srusti Navy + Pure White + Cyan Shimmer) ─── */}
       <section className="relative min-h-[90vh] lg:min-h-screen flex flex-col justify-between overflow-hidden bg-[#000d1a] group">
         
-        {/* Exclusive Dynamic Blue Fire Particles Background */}
+        {/* Dynamic Blue Fire Cosmic Particles Swarm Background */}
         <HeroParticlesBackground className="opacity-100" />
 
+        {/* ── Desktop Top-Left Institutional Card (SAGS Crest) ── */}
+        <div className="hidden lg:flex flex-col items-center absolute top-20 left-8 xl:left-14 z-20 group select-none">
+          <div className="w-24 h-24 sm:w-26 sm:h-26 rounded-3xl bg-white p-2.5 shadow-[0_10px_35px_rgba(0,0,0,0.6)] border border-cyan-400/40 flex items-center justify-center group-hover:scale-105 transition-all duration-300">
+            <img
+              src="/sagslogo.png"
+              alt="SAGS - Srusti Academy of Graduate Studies"
+              className="w-full h-full object-contain filter drop-shadow-sm"
+            />
+          </div>
+          <p className="mt-2 text-[11px] font-bold text-slate-200 leading-tight text-center max-w-[170px] drop-shadow-sm">
+            Srusti Academy of Management<br />and Technology
+          </p>
+        </div>
+
         {/* Central Content */}
-        <div className="relative z-10 flex-1 flex flex-col items-center justify-center text-center px-4 sm:px-6 pt-16 sm:pt-20 md:pt-24 pb-12 max-w-5xl mx-auto w-full">
+        <div className="relative z-10 flex-1 flex flex-col items-center justify-center text-center px-4 sm:px-6 pt-12 sm:pt-14 md:pt-16 pb-3 max-w-5xl mx-auto w-full">
           
-          {/* Dual Institutional Emblem Badges: CrossFire Center & Enlarged, College Logo on Right Side */}
+          {/* Mobile Institutional Card (Compact on top) */}
+          <div className="lg:hidden flex flex-col items-center mb-3 select-none">
+            <div className="w-16 h-16 rounded-2xl bg-white p-1.5 shadow-lg border border-cyan-400/30 flex items-center justify-center">
+              <img src="/sagslogo.png" alt="Srusti Academy" className="w-full h-full object-contain" />
+            </div>
+            <p className="mt-1.5 text-[10px] font-bold text-slate-300 text-center max-w-[200px]">
+              Srusti Academy of Management and Technology
+            </p>
+          </div>
+
+          {/* ── Center Hero Emblem: Glowing Cyan Target Reticle with Flame ── */}
           <motion.div
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
+            initial={{ opacity: 0, scale: 0.85 }}
+            animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.6 }}
-            className="flex items-center justify-center gap-4 sm:gap-6 mb-6 flex-wrap"
+            className="relative -mb-1 flex items-center justify-center select-none"
           >
-            {/* CrossFire Logo (Center & Prominent Large Size) */}
-            <div className="relative group">
-              <div className="w-20 h-20 sm:w-24 sm:h-24 md:w-28 md:h-28 rounded-3xl bg-white p-2 sm:p-2.5 shadow-[0_0_45px_rgba(0,132,255,0.55)] border-2 border-cyan-400 flex items-center justify-center hover:scale-105 transition-all duration-300">
-                <img
-                  src="/Logo.png"
-                  alt="CrossFire 2026"
-                  className="w-full h-full object-contain filter drop-shadow"
-                />
-              </div>
-              <span className="absolute -bottom-2 left-1/2 -translate-x-1/2 px-2.5 py-0.5 bg-gradient-to-r from-blue-600 to-cyan-500 text-white text-[10px] sm:text-xs font-black uppercase rounded-full shadow-md tracking-wider border border-white/30 whitespace-nowrap">
-                CROSSFIRE 2026
-              </span>
-            </div>
-
-            {/* Connecting Subtle Divider */}
-            <div className="hidden sm:flex flex-col items-center px-1">
-              <div className="w-px h-8 bg-gradient-to-b from-transparent via-cyan-400/50 to-transparent" />
-            </div>
-
-            {/* Srusti SAGS College Emblem (Right Side with 'Organized by SAGS' label) */}
-            <div className="flex flex-col items-center sm:items-start text-left">
-              <span className="text-[10px] sm:text-xs uppercase tracking-widest text-cyan-300 font-extrabold mb-1">
-                Organized by SAGS
-              </span>
-              <div className="h-14 sm:h-16 px-4 py-1.5 rounded-2xl bg-white/95 backdrop-blur-md shadow-2xl shadow-black/50 border border-white/50 flex items-center justify-center hover:scale-105 transition-transform">
-                <img
-                  src="/sagslogo.png"
-                  alt="Srusti Academy of Graduate Studies"
-                  className="h-full object-contain max-h-12"
-                />
-              </div>
+            <div className="relative w-20 h-14 sm:w-28 sm:h-18 md:w-32 md:h-20 flex items-center justify-center">
+              <img
+                src="/hero-flame-reticle.png"
+                alt="CrossFire Reticle Flame"
+                className="w-full h-full object-contain filter drop-shadow-[0_0_20px_rgba(0,212,255,0.5)] animate-pulse"
+              />
             </div>
           </motion.div>
 
+          {/* ── Main Display Title: Metallic Chrome CROSS + Fiery Orange FIRE ── */}
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1, duration: 0.6 }}
+            className="mb-0.5 flex items-center justify-center"
+          >
+            <img
+              src="/hero-crossfire-title.png"
+              alt="CROSSFIRE"
+              className="w-[270px] sm:w-[380px] md:w-[480px] lg:w-[540px] h-auto object-contain filter drop-shadow-[0_10px_35px_rgba(0,0,0,0.9)] select-none"
+            />
+          </motion.div>
 
-          {/* Main Title */}
-          <div className="space-y-2 mb-4 perspective-1000">
-            <motion.p
-              initial={{ opacity: 0, letterSpacing: '0em' }}
-              animate={{ opacity: 1, letterSpacing: '0.3em' }}
-              transition={{ delay: 0.1, duration: 1 }}
-              className="text-slate-300 text-xs sm:text-sm font-bold uppercase"
-            >
-              Ignite Your Talent At
-            </motion.p>
-            <h1 className="text-4xl sm:text-6xl md:text-7xl lg:text-8xl font-black tracking-tight leading-[1.05] uppercase flex items-center justify-center flex-wrap">
-              <StaggeredText text="CROSS" className="text-white drop-shadow-[0_4px_25px_rgba(0,0,0,0.8)]" />
-              <StaggeredText text="FIRE" className="bg-gradient-to-r from-white via-sky-200 to-blue-400 bg-clip-text text-transparent drop-shadow-[0_0_35px_rgba(0,98,255,0.7)] ml-2" />
-              <motion.span 
-                initial={{ opacity: 0, scale: 0.5, rotateX: 90 }}
-                animate={{ opacity: 1, scale: 1, rotateX: 0 }}
-                transition={{ type: "spring", damping: 10, stiffness: 100, delay: 1 }}
-                className="inline-block ml-2 sm:ml-4 px-3 py-0.5 rounded-2xl bg-blue-500/20 border border-blue-400/40 text-cyan-300 text-xl sm:text-3xl md:text-4xl lg:text-5xl font-black align-middle shadow-[0_0_20px_rgba(56,189,248,0.2)]"
-              >
-                2026
-              </motion.span>
-            </h1>
-          </div>
-
-          {/* Date & Location Pill Strip */}
+          {/* ── Subtitle Flanked by Cyan Accent Lines ── */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ delay: 0.3, duration: 0.5 }}
-            className="flex flex-wrap items-center justify-center gap-2.5 text-white/90 text-xs sm:text-sm font-semibold mb-6"
+            transition={{ delay: 0.2, duration: 0.6 }}
+            className="flex items-center justify-center gap-3 sm:gap-5 my-1 w-full max-w-xl mx-auto select-none"
           >
-            <span className="flex items-center gap-1.5 bg-white/10 border border-white/20 px-3.5 py-1.5 rounded-full backdrop-blur-sm">
-              <CalendarDays className="w-4 h-4 text-cyan-400 shrink-0" />
+            <span className="w-8 sm:w-16 h-[2px] bg-cyan-400 shadow-[0_0_8px_rgba(0,212,255,0.8)]" />
+            <span className="text-[10px] sm:text-xs md:text-sm font-black uppercase tracking-[0.25em] text-slate-200 whitespace-nowrap">
+              STATE LEVEL COMPETITION
+            </span>
+            <span className="w-8 sm:w-16 h-[2px] bg-cyan-400 shadow-[0_0_8px_rgba(0,212,255,0.8)]" />
+          </motion.div>
+
+          {/* ── Glowing Cyan Tagline ── */}
+          <motion.p
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.25, duration: 0.6 }}
+            className="text-xs sm:text-sm md:text-base font-black uppercase tracking-[0.35em] text-[#00d4ff] drop-shadow-[0_0_15px_rgba(0,212,255,0.75)] mt-0.5 mb-3 select-none"
+          >
+            IGNITE YOUR TALENT
+          </motion.p>
+
+          {/* ── Unified Date & Venue Pill ── */}
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3, duration: 0.5 }}
+            className="inline-flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-4 px-5 sm:px-7 py-2 rounded-full bg-[#001428]/80 border border-cyan-500/35 backdrop-blur-md text-xs sm:text-sm font-bold text-slate-200 shadow-[0_0_20px_rgba(0,140,255,0.12)] mb-3 sm:mb-4 select-none"
+          >
+            <span className="flex items-center gap-2">
+              <Calendar className="w-4 h-4 text-cyan-400 shrink-0" />
               <span>Sunday, November 15, 2026</span>
             </span>
-            <span className="text-white/40 hidden sm:inline">•</span>
-            <span className="flex items-center gap-1.5 bg-white/10 border border-white/20 px-3.5 py-1.5 rounded-full backdrop-blur-sm">
+            <span className="hidden sm:inline text-cyan-400/30 font-light">|</span>
+            <span className="flex items-center gap-2">
               <MapPin className="w-4 h-4 text-cyan-400 shrink-0" />
               <span>Srusti Academy of Management and Technology</span>
             </span>
           </motion.div>
 
-          {/* Dynamic Countdown Timer */}
+          {/* ── Championship Starts In & Countdown Boxes ── */}
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: 0.4, duration: 0.5 }}
-            className="mb-6"
+            className="mb-3 sm:mb-4 select-none"
           >
-            <p className="text-[10px] uppercase tracking-[0.25em] font-black text-slate-300 mb-3">
-              Championship Starts In
-            </p>
+            <div className="flex items-center justify-center gap-2 text-[10px] sm:text-xs uppercase tracking-[0.28em] font-black text-slate-300 mb-2">
+              <span className="text-cyan-400 text-xs">✦</span>
+              <span>CHAMPIONSHIP STARTS IN</span>
+            </div>
             <CountdownTimer targetDate="2026-11-15T09:30:00+05:30" />
           </motion.div>
 
-          {/* Primary Action Buttons (Electric Cobalt + Frost Glass + Interactive Downloads) */}
+          {/* ── Primary Action Buttons (Register Free, Explore Tracks, Brochure) ── */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.5, duration: 0.5 }}
-            className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4 mb-7 w-full max-w-md sm:max-w-none relative z-30"
+            className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4 mb-4 sm:mb-5 w-full max-w-md sm:max-w-none relative z-30"
           >
-            {/* Primary Action: Register Free (Enlarged, no 60s) */}
+            {/* Register Free Button */}
             <motion.button
               whileHover={{ scale: 1.04 }}
               whileTap={{ scale: 0.96 }}
               onClick={() => setCurrentView('register')}
-              className="relative overflow-hidden w-full sm:w-auto h-15 sm:h-16 px-10 sm:px-12 rounded-2xl bg-gradient-to-r from-[#0062FF] via-[#0084FF] to-[#00D4FF] text-white font-black text-base sm:text-lg shadow-[0_0_40px_rgba(0,132,255,0.55)] hover:shadow-[0_0_55px_rgba(0,212,255,0.7)] transition-all flex items-center justify-center gap-3 cursor-pointer group border-2 border-cyan-300/50"
+              className="h-12 sm:h-13 px-8 sm:px-10 rounded-full bg-gradient-to-r from-[#0062FF] via-[#0084FF] to-[#00D4FF] text-white font-black text-sm sm:text-base shadow-[0_0_30px_rgba(0,132,255,0.55)] hover:shadow-[0_0_45px_rgba(0,212,255,0.7)] transition-all flex items-center justify-center gap-2.5 border border-cyan-300/40 cursor-pointer"
             >
-              <span className="relative z-10 flex items-center gap-2.5 tracking-wide">
-                Register Free
-                <ArrowRight className="w-5 h-5 group-hover:translate-x-1.5 transition-transform" />
-              </span>
+              <span>Register Free</span>
+              <ArrowRight className="w-4 h-4" />
             </motion.button>
 
-            {/* Secondary Action: Explore Tracks */}
+            {/* Explore All 6 Tracks */}
             <motion.button
               whileHover={{ scale: 1.04 }}
               whileTap={{ scale: 0.96 }}
               onClick={() => setCurrentView('events')}
-              className="w-full sm:w-auto h-13 px-7 sm:px-8 rounded-2xl bg-white/[0.08] hover:bg-white/[0.15] backdrop-blur-xl text-white font-bold text-sm border border-white/20 hover:border-cyan-400/60 hover:shadow-[0_0_25px_rgba(56,189,248,0.25)] transition-all flex items-center justify-center gap-2 cursor-pointer"
+              className="h-12 sm:h-13 px-6 sm:px-7 rounded-full bg-[#001428]/80 hover:bg-[#002447] text-white font-bold text-xs sm:text-sm border border-cyan-500/30 hover:border-cyan-400/60 backdrop-blur-md transition-all flex items-center justify-center gap-2 cursor-pointer shadow-[0_0_15px_rgba(0,140,255,0.1)] hover:scale-105"
             >
-              <Compass className="w-4 h-4 text-cyan-300" />
+              <FileText className="w-4 h-4 text-cyan-400" />
               <span>Explore All 6 Tracks</span>
             </motion.button>
 
-            {/* Tertiary Action: Official Downloads (Brochure & Poster) */}
+            {/* Brochure & Media (PDF) Dropdown */}
             <div className="relative w-full sm:w-auto">
               <motion.button
                 whileHover={{ scale: 1.04 }}
                 whileTap={{ scale: 0.96 }}
                 onClick={() => setShowDownloadMenu(!showDownloadMenu)}
-                className={`w-full sm:w-auto h-13 px-6 rounded-2xl backdrop-blur-xl font-bold text-xs border transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                className={`w-full sm:w-auto h-12 sm:h-13 px-5 sm:px-6 rounded-full backdrop-blur-md font-bold text-xs sm:text-sm border transition-all flex items-center justify-center gap-2 cursor-pointer shadow-[0_0_15px_rgba(0,140,255,0.1)] ${
                   showDownloadMenu
                     ? 'bg-blue-600/30 text-white border-cyan-400 shadow-[0_0_25px_rgba(56,189,248,0.3)]'
-                    : 'bg-white/[0.06] hover:bg-white/[0.12] text-slate-200 hover:text-white border-white/15 hover:border-cyan-400/40'
+                    : 'bg-[#001428]/80 hover:bg-[#002447] text-slate-200 hover:text-white border-cyan-500/30 hover:border-cyan-400/60'
                 }`}
               >
                 <Download className="w-4 h-4 text-cyan-400 shrink-0" />
@@ -521,12 +515,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               <AnimatePresence>
                 {showDownloadMenu && (
                   <>
-                    {/* Backdrop Click Dismiss */}
                     <div
                       className="fixed inset-0 z-40"
                       onClick={() => setShowDownloadMenu(false)}
                     />
-
                     <motion.div
                       initial={{ opacity: 0, y: 8, scale: 0.95 }}
                       animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -539,7 +531,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                         <p className="text-[11px] text-slate-400">Direct event files & guidelines</p>
                       </div>
 
-                      {/* 1. Official Brochure */}
                       <a
                         href="/Crossfire-2026-Brochure.pdf"
                         download="Crossfire-2026-Brochure.pdf"
@@ -560,7 +551,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                         </div>
                       </a>
 
-                      {/* 2. Official Poster */}
                       <a
                         href="/A3-Crossfire-2026-Poster.pdf"
                         download="A3-Crossfire-2026-Poster.pdf"
@@ -581,7 +571,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                         </div>
                       </a>
 
-                      {/* 3. Meal Coupon Format */}
                       <a
                         href="/Crossfire-coupon.pdf"
                         download="Crossfire-coupon.pdf"
@@ -608,28 +597,49 @@ export const LandingPage: React.FC<LandingPageProps> = ({
             </div>
           </motion.div>
 
-          {/* Trust & Eligibility Badges (Cyber Frost Aesthetic) */}
+          {/* ── Continuous Bottom Trust Bar with Smooth Right-to-Left Moving Animation (No AI Badge) ── */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.6, duration: 0.5 }}
-            className="flex flex-wrap items-center justify-center gap-2.5 max-w-4xl mx-auto"
+            className="relative mt-2 sm:mt-3 max-w-4xl w-full mx-auto select-none"
           >
-            {[
-              { label: '+2 2nd Year (Class 12) Only', icon: <GraduationCap className="w-3.5 h-3.5 text-cyan-300" /> },
-              { label: 'CBSE / ICSE / CHSE', icon: <Building2 className="w-3.5 h-3.5 text-sky-300" /> },
-              { label: 'Max 2 Events / Student', icon: <Zap className="w-3.5 h-3.5 text-amber-300" /> },
-              { label: '100% Free Entry & Refreshments', icon: <Coffee className="w-3.5 h-3.5 text-emerald-300" /> },
-            ].map(({ label, icon }) => (
-              <span
-                key={label}
-                className="inline-flex items-center gap-2 text-xs font-bold text-cyan-100 bg-[#001b33]/80 hover:bg-[#002647] border border-cyan-500/30 hover:border-cyan-400/60 px-3.5 py-1.5 rounded-full backdrop-blur-md shadow-[0_0_15px_rgba(56,189,248,0.12)] hover:shadow-[0_0_20px_rgba(56,189,248,0.25)] transition-all cursor-default"
-              >
-                <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />
-                {icon}
-                <span>{label}</span>
-              </span>
-            ))}
+            {/* Single continuous pill bar matching reference design */}
+            <div className="rounded-full bg-[#001428]/85 border border-cyan-500/40 backdrop-blur-md px-6 py-3.5 shadow-[0_0_25px_rgba(0,140,255,0.15)] overflow-hidden relative group">
+              {/* Glowing top line highlight */}
+              <div className="absolute top-0 inset-x-12 h-[1px] bg-gradient-to-r from-transparent via-cyan-400 to-transparent pointer-events-none" />
+
+              {/* Continuous Right-to-Left Infinite Marquee */}
+              <div className="w-full overflow-hidden flex">
+                <motion.div
+                  animate={{ x: ['0%', '-50%'] }}
+                  transition={{ ease: 'linear', duration: 22, repeat: Infinity }}
+                  className="flex items-center gap-6 sm:gap-8 whitespace-nowrap shrink-0 pr-6 sm:pr-8"
+                >
+                  {[
+                    { icon: GraduationCap, label: '+2 2nd Year (Class 12) Only' },
+                    { icon: FileText, label: 'CBSE / ICSE / CHSE' },
+                    { icon: Zap, label: 'Max 2 Events / Student' },
+                    { icon: Star, label: '100% Free Entry & Refreshnts' },
+                    { icon: GraduationCap, label: '+2 2nd Year (Class 12) Only' },
+                    { icon: FileText, label: 'CBSE / ICSE / CHSE' },
+                    { icon: Zap, label: 'Max 2 Events / Student' },
+                    { icon: Star, label: '100% Free Entry & Refreshnts' },
+                  ].map((item, idx) => {
+                    const Icon = item.icon;
+                    return (
+                      <React.Fragment key={idx}>
+                        <span className="flex items-center gap-2 text-xs sm:text-sm font-bold text-slate-200 hover:text-cyan-300 transition-colors">
+                          <Icon className="w-4 h-4 text-cyan-400 shrink-0" />
+                          <span>{item.label}</span>
+                        </span>
+                        <span className="text-cyan-500/30 font-light">|</span>
+                      </React.Fragment>
+                    );
+                  })}
+                </motion.div>
+              </div>
+            </div>
           </motion.div>
 
         </div>
@@ -753,22 +763,22 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                   </div>
                   
                   <div className="grid grid-cols-3 gap-2 text-center text-xs font-bold">
-                    <div className="p-2 rounded-lg bg-blue-100 border border-blue-200 text-[#001F3F]">
-                      <span className="text-[9px] block text-slate-500 font-semibold">1st Place</span>
+                    <div className="p-2 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-950 shadow-sm">
+                      <span className="text-[9px] block text-amber-700 font-black uppercase tracking-wider">🏆 Champion</span>
                       ₹{event.prize_distribution['1st']?.toLocaleString('en-IN')}
                     </div>
-                    <div className="p-2 rounded-lg bg-sky-100/70 border border-sky-200 text-[#003D7A]">
-                      <span className="text-[9px] block text-slate-500 font-semibold">2nd Place</span>
+                    <div className="p-2 rounded-lg bg-slate-100 border border-slate-300/80 text-slate-800">
+                      <span className="text-[9px] block text-slate-600 font-bold uppercase tracking-wider">1st Runner-up</span>
                       ₹{event.prize_distribution['2nd']?.toLocaleString('en-IN')}
                     </div>
-                    <div className="p-2 rounded-lg bg-white border border-slate-200 text-slate-700 shadow-sm">
-                      <span className="text-[9px] block text-slate-500 font-semibold">3rd Place</span>
+                    <div className="p-2 rounded-lg bg-orange-50 border border-orange-200 text-orange-950 shadow-sm">
+                      <span className="text-[9px] block text-orange-700 font-bold uppercase tracking-wider">2nd Runner-up</span>
                       ₹{event.prize_distribution['3rd']?.toLocaleString('en-IN')}
                     </div>
                   </div>
                   {event.prize_distribution['4th'] && (
-                    <div className="text-[10px] text-center font-bold text-blue-700 bg-blue-100/60 rounded-md py-1 px-2 border border-blue-200/60">
-                      + 4th, 5th, 6th Runner-ups: ₹1,500 each
+                    <div className="text-[10px] text-center font-bold text-blue-700 bg-blue-100/70 rounded-md py-1 px-2 border border-blue-200/70">
+                      + 3rd, 4th, 5th: ₹1,500 each (6 Finalists)
                     </div>
                   )}
                 </div>
@@ -800,6 +810,155 @@ export const LandingPage: React.FC<LandingPageProps> = ({
 
             </div>
           ))}
+        </div>
+
+        {/* ─── OFFICIAL PRIZE & TEAM SIZE MATRIX TABLE ─── */}
+        <div className="mt-14 bg-white rounded-2xl border border-slate-200/90 shadow-[0_8px_30px_rgba(0,31,63,0.06)] overflow-hidden">
+          <div className="p-6 sm:p-8 bg-gradient-to-r from-[#001F3F] via-[#002b5c] to-[#0062FF] text-white flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 text-xs font-bold text-amber-300 uppercase tracking-wider mb-2">
+                <Trophy className="w-3.5 h-3.5" />
+                <span>Official Prize Matrix</span>
+              </div>
+              <h3 className="text-xl sm:text-2xl font-black tracking-tight text-white">
+                Event Prize & Team Distribution
+              </h3>
+              <p className="text-xs sm:text-sm text-slate-200 mt-1">
+                State-level cash pool of ₹50,000, trophies for champions, runner-up awards, and participation honors.
+              </p>
+            </div>
+            <div className="text-left sm:text-right shrink-0 bg-white/10 sm:bg-transparent p-3 sm:p-0 rounded-xl border border-white/10 sm:border-0">
+              <span className="text-[10px] uppercase font-bold tracking-wider text-blue-200 block">Total Cash Award</span>
+              <span className="text-2xl sm:text-3xl font-black text-amber-400">₹50,000</span>
+              <span className="text-[10px] text-slate-300 block font-semibold">100% Free Entry • ₹0 Fee</span>
+            </div>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs sm:text-sm border-collapse">
+              <thead>
+                <tr className="bg-slate-50 border-b border-slate-200 text-slate-700 font-extrabold uppercase text-[10px] sm:text-xs tracking-wider">
+                  <th className="py-3.5 px-4 sm:px-6">Event</th>
+                  <th className="py-3.5 px-3 text-center">Team size</th>
+                  <th className="py-3.5 px-3 text-center text-amber-700 bg-amber-500/10">🏆 Champion</th>
+                  <th className="py-3.5 px-3 text-center text-slate-700">1st Runner-up</th>
+                  <th className="py-3.5 px-3 text-center text-orange-800">2nd Runner-up</th>
+                  <th className="py-3.5 px-3 text-center text-slate-500">3rd</th>
+                  <th className="py-3.5 px-3 text-center text-slate-500">4th</th>
+                  <th className="py-3.5 px-3 text-center text-slate-500">5th</th>
+                  <th className="py-3.5 px-4 sm:px-6 text-right text-[#0062FF] font-black">Event total</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 font-medium text-slate-700">
+                <tr className="hover:bg-blue-50/40 transition-colors">
+                  <td className="py-3.5 px-4 sm:px-6 font-bold text-[#001F3F] flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-[#0062FF]"></span>
+                    Quiz
+                  </td>
+                  <td className="py-3.5 px-3 text-center font-bold text-slate-600">2</td>
+                  <td className="py-3.5 px-3 text-center font-black text-amber-700 bg-amber-50/50">₹6,000</td>
+                  <td className="py-3.5 px-3 text-center font-bold text-slate-800">₹4,000</td>
+                  <td className="py-3.5 px-3 text-center font-bold text-orange-800">₹3,500</td>
+                  <td className="py-3.5 px-3 text-center text-slate-600 font-semibold">₹1,500</td>
+                  <td className="py-3.5 px-3 text-center text-slate-600 font-semibold">₹1,500</td>
+                  <td className="py-3.5 px-3 text-center text-slate-600 font-semibold">₹1,500</td>
+                  <td className="py-3.5 px-4 sm:px-6 text-right font-black text-[#001F3F]">₹18,000</td>
+                </tr>
+                <tr className="hover:bg-blue-50/40 transition-colors">
+                  <td className="py-3.5 px-4 sm:px-6 font-bold text-[#001F3F] flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-cyan-500"></span>
+                    Treasure Hunt
+                  </td>
+                  <td className="py-3.5 px-3 text-center font-bold text-slate-600">3</td>
+                  <td className="py-3.5 px-3 text-center font-black text-amber-700 bg-amber-50/50">₹3,000</td>
+                  <td className="py-3.5 px-3 text-center font-bold text-slate-800">₹2,000</td>
+                  <td className="py-3.5 px-3 text-center font-bold text-orange-800">₹1,000</td>
+                  <td className="py-3.5 px-3 text-center text-slate-400">–</td>
+                  <td className="py-3.5 px-3 text-center text-slate-400">–</td>
+                  <td className="py-3.5 px-3 text-center text-slate-400">–</td>
+                  <td className="py-3.5 px-4 sm:px-6 text-right font-black text-[#001F3F]">₹6,000</td>
+                </tr>
+                <tr className="hover:bg-blue-50/40 transition-colors">
+                  <td className="py-3.5 px-4 sm:px-6 font-bold text-[#001F3F] flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-purple-500"></span>
+                    Ramp Walk
+                  </td>
+                  <td className="py-3.5 px-3 text-center font-bold text-slate-600">1</td>
+                  <td className="py-3.5 px-3 text-center font-black text-amber-700 bg-amber-50/50">₹3,000</td>
+                  <td className="py-3.5 px-3 text-center font-bold text-slate-800">₹2,000</td>
+                  <td className="py-3.5 px-3 text-center font-bold text-orange-800">₹1,000</td>
+                  <td className="py-3.5 px-3 text-center text-slate-400">–</td>
+                  <td className="py-3.5 px-3 text-center text-slate-400">–</td>
+                  <td className="py-3.5 px-3 text-center text-slate-400">–</td>
+                  <td className="py-3.5 px-4 sm:px-6 text-right font-black text-[#001F3F]">₹6,000</td>
+                </tr>
+                <tr className="hover:bg-blue-50/40 transition-colors">
+                  <td className="py-3.5 px-4 sm:px-6 font-bold text-[#001F3F] flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-pink-500"></span>
+                    Reels
+                  </td>
+                  <td className="py-3.5 px-3 text-center font-bold text-slate-600">1</td>
+                  <td className="py-3.5 px-3 text-center font-black text-amber-700 bg-amber-50/50">₹3,000</td>
+                  <td className="py-3.5 px-3 text-center font-bold text-slate-800">₹2,000</td>
+                  <td className="py-3.5 px-3 text-center font-bold text-orange-800">₹1,000</td>
+                  <td className="py-3.5 px-3 text-center text-slate-400">–</td>
+                  <td className="py-3.5 px-3 text-center text-slate-400">–</td>
+                  <td className="py-3.5 px-3 text-center text-slate-400">–</td>
+                  <td className="py-3.5 px-4 sm:px-6 text-right font-black text-[#001F3F]">₹6,000</td>
+                </tr>
+                <tr className="hover:bg-blue-50/40 transition-colors">
+                  <td className="py-3.5 px-4 sm:px-6 font-bold text-[#001F3F] flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-indigo-500"></span>
+                    Debate
+                  </td>
+                  <td className="py-3.5 px-3 text-center font-bold text-slate-600">1</td>
+                  <td className="py-3.5 px-3 text-center font-black text-amber-700 bg-amber-50/50">₹4,000</td>
+                  <td className="py-3.5 px-3 text-center font-bold text-slate-800">₹2,000</td>
+                  <td className="py-3.5 px-3 text-center font-bold text-orange-800">₹1,000</td>
+                  <td className="py-3.5 px-3 text-center text-slate-400">–</td>
+                  <td className="py-3.5 px-3 text-center text-slate-400">–</td>
+                  <td className="py-3.5 px-3 text-center text-slate-400">–</td>
+                  <td className="py-3.5 px-4 sm:px-6 text-right font-black text-[#001F3F]">₹7,000</td>
+                </tr>
+                <tr className="hover:bg-blue-50/40 transition-colors">
+                  <td className="py-3.5 px-4 sm:px-6 font-bold text-[#001F3F] flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-amber-500"></span>
+                    Poster Making
+                  </td>
+                  <td className="py-3.5 px-3 text-center font-bold text-slate-600">1</td>
+                  <td className="py-3.5 px-3 text-center font-black text-amber-700 bg-amber-50/50">₹4,000</td>
+                  <td className="py-3.5 px-3 text-center font-bold text-slate-800">₹2,000</td>
+                  <td className="py-3.5 px-3 text-center font-bold text-orange-800">₹1,000</td>
+                  <td className="py-3.5 px-3 text-center text-slate-400">–</td>
+                  <td className="py-3.5 px-3 text-center text-slate-400">–</td>
+                  <td className="py-3.5 px-3 text-center text-slate-400">–</td>
+                  <td className="py-3.5 px-4 sm:px-6 text-right font-black text-[#001F3F]">₹7,000</td>
+                </tr>
+              </tbody>
+              <tfoot>
+                <tr className="bg-slate-100/90 font-black text-xs sm:text-sm text-[#001F3F] border-t-2 border-slate-300">
+                  <td className="py-4 px-4 sm:px-6 uppercase tracking-wider">Grand Total (6 Tracks)</td>
+                  <td className="py-4 px-3 text-center text-slate-500">—</td>
+                  <td className="py-4 px-3 text-center text-amber-800 bg-amber-500/10">₹23,000</td>
+                  <td className="py-4 px-3 text-center">₹14,000</td>
+                  <td className="py-4 px-3 text-center text-orange-900">₹8,500</td>
+                  <td className="py-4 px-3 text-center text-slate-600">₹1,500</td>
+                  <td className="py-4 px-3 text-center text-slate-600">₹1,500</td>
+                  <td className="py-4 px-3 text-center text-slate-600">₹1,500</td>
+                  <td className="py-4 px-4 sm:px-6 text-right text-base font-black text-[#0062FF]">₹50,000</td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+          <div className="p-4 bg-slate-50 border-t border-slate-200 text-xs text-slate-600 flex flex-col sm:flex-row items-center justify-between gap-2">
+            <span className="flex items-center gap-1.5 font-semibold">
+              <ShieldCheck className="w-4 h-4 text-emerald-600" />
+              Cash Awards & Championship Trophies awarded at Valedictory Ceremony (Nov 15, 2026).
+            </span>
+            <span className="font-bold text-[#001F3F]">
+              Top 6 Teams qualify for Quiz Campus Finals
+            </span>
+          </div>
         </div>
 
       </section>
@@ -1311,6 +1470,102 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               <ArrowRight className="w-3.5 h-3.5" />
             </button>
           </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ─── AI EVENT ASSISTANT MODAL ─── */}
+      <AnimatePresence>
+        {showAiModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-md">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="bg-[#001428] border border-cyan-500/40 rounded-3xl max-w-xl w-full p-6 sm:p-7 shadow-[0_25px_60px_rgba(0,0,0,0.85)] text-white relative overflow-hidden"
+            >
+              {/* Header */}
+              <div className="flex items-center justify-between border-b border-white/10 pb-4 mb-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-cyan-500/20 border border-cyan-400/40 flex items-center justify-center text-cyan-300 shadow-[0_0_15px_rgba(0,212,255,0.3)]">
+                    <Bot className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-base sm:text-lg font-black tracking-wide text-white flex items-center gap-2">
+                      <span>CROSSFIRE AI Assistant</span>
+                      <span className="text-[10px] bg-cyan-500/20 text-cyan-300 border border-cyan-400/40 px-2 py-0.5 rounded-full font-bold">Live</span>
+                    </h3>
+                    <p className="text-xs text-slate-400">Instant answers regarding events, rules, fees & prizes</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setShowAiModal(false)}
+                  className="p-1.5 rounded-full hover:bg-white/10 text-slate-400 hover:text-white transition-colors cursor-pointer"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Quick Prompt Chips */}
+              <div className="space-y-2 mb-4">
+                <p className="text-[11px] font-bold uppercase tracking-wider text-cyan-400">Popular Queries</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {[
+                    'Competition Tracks & Teams',
+                    '₹50,000 Cash Prize Breakdown',
+                    'Schedule & Event Timings',
+                    'Free Lunch & Hospitality Rules'
+                  ].map((chip) => (
+                    <button
+                      key={chip}
+                      onClick={() => {
+                        setAiQuestion(chip);
+                        handleAiAsk(chip);
+                      }}
+                      className="text-xs px-3 py-1.5 rounded-full bg-white/5 hover:bg-white/15 border border-white/10 hover:border-cyan-400/40 text-slate-200 transition-all text-left cursor-pointer"
+                    >
+                      {chip}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* AI Answer Box */}
+              {aiAnswer && (
+                <div className="p-4 rounded-2xl bg-blue-950/50 border border-cyan-500/40 text-xs sm:text-sm text-cyan-100 leading-relaxed mb-4 shadow-inner">
+                  <p className="font-bold text-white mb-1.5 flex items-center gap-1.5 text-cyan-300 text-xs">
+                    <Sparkles className="w-3.5 h-3.5 text-cyan-400 animate-pulse" />
+                    Assistant Insights
+                  </p>
+                  <p>{aiAnswer}</p>
+                </div>
+              )}
+
+              {/* Question Input Form */}
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  handleAiAsk(aiQuestion);
+                }}
+                className="flex items-center gap-2"
+              >
+                <input
+                  type="text"
+                  value={aiQuestion}
+                  onChange={(e) => setAiQuestion(e.target.value)}
+                  placeholder="Ask anything about CROSSFIRE 2026..."
+                  className="flex-1 bg-white/5 border border-white/15 rounded-xl px-4 py-2.5 text-xs sm:text-sm text-white placeholder-slate-500 focus:outline-none focus:border-cyan-400 transition-colors"
+                />
+                <button
+                  type="submit"
+                  disabled={aiLoading}
+                  className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-[#0062FF] to-[#00D4FF] hover:from-blue-600 hover:to-cyan-400 text-white font-bold text-xs sm:text-sm flex items-center gap-1.5 transition-all cursor-pointer shadow-md"
+                >
+                  <Send className="w-4 h-4" />
+                  <span>Ask</span>
+                </button>
+              </form>
+            </motion.div>
+          </div>
         )}
       </AnimatePresence>
 
