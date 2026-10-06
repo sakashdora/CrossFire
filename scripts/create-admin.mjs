@@ -8,8 +8,13 @@ const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 async function createAdmin() {
-  const email = 'chandanmahapatra2400@gmail.com';
-  const password = '8328863317@';
+  const email = process.env.SUPER_ADMIN_EMAIL || process.env.ADMIN_EMAIL || 'superadmin@crossfire.org';
+  const password = process.env.SUPER_ADMIN_PASSWORD || process.env.ADMIN_PASSWORD;
+
+  if (!password) {
+    console.error('Error: Please set SUPER_ADMIN_PASSWORD or ADMIN_PASSWORD in your .env');
+    return;
+  }
 
   // Create user in Auth
   const { data: authData, error: authError } = await supabase.auth.admin.createUser({

@@ -293,12 +293,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       // 1. Super Admin Authentication (TrueInspire / Tech Team)
       if (lowerEmail === 'trueinspire@gmail.com' || lowerEmail === 'chandanmahapatra2400@gmail.com') {
-        const sbPassword = password || 'Trueinspire@2512';
+        if (!password) {
+          return { success: false, error: 'Password is required for super admin access.' };
+        }
         if (isSupabaseConfigured) {
           try {
             const { data: authRes, error: authErr } = await supabase.auth.signInWithPassword({
               email: lowerEmail,
-              password: sbPassword
+              password: password.trim()
             });
             if (!authErr && authRes.user) {
               const { data: dbProfile } = await supabase
@@ -315,34 +317,35 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               localStorage.setItem('crossfire_mock_user', JSON.stringify(superAdminUser));
               return { success: true, role: 'super_admin' };
             } else if (authErr) {
-              console.warn('[CROSSFIRE] Supabase super admin sign in error:', authErr);
-              if (password && password !== 'Trueinspire@2512') {
-                return { success: false, error: authErr.message || 'Invalid password. Please check your credentials.' };
-              }
+              return { success: false, error: authErr.message || 'Invalid super admin credentials.' };
             }
           } catch (e) {
-            console.warn('[CROSSFIRE] Online super admin sign in fallback:', e);
+            console.warn('[CROSSFIRE] Online super admin sign in error:', e);
+            return { success: false, error: 'Authentication failed. Please verify credentials.' };
           }
         }
 
-        if (password && password !== 'Trueinspire@2512' && password !== 'admin123') {
-          return { success: false, error: 'Invalid password. Please check your credentials.' };
+        // Offline mock fallback only if Supabase is unconfigured
+        if (!isSupabaseConfigured) {
+          const superAdminUser: UserProfile = { ...DEMO_USERS.admin_chandan, email: lowerEmail, role: 'super_admin' };
+          setUser(superAdminUser);
+          localStorage.setItem('crossfire_mock_user', JSON.stringify(superAdminUser));
+          return { success: true, role: 'super_admin' };
         }
 
-        const superAdminUser: UserProfile = { ...DEMO_USERS.admin_chandan, email: lowerEmail, role: 'super_admin' };
-        setUser(superAdminUser);
-        localStorage.setItem('crossfire_mock_user', JSON.stringify(superAdminUser));
-        return { success: true, role: 'super_admin' };
+        return { success: false, error: 'Invalid credentials. Please verify your password.' };
       }
 
       // 2. College Admin Authentication (CrossFire Official Admin)
       if (lowerEmail === 'crossfire@gmail.com' || lowerEmail === 'admin@srusti.edu.in') {
-        const sbPassword = password || 'Crossfire@2026';
+        if (!password) {
+          return { success: false, error: 'Password is required for admin access.' };
+        }
         if (isSupabaseConfigured) {
           try {
             const { data: authRes, error: authErr } = await supabase.auth.signInWithPassword({
               email: lowerEmail,
-              password: sbPassword
+              password: password.trim()
             });
             if (!authErr && authRes.user) {
               const { data: dbProfile } = await supabase
@@ -359,23 +362,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               localStorage.setItem('crossfire_mock_user', JSON.stringify(collegeAdminUser));
               return { success: true, role: 'admin' };
             } else if (authErr) {
-              console.warn('[CROSSFIRE] Supabase admin sign in error:', authErr);
-              if (password && password !== 'Crossfire@2026') {
-                return { success: false, error: authErr.message || 'Invalid password. Please check your credentials.' };
-              }
+              return { success: false, error: authErr.message || 'Invalid admin credentials.' };
             }
           } catch (e) {
-            console.warn('[CROSSFIRE] Online college admin sign in fallback:', e);
+            console.warn('[CROSSFIRE] Online college admin sign in error:', e);
+            return { success: false, error: 'Authentication failed. Please verify credentials.' };
           }
         }
 
-        if (password && password !== 'Crossfire@2026' && password !== 'admin123') {
-          return { success: false, error: 'Invalid password. Please check your credentials.' };
+        // Offline mock fallback only if Supabase is unconfigured
+        if (!isSupabaseConfigured) {
+          setUser(DEMO_USERS.admin);
+          localStorage.setItem('crossfire_mock_user', JSON.stringify(DEMO_USERS.admin));
+          return { success: true, role: 'admin' };
         }
 
-        setUser(DEMO_USERS.admin);
-        localStorage.setItem('crossfire_mock_user', JSON.stringify(DEMO_USERS.admin));
-        return { success: true, role: 'admin' };
+        return { success: false, error: 'Invalid credentials. Please verify your password.' };
       }
 
       // 3. Volunteer Verification (supports Email or Volunteer ID, checking Supabase first)
@@ -404,12 +406,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       // 4. Judge Authentication
       if (lowerEmail === DEMO_USERS.judge.email) {
-        const judgeUser = DEMO_USERS.judge;
-        if (isSupabaseConfigured && password) {
-          try {
-            await supabase.auth.signInWithPassword({ email: lowerEmail, password: password || 'judge123' });
-          } catch { /* ignore */ }
+        if (!password) {
+          return { success: false, error: 'Password is required for judge access.' };
         }
+        if (isSupabaseConfigured) {
+          try {
+            const { error: judgeErr } = await supabase.auth.signInWithPassword({
+              email: lowerEmail,
+              password: password.trim()
+            });
+            if (judgeErr) {
+              return { success: false, error: judgeErr.message || 'Invalid judge credentials.' };
+            }
+          } catch (e) {
+            console.warn('[CROSSFIRE] Online judge sign in error:', e);
+          }
+        }
+        const judgeUser = DEMO_USERS.judge;
         setUser(judgeUser);
         localStorage.setItem('crossfire_mock_user', JSON.stringify(judgeUser));
         return { success: true, role: 'judge' };

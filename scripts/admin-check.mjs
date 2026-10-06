@@ -22,7 +22,8 @@ const { data: prof } = await svc.from('users').select('id,role').eq('id', u.id);
 console.log('profile', prof);
 
 const anon = createClient(url, env.VITE_SUPABASE_ANON_KEY);
-for (const pw of ['CrossFire@Admin2026', 'admin123']) {
+const candidatePasswords = [env.ADMIN_PASSWORD, 'ChangeMeAdmin@2026!'].filter(Boolean);
+for (const pw of candidatePasswords) {
   const { data, error } = await anon.auth.signInWithPassword({ email, password: pw });
   console.log('signIn with candidate', pw === 'admin123' ? '#2' : '#1', error ? 'FAIL ' + error.message : 'OK');
   if (!error && data.session) {

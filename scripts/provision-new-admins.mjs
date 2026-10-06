@@ -13,15 +13,15 @@ const adminClient = createClient(env.VITE_SUPABASE_URL, env.SUPABASE_SERVICE_ROL
 
 const admins = [
   {
-    email: 'trueinspire@gmail.com',
-    password: 'Trueinspire@2512',
+    email: env.SUPER_ADMIN_EMAIL || 'trueinspire@gmail.com',
+    password: env.SUPER_ADMIN_PASSWORD || 'ChangeMeSuperAdmin@2026!',
     role: 'super_admin',
     first_name: 'TrueInspire',
     last_name: 'SuperAdmin'
   },
   {
-    email: 'crossfire@gmail.com',
-    password: 'Crossfire@2026',
+    email: env.ADMIN_EMAIL || 'crossfire@gmail.com',
+    password: env.ADMIN_PASSWORD || 'ChangeMeAdmin@2026!',
     role: 'admin',
     first_name: 'CrossFire',
     last_name: 'CollegeAdmin'

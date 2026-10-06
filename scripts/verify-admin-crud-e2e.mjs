@@ -19,8 +19,8 @@ async function main() {
 
   // 1. Authenticate as Super Admin
   const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
-    email: 'trueinspire@gmail.com',
-    password: 'Trueinspire@2512'
+    email: process.env.SUPER_ADMIN_EMAIL || 'trueinspire@gmail.com',
+    password: process.env.SUPER_ADMIN_PASSWORD || 'ChangeMeSuperAdmin@2026!'
   });
 
   if (authError || !authData.session) {

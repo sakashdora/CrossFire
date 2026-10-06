@@ -17,17 +17,17 @@ const adminClient = createClient(supabaseUrl, serviceKey, {
 
 const ACCOUNTS = [
   {
-    email: 'chandanmahapatra2400@gmail.com',
-    password: '8328863317@',
+    email: process.env.SUPER_ADMIN_EMAIL || 'superadmin@crossfire.org',
+    password: process.env.SUPER_ADMIN_PASSWORD || 'ChangeMeSuperAdmin@2026!',
     role: 'super_admin',
-    first_name: 'Chandan',
-    last_name: 'Mahapatra',
-    contact_number: '+918328863317',
+    first_name: 'Super',
+    last_name: 'Admin',
+    contact_number: '+919999999999',
     institute_name: 'Srusti Academy of Graduate Studies'
   },
   {
-    email: 'admin@srusti.edu.in',
-    password: 'CrossFire@Admin2026',
+    email: process.env.ADMIN_EMAIL || 'admin@srusti.edu.in',
+    password: process.env.ADMIN_PASSWORD || 'ChangeMeAdmin@2026!',
     role: 'admin',
     first_name: 'Srusti College',
     last_name: 'Admin',
@@ -35,8 +35,8 @@ const ACCOUNTS = [
     institute_name: 'Srusti Academy of Graduate Studies'
   },
   {
-    email: 'volunteer@srusti.edu.in',
-    password: 'volunteer123',
+    email: process.env.VOLUNTEER_EMAIL || 'volunteer@srusti.edu.in',
+    password: process.env.VOLUNTEER_PASSWORD || 'ChangeMeVol@2026!',
     role: 'volunteer',
     first_name: 'Subhashree',
     last_name: 'Mohapatra',
@@ -44,8 +44,8 @@ const ACCOUNTS = [
     institute_name: 'Srusti Academy of Graduate Studies'
   },
   {
-    email: 'judge@srusti.edu.in',
-    password: 'judge123',
+    email: process.env.JUDGE_EMAIL || 'judge@srusti.edu.in',
+    password: process.env.JUDGE_PASSWORD || 'ChangeMeJudge@2026!',
     role: 'judge',
     first_name: 'Dr. Meera',
     last_name: 'Senapati',
