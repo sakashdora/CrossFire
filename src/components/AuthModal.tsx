@@ -10,7 +10,8 @@ import {
   Mail, 
   ArrowRight,
   ShieldCheck,
-  GraduationCap
+  GraduationCap,
+  ExternalLink
 } from 'lucide-react';
 
 interface AuthModalProps {
@@ -295,7 +296,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                       required
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      placeholder="e.g. crossfire@gmail.com, trueinspire@gmail.com or VOL-101"
+                      placeholder="e.g. staff@institution.edu or VOL-101"
                       className="w-full pl-9 pr-3 py-2.5 border border-gray-200 rounded-xl text-xs focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all"
                     />
                   </div>
@@ -340,8 +341,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             )}
           </form>
 
-          {/* Registration Link Footer */}
-          <div className="mt-5 pt-4 border-t border-gray-100 text-center">
+          {/* Registration Link Footer with Google Form Support */}
+          <div className="mt-5 pt-4 border-t border-gray-100 text-center space-y-2">
             <p className="text-[11px] text-gray-500">
               Haven't registered for CrossFire 2026 yet?{' '}
               <button
@@ -351,6 +352,18 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               >
                 Complete Free Registration
               </button>
+            </p>
+            <p className="text-[10px] text-gray-500">
+              Facing problems with online registration?{' '}
+              <a
+                href="https://docs.google.com/forms/d/e/1FAIpQLSfIPctLilosmqJukeZze--Z9MKpcazZ3zJRq1pstA59bcfWzA/viewform"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-bold text-blue-600 hover:text-blue-700 hover:underline inline-flex items-center gap-1"
+              >
+                <span>Use Official Google Form Backup</span>
+                <ExternalLink className="w-3 h-3" />
+              </a>
             </p>
           </div>
 

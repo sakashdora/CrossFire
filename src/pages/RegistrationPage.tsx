@@ -23,7 +23,8 @@ import {
   User,
   ArrowRight,
   Lock,
-  Printer
+  Printer,
+  ExternalLink
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { useEvents } from '../context/EventsContext';
@@ -335,6 +336,27 @@ export const RegistrationPage: React.FC<RegistrationPageProps> = ({
             Group A (Any Two) • Group B (Any Two)
           </span>
         </div>
+
+        {/* Assistance / Google Form Emergency Backup Banner */}
+        <div className="bg-gradient-to-r from-blue-50 via-cyan-50/60 to-blue-50 border-b border-blue-200 px-4 sm:px-6 py-2.5 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs text-blue-900">
+          <div className="flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-blue-600 animate-pulse shrink-0"></span>
+            <span className="font-semibold text-blue-950">
+              Facing any problem with the online registration form?
+            </span>
+            <span className="text-blue-800 hidden md:inline">
+              You can instantly submit your entry using our official Google Form backup.
+            </span>
+          </div>
+          <a
+            href="https://docs.google.com/forms/d/e/1FAIpQLSfIPctLilosmqJukeZze--Z9MKpcazZ3zJRq1pstA59bcfWzA/viewform"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-blue-600 hover:bg-blue-700 text-white font-bold text-[11px] shadow-sm transition-all self-start sm:self-auto shrink-0 hover:scale-105"
+          >
+            <span>Register via Google Form ↗</span>
+          </a>
+        </div>
       </div>
 
       {submitted ? (
@@ -427,11 +449,27 @@ export const RegistrationPage: React.FC<RegistrationPageProps> = ({
         /* Main Registration Form */
         <form onSubmit={handleSubmit} className="space-y-6">
           
-          {/* Error Alerts */}
+          {/* Error Alerts with Google Form Emergency Link */}
           {errorMessage && (
-            <div className="p-4 bg-red-50 border border-red-200 rounded-2xl text-xs text-red-700 flex items-start gap-2 shadow-sm animate-fadeIn">
-              <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
-              <span className="font-semibold">{errorMessage}</span>
+            <div className="p-4 bg-red-50 border border-red-200 rounded-2xl text-xs text-red-700 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-sm animate-fadeIn">
+              <div className="flex items-start gap-2.5">
+                <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
+                <div>
+                  <span className="font-bold text-red-800 block text-xs">{errorMessage}</span>
+                  <span className="text-[11px] text-red-600 mt-0.5 block">
+                    Experiencing persistent submission issues? You can complete registration directly via Google Form.
+                  </span>
+                </div>
+              </div>
+              <a
+                href="https://docs.google.com/forms/d/e/1FAIpQLSfIPctLilosmqJukeZze--Z9MKpcazZ3zJRq1pstA59bcfWzA/viewform"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-red-600 hover:bg-red-700 text-white font-bold text-xs shrink-0 shadow-sm transition-all hover:scale-105"
+              >
+                <span>Submit via Google Form</span>
+                <ExternalLink className="w-3.5 h-3.5" />
+              </a>
             </div>
           )}
 
@@ -844,6 +882,31 @@ export const RegistrationPage: React.FC<RegistrationPageProps> = ({
           <p className="text-center text-[11px] text-gray-400 mt-3">
             Secure submission powered by Supabase Auth & Database • Srusti Academy of Management & Technology
           </p>
+
+          {/* Alternative Google Form Registration Support Card */}
+          <div className="mt-5 p-4 rounded-2xl bg-gradient-to-r from-blue-50/90 via-white to-blue-50/90 border border-blue-200 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
+            <div className="flex items-center gap-3 text-center sm:text-left">
+              <div className="w-10 h-10 rounded-xl bg-blue-100 text-blue-600 flex items-center justify-center shrink-0 shadow-sm">
+                <ExternalLink className="w-5 h-5" />
+              </div>
+              <div>
+                <p className="font-bold text-navy text-xs sm:text-sm">
+                  Facing any problem submitting your registration?
+                </p>
+                <p className="text-[11px] text-gray-500 mt-0.5">
+                  You can directly submit your registration using our official Google Form backup.
+                </p>
+              </div>
+            </div>
+            <a
+              href="https://docs.google.com/forms/d/e/1FAIpQLSfIPctLilosmqJukeZze--Z9MKpcazZ3zJRq1pstA59bcfWzA/viewform"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-navy hover:bg-navy-dark text-white font-bold text-xs flex items-center justify-center gap-2 shrink-0 transition-all hover:scale-105 shadow-md"
+            >
+              <span>Open Google Form ↗</span>
+            </a>
+          </div>
         </div>
 
         </form>
