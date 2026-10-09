@@ -1,0 +1,174 @@
+.cf-footer {
+  background: #080e10;
+  border-top: 1px solid #283236;
+  color: #d8e0e4;
+  padding: 25px 30px;
+  font-size: 11px;
+}
+.cf-footer-inner {
+  max-width: 1360px;
+  margin: auto;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 25px;
+}
+.cf-footer a {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 40px;
+}
+.cf-footer a:hover {
+  color: #00d5f5;
+}
+.cf-footer-inner>a:not(.cf-footer-academy) {
+  border-left: 1px solid #566268;
+  padding-left: 25px;
+}
+.cf-footer-brand {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  flex-shrink: 0;
+}
+.cf-footer-brand img:first-child {
+  width: 38px;
+  height: 40px;
+  object-fit: contain;
+}
+.cf-footer-brand img:last-child {
+  width: 140px;
+  height: 40px;
+  object-fit: contain;
+}
+.cf-footer-inner>span {
+  white-space: nowrap;
+  color: #aab7bf;
+  font-size: 10px;
+}
+.cf-navbar-brand {
+  border: 0;
+  text-align: left;
+}
+.cf-events-nav-logo { width: 158px; height: 36px; object-fit: contain; }
+.cf-events-nav-year { display: inline-flex; align-items: center; border-radius: 4px; padding: 2px 5px; font-family: 'Barlow Condensed', sans-serif; font-size: 15px; line-height: 1.1; background: #00d5ed; color: #031117; }
+.cf-landing-view .cf-navbar-register { border-radius: 6px; border-color: #f96c34; box-shadow: 0 3px 16px #ff591719; }
+.cf-landing-view .cf-navbar-register > div:first-child { background: linear-gradient(110deg, #ff4b09, #ff6c20); }
+.cf-landing-view .cf-desktop-nav > div { height: 100%; padding: 0; border: 0; border-radius: 0; background: transparent; backdrop-filter: none; }
+.cf-landing-view .cf-desktop-nav button { height: 100%; border-radius: 0; font-size: 13px; }
+.cf-landing-view .cf-desktop-nav button > div { top: auto; bottom: 0; height: 2px; border: 0; border-radius: 0; background: #00d5ed; box-shadow: none; }
+.cf-landing-view .cf-desktop-nav button > span > svg { display: none; }
+.cf-notification-panel {
+  max-height: calc(100dvh - 95px);
+  overflow: auto;
+}
+@media(max-width:600px) {
+  .cf-events-nav-logo { width: 130px; height: 30px; }
+  .cf-events-nav-year { font-size: 12px; }
+  .cf-navbar-actions .cf-navbar-signin {
+    display: none;
+  }
+}
+@media(min-width:1024px) and (max-width:1199px) {
+  .cf-navbar-brand>div:last-child span:first-child {
+    font-size: 16px;
+  }
+  .cf-navbar-brand>div:last-child span:last-child {
+    display: none;
+  }
+  .cf-desktop-nav button {
+    padding-left: 13px;
+    padding-right: 13px;
+  }
+  .cf-navbar-register {
+    padding-left: 13px;
+    padding-right: 13px;
+  }
+  .cf-navbar-register span {
+    font-size: 12px;
+  }
+}
+@media(max-width:1000px) {
+  .cf-footer-inner {
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 8px 20px;
+  }
+  .cf-footer-academy {
+    font-size: 11px;
+  }
+  .cf-footer-inner>a:not(.cf-footer-academy) {
+    padding-left: 20px;
+  }
+}
+@media(max-width:600px) {
+  .cf-navbar-brand {
+    gap: 8px!important;
+  }
+  .cf-navbar-brand>div:first-child>div {
+    width: 32px;
+    height: 32px;
+    border-radius: 9px;
+  }
+  .cf-navbar-brand>div:last-child span:first-child {
+    font-size: 15px;
+    letter-spacing: .025em;
+  }
+  .cf-navbar-signin {
+    display: none;
+  }
+  .cf-navbar-actions {
+    gap: 7px!important;
+  }
+  .cf-navbar-actions>button {
+    min-width: 42px;
+    min-height: 42px;
+  }
+  .cf-notification-panel {
+    position: fixed!important;
+    top: 70px;
+    left: 12px;
+    right: 12px;
+    width: auto!important;
+    margin: 0!important;
+  }
+  .cf-user-panel {
+    position: fixed!important;
+    top: 70px;
+    left: 12px;
+    right: 12px;
+    width: auto!important;
+    margin: 0!important;
+  }
+  .cf-footer {
+    padding: 20px 23px;
+  }
+  .cf-footer-inner {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 9px 10px;
+    text-align: center;
+  }
+  .cf-footer-brand {
+    grid-column: 1 / -1;
+    justify-content: center;
+  }
+  .cf-footer-academy {
+    grid-column: 1 / -1;
+    justify-content: center;
+    max-width: 270px;
+    margin: auto;
+    line-height: 1.6;
+  }
+  .cf-footer-inner>a:not(.cf-footer-academy) {
+    border: 0;
+    padding: 0;
+    justify-content: center;
+    font-size: 10px;
+  }
+  .cf-footer-inner>span {
+    grid-column: 1 / -1;
+    margin-top: 6px;
+  }
+}

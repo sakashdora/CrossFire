@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { 
   X, 
@@ -35,6 +35,16 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [studentPassId, setStudentPassId] = useState('');
+  const dialogRef = useRef<HTMLDialogElement>(null);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const dialog = dialogRef.current;
+    if (dialog && !dialog.open) dialog.showModal();
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => { document.body.style.overflow = previousOverflow; };
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
@@ -108,14 +118,14 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-navy-dark/75 backdrop-blur-sm animate-fadeIn">
-      <div className="bg-white rounded-3xl shadow-2xl max-w-md w-full overflow-hidden border border-gray-200">
+    <dialog ref={dialogRef} aria-labelledby="login-dialog-title" onCancel={onClose} className="fixed inset-0 z-50 m-0 w-screen max-w-none h-[100dvh] max-h-none flex items-center justify-center p-4 bg-navy-dark/75 backdrop-blur-sm">
+      <div className="bg-white rounded-3xl shadow-2xl max-w-md w-full max-h-[90dvh] overflow-y-auto border border-gray-200">
         
         {/* Header banner */}
         <div className="bg-navy text-white px-6 py-5 relative">
           <button
             onClick={onClose}
-            className="absolute top-4 right-4 text-gray-400 hover:text-white p-1 rounded-full hover:bg-white/10 transition-colors"
+            className="absolute top-2 right-2 text-gray-400 hover:text-white p-3 rounded-full hover:bg-white/10 transition-colors"
             aria-label="Close dialog"
           >
             <X className="w-5 h-5" />
@@ -124,7 +134,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           <div className="flex items-center gap-3">
             <img src="/Logo.png" alt="CrossFire Logo" className="w-10 h-10 object-contain bg-white rounded-full p-0.5" />
             <div>
-              <h3 className="text-base sm:text-lg font-black text-white">
+              <h3 id="login-dialog-title" className="text-base sm:text-lg font-black text-white pr-4">
                 CrossFire 2026 Portal Login
               </h3>
               <p className="text-[11px] text-gray-300">
@@ -369,6 +379,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
         </div>
       </div>
-    </div>
+    </dialog>
   );
 };

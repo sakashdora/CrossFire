@@ -28,7 +28,7 @@ console.log('Guests in DB:', guests?.length, 'sample with escort FK:', guests?.[
 console.log('\n--- 4. Testing Volunteer Login Verification RPC ---');
 const { data: volAuth, error: vaErr } = await anonClient.rpc('verify_volunteer_login', {
   p_identifier: 'VOL-101',
-  p_password: 'volunteer123'
+  p_password: process.env.VOLUNTEER_PASSWORD || 'ChangeMeVol@2026!'
 });
 console.log('Volunteer login VOL-101 result:', volAuth ? `Verified (${volAuth.name})` : 'Failed', 'error:', vaErr);
 

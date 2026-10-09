@@ -1,64 +1,52 @@
-import React, { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import { CROSSFIRE_START, getCountdown } from '../lib/countdown';
 
-interface CountdownTimerProps {
-  targetDate?: string;
+function FlipNumber({ value, animate }: { value: number; animate: boolean }) {
+  const [frame, setFrame] = useState({ current: value, previous: value });
+  if (frame.current !== value || (!animate && frame.previous !== value)) {
+    setFrame({ current: value, previous: animate ? frame.current : value });
+  }
+  const current = String(value).padStart(2, '0');
+  const previous = String(frame.previous).padStart(2, '0');
+  const flip = animate && frame.current !== frame.previous;
+  return <span className="cf-flip" aria-hidden="true" data-value={current}>
+    <span className="cf-flip-half cf-flip-top"><b>{current}</b></span>
+    <span className="cf-flip-half cf-flip-bottom"><b>{flip ? previous : current}</b></span>
+    {flip && <span key={current} className="cf-flip-leaves">
+      <span className="cf-flip-half cf-flip-top cf-flip-out"><b>{previous}</b></span>
+      <span className="cf-flip-half cf-flip-bottom cf-flip-in"><b>{current}</b></span>
+    </span>}
+    <span className="cf-flip-seam" />
+  </span>;
 }
 
-export const CountdownTimer: React.FC<CountdownTimerProps> = ({
-  targetDate = '2026-11-15T09:30:00+05:30',
-}) => {
-  const [timeLeft, setTimeLeft] = useState<{
-    days: number;
-    hours: number;
-    minutes: number;
-    seconds: number;
-  }>({ days: 0, hours: 0, minutes: 0, seconds: 0 });
-
+export function CountdownTimer({ targetDate = CROSSFIRE_START, animate = true }: { targetDate?: string; animate?: boolean }) {
+  const [countdown, setCountdown] = useState(() => getCountdown(targetDate));
   useEffect(() => {
-    const calculateTime = () => {
-      const difference = +new Date(targetDate) - +new Date();
-      if (difference > 0) {
-        setTimeLeft({
-          days: Math.floor(difference / (1000 * 60 * 60 * 24)),
-          hours: Math.floor((difference / (1000 * 60 * 60)) % 24),
-          minutes: Math.floor((difference / 1000 / 60) % 60),
-          seconds: Math.floor((difference / 1000) % 60),
-        });
-      } else {
-        setTimeLeft({ days: 0, hours: 0, minutes: 0, seconds: 0 });
+    let timer: number | undefined;
+    const update = () => setCountdown(getCountdown(targetDate));
+    const synchronize = () => {
+      window.clearInterval(timer);
+      update();
+      if (!document.hidden && Date.parse(targetDate) > Date.now()) {
+        timer = window.setInterval(() => {
+          update();
+          if (Date.now() >= Date.parse(targetDate)) window.clearInterval(timer);
+        }, 1000);
       }
     };
-
-    calculateTime();
-    const interval = setInterval(calculateTime, 1000);
-    return () => clearInterval(interval);
+    synchronize();
+    document.addEventListener('visibilitychange', synchronize);
+    return () => { window.clearInterval(timer); document.removeEventListener('visibilitychange', synchronize); };
   }, [targetDate]);
-
-  const units = [
-    { label: 'DAYS', value: timeLeft.days },
-    { label: 'HOURS', value: timeLeft.hours },
-    { label: 'MINUTES', value: timeLeft.minutes },
-    { label: 'SECONDS', value: timeLeft.seconds },
-  ];
-
-  return (
-    <div className="flex items-center justify-center gap-2.5 sm:gap-4 md:gap-5 select-none">
-      {units.map((unit, idx) => (
-        <div
-          key={idx}
-          className="w-16 h-20 sm:w-20 sm:h-24 md:w-24 md:h-26 rounded-2xl bg-[#001428]/85 backdrop-blur-md border border-cyan-500/40 hover:border-cyan-400 shadow-[0_0_20px_rgba(0,140,255,0.18)] flex flex-col items-center justify-center p-2 transition-all duration-300 hover:scale-105 group relative overflow-hidden"
-        >
-          {/* Subtle top glare reflection */}
-          <div className="absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-cyan-400/10 to-transparent pointer-events-none" />
-          
-          <span className="text-2xl sm:text-3xl md:text-4xl font-black text-cyan-400 font-sans tracking-tight drop-shadow-[0_0_12px_rgba(0,212,255,0.45)]">
-            {String(unit.value).padStart(2, '0')}
-          </span>
-          <span className="text-[9px] sm:text-[10px] font-bold text-slate-300 uppercase tracking-[0.2em] mt-1 sm:mt-1.5">
-            {unit.label}
-          </span>
-        </div>
-      ))}
+  return <div className="cf-countdown-panel" data-countdown-status={countdown.status}>
+    <p className="cf-countdown-label">{countdown.status === 'started' ? 'CrossFire 2026 is here' : countdown.status === 'unavailable' ? 'Event date to be announced' : 'Championship starts in'}</p>
+    <div className="cf-countdown" role="timer" aria-label="Time until CrossFire 2026" aria-live="off">
+      {['Days', 'Hours', 'Minutes', 'Seconds'].map((label, index) => <div className="cf-countdown-unit" key={label}>
+        <span className="sr-only">{countdown.values[index]} {label}</span>
+        <FlipNumber value={countdown.values[index]} animate={animate} />
+        <span className="cf-countdown-unit-label" aria-hidden="true">{label}</span>
+      </div>)}
     </div>
-  );
-};
+  </div>;
+}

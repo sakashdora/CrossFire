@@ -774,13 +774,13 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
                 </div>
                 <div className="flex justify-between items-center pt-2 border-t border-white/10">
                   <span className="text-gray-400">Security Password:</span>
-                  <strong className="text-orange-400 font-mono text-sm">Crossfire@2026</strong>
+                  <strong className="text-orange-400 font-mono text-sm">Srusti@Guest2026</strong>
                 </div>
               </div>
             </div>
 
             <button
-              onClick={() => copyToClipboard('Crossfire@2026', 'wifi')}
+              onClick={() => copyToClipboard('Srusti@Guest2026', 'wifi')}
               className="w-full py-2.5 rounded-xl bg-orange-500 hover:bg-orange-600 text-white font-black text-xs shadow transition-all flex items-center justify-center gap-1.5 cursor-pointer"
             >
               {copiedWifi ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}

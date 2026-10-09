@@ -7,9 +7,21 @@ node_modules
 dist
 dist-ssr
 
-# Environment files
+# Environment files & Secrets
 .env
+.env.*
 .env*.local
+!.env.example
+*.pem
+*.key
+*.cert
+*.crt
+*.pfx
+*.p12
+
+# Assistant & Local Workspace Artifacts
+.agents/
+artifacts/
 
 # Logs
 npm-debug.log*

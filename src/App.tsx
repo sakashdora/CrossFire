@@ -1,23 +1,24 @@
-import React, { useState, useEffect } from 'react';
+import React, { lazy, Suspense, useState, useEffect, useCallback } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { EventsProvider, useEvents } from './context/EventsContext';
 import { Navbar } from './components/Navbar';
 import { Footer } from './components/Footer';
-import { CinematicIntro } from './components/CinematicIntro';
 import { AuthModal } from './components/AuthModal';
+import { CinematicIntro } from './components/CinematicIntro';
 import { LandingPage } from './pages/LandingPage';
-import { EventsDiscoveryPage } from './pages/EventsDiscoveryPage';
-import { StudentDashboard } from './pages/StudentDashboard';
-import { JudgePanel } from './pages/JudgePanel';
-import { AdminDashboard } from './pages/AdminDashboard';
-import { VolunteerDashboard } from './pages/VolunteerDashboard';
-import { LeaderboardPage } from './pages/LeaderboardPage';
-import { RegistrationPage } from './pages/RegistrationPage';
 import { EventItem } from './types';
 
 import { Home, Calendar, Trophy, User, ShieldCheck, Gavel, UserPlus, HeartHandshake, ArrowUp } from 'lucide-react';
 
 import { ShieldAlert } from 'lucide-react';
+
+const EventsDiscoveryPage = lazy(() => import('./pages/EventsDiscoveryPage').then(module => ({ default: module.EventsDiscoveryPage })));
+const StudentDashboard = lazy(() => import('./pages/StudentDashboard').then(module => ({ default: module.StudentDashboard })));
+const JudgePanel = lazy(() => import('./pages/JudgePanel').then(module => ({ default: module.JudgePanel })));
+const AdminDashboard = lazy(() => import('./pages/AdminDashboard').then(module => ({ default: module.AdminDashboard })));
+const VolunteerDashboard = lazy(() => import('./pages/VolunteerDashboard').then(module => ({ default: module.VolunteerDashboard })));
+const LeaderboardPage = lazy(() => import('./pages/LeaderboardPage').then(module => ({ default: module.LeaderboardPage })));
+const RegistrationPage = lazy(() => import('./pages/RegistrationPage').then(module => ({ default: module.RegistrationPage })));
 
 const ProtectedRoute = ({ children, allowedRoles }: { children: React.ReactNode, allowedRoles?: string[] }) => {
   const { user, role, isLoading } = useAuth();
@@ -67,7 +68,7 @@ const ProtectedRoute = ({ children, allowedRoles }: { children: React.ReactNode,
 };
 
 const CrossFireApp: React.FC = () => {
-  const { role } = useAuth();
+  const { role, user } = useAuth();
   const [currentView, setCurrentView] = useState<string>(() => {
     const hash = window.location.hash.replace('#', '');
     return hash || 'landing';
@@ -87,6 +88,7 @@ const CrossFireApp: React.FC = () => {
   }, []);
 
   const [authModalOpen, setAuthModalOpen] = useState(false);
+  const [selectedLandingEvent, setSelectedLandingEvent] = useState<EventItem | null>(null);
   
   const [showBackToTop, setShowBackToTop] = useState(false);
 
@@ -95,23 +97,25 @@ const CrossFireApp: React.FC = () => {
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
-  // Cinematic Opening Screen State (Always-On on every page load / refresh)
-  const [showIntro, setShowIntro] = useState<boolean>(true);
+  // Only greet visitors arriving at the landing page; deep links stay direct.
+  const [showIntro, setShowIntro] = useState(() => currentView === 'landing' && !window.matchMedia('(prefers-reduced-motion: reduce)').matches);
 
-  const handleIntroComplete = () => {
+  const handleIntroComplete = useCallback(() => {
     setShowIntro(false);
-  };
+  }, []);
 
-  const handleReplayIntro = () => {
+  const handleReplayIntro = useCallback(() => {
     setShowIntro(true);
-  };
+  }, []);
 
   // Auto scroll to top on any page view transition
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'instant' });
+    if (currentView !== 'events') setSelectedLandingEvent(null);
+    if (currentView !== 'landing') setShowIntro(false);
   }, [currentView]);
 
-  const { userRegistrations, handleRegisterEvent, handleWithdrawEvent, handleSubmitMedia, refreshRegistrations } = useEvents();
+  const { userRegistrations, handleWithdrawEvent, handleSubmitMedia, refreshRegistrations } = useEvents();
 
 
 
@@ -133,12 +137,14 @@ const CrossFireApp: React.FC = () => {
     setAuthModalOpen(true);
   };
 
-  const handleSelectEvent = (_event: EventItem) => {
+  const handleSelectEvent = (event: EventItem) => {
+    setSelectedLandingEvent(event);
     setCurrentView('events');
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#F8FAFC] text-gray-900 pb-20 lg:pb-0">
+    <div className={`min-h-screen flex flex-col text-gray-900 ${currentView === 'events' ? 'cf-events-view' : currentView === 'landing' ? 'cf-landing-view' : ''} ${currentView === 'landing' || currentView === 'events' ? 'bg-[#080e10]' : 'bg-[#F8FAFC]'} pb-[calc(64px+env(safe-area-inset-bottom))] lg:pb-0`}>
+      <a href="#main-content" className="skip-to-content" onClick={event => { event.preventDefault(); document.getElementById('main-content')?.focus(); }}>Skip to content</a>
       
       {/* Cinematic Opening Screen: SAGS x CROSSFIRE */}
       {showIntro && (
@@ -154,11 +160,14 @@ const CrossFireApp: React.FC = () => {
       />
 
       {/* Main View Router */}
-      <main className={`flex-grow pb-24 lg:pb-12 min-h-[75vh] ${currentView !== 'landing' ? 'pt-16 sm:pt-[72px]' : ''}`}>
+      <main id="main-content" tabIndex={-1} className={`flex-grow min-h-[75vh] ${currentView !== 'landing' ? `pt-16 sm:pt-[72px] ${currentView === 'events' ? '' : 'pb-12'}` : ''}`}>
+        <Suspense fallback={<div className="min-h-[60vh] grid place-items-center text-slate-500" role="status">Loading page…</div>}>
         {currentView === 'landing' && (
           <LandingPage
             onSelectEvent={handleSelectEvent}
             setCurrentView={setCurrentView}
+            introActive={showIntro}
+            onReplayIntro={handleReplayIntro}
           />
         )}
 
@@ -171,9 +180,9 @@ const CrossFireApp: React.FC = () => {
 
         {currentView === 'events' && (
           <EventsDiscoveryPage
+            initialEvent={selectedLandingEvent}
             userRegistrations={userRegistrations}
-            onRegisterEvent={handleRegisterEvent}
-            openAuthModal={openAuth}
+            onRegister={() => setCurrentView('register')}
           />
         )}
 
@@ -209,13 +218,14 @@ const CrossFireApp: React.FC = () => {
         {currentView === 'leaderboard' && (
           <LeaderboardPage />
         )}
+        </Suspense>
       </main>
 
       {/* Footer */}
       <Footer setCurrentView={setCurrentView} />
 
       {/* Bottom Mobile App Bar (Fixed 5-Key Navigation) */}
-      <div className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-navy text-white border-t border-navy-light/40 px-2 py-1.5 flex items-center justify-around shadow-2xl backdrop-blur-lg">
+      <nav aria-label="Mobile navigation" className="mobile-bottom-nav lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-[#071116] text-white border-t border-white/10 px-2 pt-1.5 flex items-center justify-around shadow-2xl backdrop-blur-lg">
         <button
           onClick={() => setCurrentView('landing')}
           className={`flex flex-col items-center gap-0.5 py-1 px-2 rounded-xl text-[10px] font-bold transition-colors ${
@@ -260,6 +270,7 @@ const CrossFireApp: React.FC = () => {
 
         <button
           onClick={() => {
+            if (!user) { openAuth('login'); return; }
             setCurrentView(
               (role === 'admin' || role === 'super_admin') ? 'admin' : 
               role === 'judge' ? 'judge' : 
@@ -290,7 +301,7 @@ const CrossFireApp: React.FC = () => {
              'Portal'}
           </span>
         </button>
-      </div>
+      </nav>
 
       {/* Floating Back to Top Button */}
       {showBackToTop && (

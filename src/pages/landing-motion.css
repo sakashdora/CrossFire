@@ -1,0 +1,117 @@
+.cf-atmosphere {
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+  overflow: hidden;
+  pointer-events: none;
+  contain: paint;
+}
+.cf-atmosphere span {
+  position: absolute;
+  width: 85%;
+  height: 130%;
+  top: -30%;
+  left: -35%;
+  background: radial-gradient(ellipse, #008fbe40 0%, #006fbd16 38%, transparent 66%);
+  transform: rotate(-25deg);
+  animation: cf-aurora-drift 17s ease-in-out infinite alternate;
+  animation-play-state: paused;
+}
+.cf-atmosphere span:nth-child(2) {
+  top: -20%;
+  left: 55%;
+  background: radial-gradient(ellipse, #ff591731, #d7470912 38%, transparent 65%);
+  animation-duration: 21s;
+  animation-delay: -8s;
+}
+.cf-atmosphere span:nth-child(3) {
+  top: 35%;
+  left: 10%;
+  height: 90%;
+  background: radial-gradient(ellipse, #00bacc16, transparent 64%);
+  animation-duration: 14s;
+  animation-delay: -5s;
+}
+.cf-brand-flame {
+  animation: cf-flame-float 4s ease-in-out infinite;
+  animation-play-state: paused;
+}
+.cf-scene-running .cf-atmosphere span,
+.cf-scene-running .cf-brand-flame { animation-play-state: running; }
+
+.crossfire-landing:not(.cf-motion-off)[data-intro-active="false"] .cf-hero-content > :not(.cf-motion-controls) {
+  animation: cf-hero-enter .75s cubic-bezier(.22, 1, .36, 1) both;
+}
+.crossfire-landing[data-intro-active="false"] .cf-hero-content > :nth-child(2) { animation-delay: .08s; }
+.crossfire-landing[data-intro-active="false"] .cf-hero-content > :nth-child(3) { animation-delay: .14s; }
+.crossfire-landing[data-intro-active="false"] .cf-hero-content > :nth-child(4) { animation-delay: .2s; }
+.crossfire-landing[data-intro-active="false"] .cf-hero-content > :nth-child(5) { animation-delay: .26s; }
+.crossfire-landing[data-intro-active="false"] .cf-hero-content > :nth-child(6) { animation-delay: .3s; }
+.crossfire-landing[data-intro-active="false"] .cf-hero-content > :nth-child(7) { animation-delay: .36s; }
+.crossfire-landing[data-intro-active="false"] .cf-hero-content > :nth-child(8) { animation-delay: .42s; }
+.cf-hero-actions { position: relative; z-index: 2; }
+
+.cf-motion-controls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin: 8px 0 -12px;
+  color: #a8bbc5;
+  font-size: 11px;
+  font-weight: 500;
+}
+.cf-motion-controls button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 40px;
+  padding: 4px 8px;
+  border-radius: 6px;
+  transition: color .2s, background .2s;
+}
+.cf-motion-controls button:hover { color: #e3faff; background: #00d5f510; }
+.cf-motion-controls > span[aria-hidden] { width: 1px; height: 10px; background: #6c97a34d; }
+.cf-motion-preference { padding: 4px 8px; }
+
+.cf-reveal {
+  opacity: 0;
+  transform: translateY(24px);
+  transition: opacity .7s ease, transform .7s cubic-bezier(.22, 1, .36, 1);
+}
+.cf-reveal.cf-is-visible, .cf-reveal:focus-within {
+  opacity: 1;
+  transform: translateY(0);
+}
+.cf-arena.cf-reveal:nth-child(2) { transition-delay: .07s; }
+.cf-arena.cf-reveal:nth-child(3) { transition-delay: .14s; }
+.cf-arena.cf-reveal:nth-child(4) { transition-delay: .07s; }
+.cf-arena.cf-reveal:nth-child(5) { transition-delay: .14s; }
+.cf-arena.cf-reveal:nth-child(6) { transition-delay: .07s; }
+.cf-motion-off .cf-atmosphere span, .cf-motion-off .cf-brand-flame { animation: none; }
+
+@keyframes cf-aurora-drift {
+  from { transform: translate3d(-5%, -3%, 0) rotate(-25deg) scale(.95); opacity: .65; }
+  to { transform: translate3d(15%, 9%, 0) rotate(5deg) scale(1.12); opacity: 1; }
+}
+@keyframes cf-flame-float {
+  0%, 100% { transform: translateY(0); filter: drop-shadow(0 0 7px #00d5f52b); }
+  50% { transform: translateY(-5px); filter: drop-shadow(0 0 17px #00d5f575); }
+}
+@keyframes cf-hero-enter {
+  from { opacity: 0; transform: translateY(15px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@media (max-width: 600px) {
+  .cf-atmosphere span { width: 130%; left: -75%; }
+  .cf-atmosphere span:nth-child(2) { left: 45%; }
+  .cf-atmosphere span:nth-child(3) { left: -15%; }
+  .cf-motion-controls { margin-top: 9px; margin-bottom: -10px; }
+  .cf-motion-controls button { min-height: 44px; }
+  .cf-reveal { transform: translateY(16px); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .crossfire-landing *, .crossfire-landing *::before, .crossfire-landing *::after { animation: none !important; transition: none !important; }
+  .cf-reveal { opacity: 1; transform: none; }
+}

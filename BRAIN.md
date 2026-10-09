@@ -243,10 +243,10 @@ The app uses hash-based client routing: `#landing`, `#events`, `#register`, `#da
    - Legacy mock students (`user-student-demo`, `imazureakash@gmail.com`) have been completely purged.
    - Do NOT re-populate dummy students or mock leaderboard scores. The system is live and collecting real student registrations.
 2. **TWO-TIER ADMINISTRATIVE ARCHITECTURE (SUPABASE):**
-   - **Super Admin (Lead / Tech Team):** `trueinspire@gmail.com` / `Trueinspire@2512` (role: `'super_admin'`). Full database master authority, portal lock/unlock, system settings, and volunteer/guest credentials management. (Legacy alias: `chandanmahapatra2400@gmail.com`).
-   - **College Admin (Srusti Executive):** `crossfire@gmail.com` / `Crossfire@2026` (role: `'admin'`). Master roster inspection, attendance verification, desk check-in sheet generation, and data exports. (Legacy alias: `admin@srusti.edu.in`).
-   - **Official Volunteer:** `volunteer@srusti.edu.in` / `volunteer123` or Volunteer ID (e.g. `VOL-101`).
-   - **Official Judge:** `judge@srusti.edu.in` / `judge123`.
+   - **Super Admin (Lead / Tech Team):** `trueinspire@gmail.com` (role: `'super_admin'`). Credentials configured securely via `SUPER_ADMIN_PASSWORD` in `.env`. Full database master authority, portal lock/unlock, system settings, and volunteer/guest credentials management. (Legacy alias: `chandanmahapatra2400@gmail.com`).
+   - **College Admin (Srusti Executive):** `crossfire@gmail.com` (role: `'admin'`). Credentials configured securely via `ADMIN_PASSWORD` in `.env`. Master roster inspection, attendance verification, desk check-in sheet generation, and data exports. (Legacy alias: `admin@srusti.edu.in`).
+   - **Official Volunteer:** `volunteer@srusti.edu.in` or Volunteer ID (e.g. `VOL-101`). Password configured via `VOLUNTEER_PASSWORD` in `.env`.
+   - **Official Judge:** `judge@srusti.edu.in`. Password configured via `JUDGE_PASSWORD` in `.env`.
 
 3. **DYNAMIC STUDENT PORTAL ACCESS CONTROLLER:**
    - Controlled in Supabase via table `public.system_settings (key: 'student_portal_open')` and RPC `admin_set_system_setting`.

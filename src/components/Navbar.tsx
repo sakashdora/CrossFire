@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { useNotifications } from '../hooks/useNotifications';
 import { motion, AnimatePresence } from 'framer-motion';
+import './navigation.css';
 
 interface NavbarProps {
   currentView: string;
@@ -38,6 +39,27 @@ export const Navbar: React.FC<NavbarProps> = ({
 
   const notifRef = useRef<HTMLDivElement>(null);
   const userRef = useRef<HTMLDivElement>(null);
+  const menuButtonRef = useRef<HTMLButtonElement>(null);
+  const notificationButtonRef = useRef<HTMLButtonElement>(null);
+  const userButtonRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    setMobileMenuOpen(false);
+    setNotificationsOpen(false);
+    setUserDropdownOpen(false);
+  }, [currentView]);
+
+  useEffect(() => {
+    const onEscape = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') return;
+      if (notificationsOpen) notificationButtonRef.current?.focus();
+      else if (userDropdownOpen) userButtonRef.current?.focus();
+      else if (mobileMenuOpen) menuButtonRef.current?.focus();
+      setMobileMenuOpen(false);setNotificationsOpen(false);setUserDropdownOpen(false);
+    };
+    document.addEventListener('keydown', onEscape);
+    return () => document.removeEventListener('keydown', onEscape);
+  }, [mobileMenuOpen, notificationsOpen, userDropdownOpen]);
 
   useEffect(() => {
     let ticking = false;
@@ -79,7 +101,7 @@ export const Navbar: React.FC<NavbarProps> = ({
       {/* Fixed Full-Width Modern Glass Navbar (Zero layout shifting, zero jitter) */}
       <header 
         className={`fixed top-0 left-0 right-0 z-50 w-full transition-all duration-300 ${
-          scrolled 
+          scrolled || currentView !== 'landing'
             ? 'bg-[#000d1a]/90 backdrop-blur-xl border-b border-cyan-500/20 shadow-[0_4px_30px_rgba(0,0,0,0.6)]' 
             : 'bg-[#000d1a]/40 backdrop-blur-md border-b border-white/10'
         }`}
@@ -88,13 +110,18 @@ export const Navbar: React.FC<NavbarProps> = ({
           <div className="flex items-center justify-between h-16 sm:h-[72px]">
             
             {/* Brand Logo */}
-            <div 
+            <button
               onClick={() => {
                 setCurrentView('landing');
                 setMobileMenuOpen(false);
               }} 
-              className="flex items-center gap-3 cursor-pointer group select-none shrink-0"
+              className="cf-navbar-brand flex items-center gap-3 cursor-pointer group select-none shrink-0"
+              aria-label="CrossFire home"
             >
+              {currentView === 'events' || currentView === 'landing' ? <>
+                <img className="cf-events-nav-logo" src="/hero-crossfire-title.png" alt="CrossFire" width="158" height="36" />
+                <span className="cf-events-nav-year">2026</span>
+              </> : <>
               <div className="relative shrink-0">
                 <div className="w-10 h-10 rounded-xl bg-white p-1 shadow-lg group-hover:scale-105 transition-transform flex items-center justify-center border border-white/20">
                   <img src="/Logo.png" alt="CrossFire Logo" className="w-full h-full object-contain" />
@@ -114,10 +141,11 @@ export const Navbar: React.FC<NavbarProps> = ({
                   </span>
                 </div>
               </div>
-            </div>
+              </>}
+            </button>
 
             {/* Desktop Navigation (Center Pills) */}
-            <nav className="hidden lg:flex items-center justify-center absolute left-1/2 -translate-x-1/2 h-full">
+            <nav aria-label="Main navigation" className="cf-desktop-nav hidden lg:flex items-center justify-center absolute left-1/2 -translate-x-1/2 h-full">
               <div className="flex items-center gap-1 p-1 bg-white/5 rounded-full border border-white/10 backdrop-blur-md">
                 {navItems.map((item) => {
                   const Icon = item.icon;
@@ -126,6 +154,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                   return (
                     <button
                       key={item.id}
+                      aria-current={isActive ? 'page' : undefined}
                       onClick={() => setCurrentView(item.id)}
                       className="relative px-5 py-2 text-sm font-semibold rounded-full group outline-none transition-colors"
                     >
@@ -147,12 +176,12 @@ export const Navbar: React.FC<NavbarProps> = ({
             </nav>
 
             {/* Right Action Bar */}
-            <div className="flex items-center gap-2 sm:gap-3">
+            <div className="cf-navbar-actions flex items-center gap-2 sm:gap-3">
               
               {/* Dynamic Register CTA (Desktop) */}
               <button
                 onClick={() => setCurrentView('register')}
-                className="hidden lg:flex relative overflow-hidden items-center gap-2 px-5 py-2 rounded-full font-bold group border border-cyan-400/40 shadow-[0_0_20px_rgba(0,136,255,0.3)]"
+                className="cf-navbar-register hidden lg:flex relative overflow-hidden items-center gap-2 px-5 py-2 rounded-full font-bold group border border-cyan-400/40 shadow-[0_0_20px_rgba(0,136,255,0.3)]"
               >
                 <div className="absolute inset-0 bg-gradient-to-r from-cyan-500 to-blue-600 transition-transform duration-500 group-hover:scale-105" />
                 
@@ -170,14 +199,15 @@ export const Navbar: React.FC<NavbarProps> = ({
               {/* Notifications Bell */}
               <div className="relative" ref={notifRef}>
                 <button
-                  onClick={() => setNotificationsOpen(!notificationsOpen)}
+                  ref={notificationButtonRef}
+                  aria-expanded={notificationsOpen}
+                  aria-controls="notifications-panel"
+                  onClick={() => { setNotificationsOpen(!notificationsOpen); setMobileMenuOpen(false); setUserDropdownOpen(false); }}
                   className="relative p-2.5 rounded-full text-gray-300 hover:text-white hover:bg-white/10 transition-colors"
                   aria-label="View notifications"
                 >
                   <Bell className="w-5 h-5" />
-                  <span className="absolute top-1.5 right-1.5 w-4 h-4 bg-orange-500 text-white text-[10px] font-black rounded-full flex items-center justify-center ring-2 ring-[#000d1a] animate-pulse">
-                    {unreadCount > 0 ? unreadCount : 3}
-                  </span>
+                  {unreadCount > 0 && <span className="absolute top-1.5 right-1.5 w-4 h-4 bg-orange-500 text-white text-[10px] font-black rounded-full flex items-center justify-center ring-2 ring-[#000d1a]">{unreadCount}</span>}
                 </button>
                 
                 {/* Working Notifications Dropdown UI */}
@@ -188,7 +218,8 @@ export const Navbar: React.FC<NavbarProps> = ({
                       animate={{ opacity: 1, y: 0, scale: 1 }}
                       exit={{ opacity: 0, y: 10, scale: 0.95 }}
                       transition={{ duration: 0.18 }}
-                      className="absolute right-0 mt-3 w-80 sm:w-96 bg-white/95 backdrop-blur-2xl rounded-2xl shadow-2xl border border-gray-200 py-3 z-50 text-gray-800"
+                      id="notifications-panel"
+                      className="cf-notification-panel absolute right-0 mt-3 w-80 sm:w-96 bg-white/95 backdrop-blur-2xl rounded-2xl shadow-2xl border border-gray-200 py-3 z-50 text-gray-800"
                     >
                       <div className="px-4 py-2.5 border-b border-gray-100 flex items-center justify-between">
                         <div className="flex items-center gap-2">
@@ -218,10 +249,10 @@ export const Navbar: React.FC<NavbarProps> = ({
                           </div>
                         ) : (
                           notifications.slice(0, 5).map((item) => (
-                            <div
+                            <button
                               key={item.id}
                               onClick={() => markAsRead(item.id)}
-                              className={`p-3.5 hover:bg-orange-50/50 transition-colors cursor-pointer ${!item.read_at ? 'bg-orange-50/30' : ''}`}
+                              className={`w-full text-left p-3.5 hover:bg-orange-50/50 transition-colors cursor-pointer ${!item.read_at ? 'bg-orange-50/30' : ''}`}
                             >
                               <div className="flex items-start justify-between gap-2">
                                 <h4 className="text-xs font-bold text-navy leading-tight">{item.title}</h4>
@@ -233,7 +264,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                               <span className="text-[10px] text-gray-400 mt-1.5 block">
                                 {new Date(item.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                               </span>
-                            </div>
+                            </button>
                           ))
                         )}
                       </div>
@@ -246,7 +277,11 @@ export const Navbar: React.FC<NavbarProps> = ({
               {user ? (
                 <div className="relative" ref={userRef}>
                   <button
-                    onClick={() => setUserDropdownOpen(!userDropdownOpen)}
+                    ref={userButtonRef}
+                    aria-label="Account menu"
+                    aria-expanded={userDropdownOpen}
+                    aria-controls="account-panel"
+                    onClick={() => { setUserDropdownOpen(!userDropdownOpen); setNotificationsOpen(false); setMobileMenuOpen(false); }}
                     className="flex items-center gap-2 pl-2 pr-4 py-1.5 rounded-full bg-white/5 hover:bg-white/10 text-white text-sm font-bold transition-all border border-white/10 hover:border-white/20"
                   >
                     <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-orange-500 to-amber-400 flex items-center justify-center text-white font-black shadow-inner">
@@ -263,7 +298,8 @@ export const Navbar: React.FC<NavbarProps> = ({
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={{ opacity: 0, y: 10, scale: 0.95 }}
                         transition={{ duration: 0.18 }}
-                        className="absolute right-0 mt-3 w-64 bg-white/95 backdrop-blur-2xl rounded-2xl shadow-2xl border border-gray-200 py-3 z-50 text-gray-800"
+                        id="account-panel"
+                        className="cf-user-panel absolute right-0 mt-3 w-64 bg-white/95 backdrop-blur-2xl rounded-2xl shadow-2xl border border-gray-200 py-3 z-50 text-gray-800"
                       >
                         <div className="px-5 py-3 border-b border-gray-100">
                           <p className="font-bold text-sm text-navy">{user.first_name} {user.last_name}</p>
@@ -300,7 +336,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                   </AnimatePresence>
                 </div>
               ) : (
-                <div className="flex items-center">
+                <div className="cf-navbar-signin flex items-center">
                   <button
                     onClick={() => openAuthModal('login')}
                     className="px-4 py-2 text-sm font-bold text-gray-300 hover:text-white transition-colors"
@@ -312,7 +348,10 @@ export const Navbar: React.FC<NavbarProps> = ({
 
               {/* Mobile Menu Toggle Button */}
               <button
-                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                ref={menuButtonRef}
+                aria-expanded={mobileMenuOpen}
+                aria-controls="mobile-menu"
+                onClick={() => { setMobileMenuOpen(!mobileMenuOpen); setNotificationsOpen(false); setUserDropdownOpen(false); }}
                 className="lg:hidden p-2 rounded-xl bg-white/5 border border-white/10 text-white hover:bg-white/10 transition-colors"
                 aria-label="Toggle navigation menu"
               >
@@ -330,7 +369,8 @@ export const Navbar: React.FC<NavbarProps> = ({
               animate={{ opacity: 1, height: 'auto' }}
               exit={{ opacity: 0, height: 0 }}
               transition={{ duration: 0.22, ease: 'easeInOut' }}
-              className="lg:hidden border-t border-white/10 bg-[#000d1a]/98 backdrop-blur-2xl px-4 py-5 shadow-2xl overflow-hidden"
+              id="mobile-menu"
+              className="lg:hidden border-t border-white/10 bg-[#000d1a] backdrop-blur-2xl px-4 py-5 shadow-2xl max-h-[calc(100dvh-140px)] overflow-y-auto"
             >
               <div className="flex flex-col gap-2">
                 {navItems.map((item) => {
