@@ -24,17 +24,17 @@ export const LiveQRScanner: React.FC<LiveQRScannerProps> = ({ onScanSuccess, onC
     let isMounted = true;
 
     Html5Qrcode.getCameras()
-      .then(devices => {
+      .then((devices: any[]) => {
         if (isMounted && devices && devices.length > 0) {
           setCameras(devices);
           // Prefer back camera if available on mobile
-          const backCam = devices.find(d => d.label.toLowerCase().includes('back') || d.label.toLowerCase().includes('environment'));
+          const backCam = devices.find((d: any) => d.label.toLowerCase().includes('back') || d.label.toLowerCase().includes('environment'));
           setSelectedCamera(backCam ? backCam.id : devices[0].id);
         } else if (isMounted) {
           setErrorMsg('No camera detected on this device. You can still scan by uploading an image or entering Pass ID.');
         }
       })
-      .catch(err => {
+      .catch((err: any) => {
         console.warn('[CROSSFIRE] Camera detection error:', err);
         if (isMounted) {
           setErrorMsg('Camera access was not granted. Please allow camera permissions in your browser.');
@@ -66,7 +66,7 @@ export const LiveQRScanner: React.FC<LiveQRScannerProps> = ({ onScanSuccess, onC
           qrbox: { width: 250, height: 250 },
           aspectRatio: 1.0,
         },
-        (decodedText) => {
+        (decodedText: string) => {
           // Play audio beep tone
           try {
             const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();

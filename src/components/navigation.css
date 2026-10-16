@@ -60,8 +60,21 @@
 .cf-landing-view .cf-desktop-nav button > div { top: auto; bottom: 0; height: 2px; border: 0; border-radius: 0; background: #00d5ed; box-shadow: none; }
 .cf-landing-view .cf-desktop-nav button > span > svg { display: none; }
 .cf-notification-panel {
-  max-height: calc(100dvh - 95px);
-  overflow: auto;
+  max-height: calc(100dvh - 85px);
+  box-shadow: 0 20px 45px -10px rgba(0, 15, 30, 0.35), 0 0 0 1px rgba(0, 0, 0, 0.06);
+}
+
+@media(max-width: 640px) {
+  .cf-notification-panel {
+    position: fixed !important;
+    top: 68px !important;
+    left: 10px !important;
+    right: 10px !important;
+    width: auto !important;
+    max-width: none !important;
+    margin-top: 0 !important;
+    max-height: calc(100dvh - 80px) !important;
+  }
 }
 @media(max-width:600px) {
   .cf-events-nav-logo { width: 130px; height: 30px; }

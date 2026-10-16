@@ -219,7 +219,7 @@ export const RegistrationPage: React.FC<RegistrationPageProps> = ({
   </div>
   <div class="slip">
     <div class="header">
-      <div class="org">SRUSTI ACADEMY OF MANAGEMENT AND TECHNOLOGY (AUTONOMOUS)</div>
+      <div class="org">SRUSTI ACADEMY OF GRADUATE STUDIES (AUTONOMOUS)</div>
       <div class="title">CROSSFIRE 2026</div>
       <div class="subtitle">STATE-LEVEL TALENT HUNT • OFFICIAL REGISTRATION ACKNOWLEDGEMENT SLIP</div>
     </div>
@@ -308,7 +308,7 @@ export const RegistrationPage: React.FC<RegistrationPageProps> = ({
                 Official Student Registration Form
               </span>
               <h1 className="text-lg sm:text-2xl md:text-3xl font-black text-white tracking-tight leading-tight">
-                SRUSTI ACADEMY OF MANAGEMENT AND TECHNOLOGY
+                SRUSTI ACADEMY OF GRADUATE STUDIES
               </h1>
               <p className="text-xs sm:text-sm text-gray-300 font-medium">
                 CROSSFIRE 2026 &bull; State-Level Talent Hunt for +2 Final Year Students
@@ -880,7 +880,7 @@ export const RegistrationPage: React.FC<RegistrationPageProps> = ({
             )}
           </button>
           <p className="text-center text-[11px] text-gray-400 mt-3">
-            Secure submission powered by Supabase Auth & Database • Srusti Academy of Management & Technology
+            Secure submission powered by Supabase Auth & Database • Srusti Academy of Graduate Studies
           </p>
 
           {/* Alternative Google Form Registration Support Card */}

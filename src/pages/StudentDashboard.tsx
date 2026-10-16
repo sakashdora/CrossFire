@@ -869,7 +869,7 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
                   <img src="/Logo.png" alt="Crossfire 2026" className="h-10 object-contain" />
                 </div>
                 <h3 className="text-lg font-black text-navy tracking-tight">
-                  SRUSTI ACADEMY OF MANAGEMENT & TECHNOLOGY
+                  SRUSTI ACADEMY OF GRADUATE STUDIES
                 </h3>
                 <p className="text-[11px] text-gray-500 font-bold uppercase tracking-wider">
                   CrossFire 2026 • State-Level Talent Hunt • Official Gate Pass

@@ -192,6 +192,7 @@ The app uses hash-based client routing: `#landing`, `#events`, `#register`, `#da
 
 1. **Brand Aesthetics & Cinematic Intro:**
    - Full-screen SAGS x CROSSFIRE 2026 intro splash animation with replay button.
+   - **Bespoke Editorial Film Header:** Clean architectural header inside the frame (`cf-intro-header`) with authentic brand typography (`CF / 26`), institution recognition (`SRUSTI ACADEMY OF GRADUATE STUDIES • UTKAL UNIV. AFFILIATED`), quiet festival ledger (`₹50,000 PRIZE POOL / 6 ARENAS SOLO & TEAM / 100% FREE ENTRY`), and minimalist micro-ring countdown skip button with ESC key support.
    - Dynamic 3D interactive particle background (`HeroParticlesBackground.tsx`).
    - Sticky mobile 5-key bottom navigation bar (Home, Events, Register, Board, Portal).
 2. **Student Registration System (`RegistrationPage.tsx`):**

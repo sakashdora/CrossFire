@@ -129,6 +129,10 @@ export interface NotificationItem {
   related_event_id?: string;
   created_at: string;
   read_at?: string;
+  action_view?: string;
+  action_label?: string;
+  priority?: 'high' | 'normal' | 'low';
+  tag?: string;
 }
 
 export type GuestCategory = 'Chief Guest' | 'Guest of Honour' | 'Keynote Speaker' | 'VIP Dignitary' | 'Judge' | 'Special Invitee';

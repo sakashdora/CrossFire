@@ -1,5 +1,6 @@
 import { UserProfile, CourseStream, FoodPreference, SchoolBoard, LeaderboardEntry } from '../types';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
+import { pushSystemNotification } from '../hooks/useNotifications';
 
 export interface StudentRegistrationRecord {
   id: string;
@@ -175,6 +176,21 @@ class StudentDataService {
       }
 
       this.saveStudents(students);
+
+      try {
+        pushSystemNotification({
+          type: 'registration',
+          title: `Pass ${record.id} Active: ${record.first_name}`,
+          message: `${record.first_name} ${record.last_name || ''} (${record.institute_name}) enrolled in ${record.selected_competitions.length} competition(s). Digital Pass CF26 QR issued.`,
+          channel: 'in_app',
+          action_view: 'dashboard',
+          action_label: 'View Pass',
+          priority: 'high',
+          tag: 'Delegate Pass'
+        });
+      } catch (errNotif) {
+        console.warn('[CROSSFIRE] Notification dispatch notice:', errNotif);
+      }
 
       return { success: true, student: record };
     } catch (err: any) {

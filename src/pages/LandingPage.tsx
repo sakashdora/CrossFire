@@ -76,7 +76,7 @@ export function LandingPage({ onSelectEvent, setCurrentView, introActive, onRepl
       <div className="cf-hero-content">
         <div className="cf-institution">
           <img src="/sagslogo.png" alt="SAGS college logo" width="46" height="48" />
-          <div><p>Srusti Academy of<br />Management and Technology</p><span><MapPin size={13} aria-hidden="true" />Srusti Campus, Bhubaneswar, Odisha</span></div>
+          <div><p>Srusti Academy of<br />Graduate Studies</p><span><MapPin size={13} aria-hidden="true" />Srusti Campus, Bhubaneswar, Odisha</span></div>
         </div>
         <h1 id="crossfire-title" className="cf-brand">
           <span className="sr-only">CrossFire 2026 — State level competition</span>
