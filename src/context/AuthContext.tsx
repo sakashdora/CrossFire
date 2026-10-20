@@ -14,7 +14,7 @@ interface AuthContextType {
   refreshAuth: () => Promise<void>;
   requestEmailCode: (email: string, createAccount?: boolean) => Promise<Result>;
   verifyEmailCode: (email: string, code: string) => Promise<Result>;
-  login: (email: string, password: string) => Promise<Result>;
+  login: (email: string, password: string, audience?: 'staff' | 'student') => Promise<Result>;
   signUp: (data: RegistrationInput) => Promise<Result>;
   logout: () => Promise<void>;
 }
@@ -97,13 +97,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return { success: true, role: data.role };
   };
 
-  const login = async (email: string, password: string): Promise<Result> => {
+  const login = async (email: string, password: string, audience: 'staff' | 'student' = 'staff'): Promise<Result> => {
     if (!isSupabaseConfigured) return { success: false, error: unavailable };
     try {
+      if (audience === 'student') {
+        const { data: portal, error: gateError } = await supabase.rpc('get_system_setting', { p_key: 'student_portal_open' });
+        if (gateError || portal !== true) return { success: false, error: 'Student portal login is currently closed. Registration remains available.' };
+      }
       const { error } = await supabase.auth.signInWithPassword({ email: email.trim().toLowerCase(), password });
       if (error) return { success: false, error: genericLoginError };
       const { data, error: profileError } = await supabase.rpc('crossfire_current_profile');
-      if (profileError || !data?.active || !staffRoles.includes(data.role)) {
+      if (profileError || !data?.active || (audience === 'staff' ? !staffRoles.includes(data.role) : data.role !== 'student')) {
         await supabase.auth.signOut({ scope: 'local' });
         return { success: false, error: genericLoginError };
       }

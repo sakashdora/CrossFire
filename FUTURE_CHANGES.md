@@ -1,14 +1,15 @@
 # Future changes
 
-## Student identity and portal access — deferred
+## Student identity and portal access — invitation workflow implemented
 
-Updated: 20 October 2026. The user chose direct CrossFire registration submissions for staff review, without student email verification or portal access.
+Updated: 20 October 2026. Registration remains open without email verification. The user subsequently requested a visible, closed Student Login tab and admin-managed official email invitations after review.
 
 - Current intake writes to private `crossfire_registration_requests`; receipt references identify submissions only.
 - Admins and super admins can mark requests reviewed or declined, add notes and reopen them for review. This does not create an account, confirm email ownership, reserve an event place or issue a pass.
 - Student email-code controls are hidden while `VITE_EMAIL_AUTH_READY=false`. Staff email/password and MFA remain available.
-- Before introducing student accounts or converting reviewed requests into event entries, confirm the college's approval/seat-allocation process and identity checks. Do not automatically associate a request with an account merely because an unverified email matches.
-- Email sending, verified account activation, student recovery and approval notifications require a later approved setup. No emails are sent by intake or staff review.
+- Admins and super admins now have official sender settings and a separate invitation action for reviewed requests. The invitation action creates an owned Auth identity, full student profile and event entries; it cannot claim an existing unrelated account by email. Student passwords are chosen through a private setup link. Pass IDs are identifiers, not passwords.
+- Email delivery still requires a verified Resend sender domain, a server API key and a real delivery acceptance test. No emails are sent by intake or the review-status action. Keep invitations disabled until configured. See [Student invitations](docs/STUDENT_INVITATIONS.md).
+- WhatsApp delivery and team formation remain deferred. The website does not promise automatic WhatsApp credentials.
 
 ## Team registration — deferred pending college clarification
 

@@ -21,6 +21,7 @@ const VolunteerDashboard = AdminDashboard;
 const AccountSecurity = lazy(() => import('./pages/AccountSecurity').then(module => ({ default: module.AccountSecurity })));
 const LeaderboardPage = lazy(() => import('./pages/LeaderboardPage').then(module => ({ default: module.LeaderboardPage })));
 const RegistrationPage = lazy(() => import('./pages/RegistrationPage').then(module => ({ default: module.RegistrationPage })));
+const StudentActivation = lazy(() => import('./pages/StudentActivation').then(module => ({ default: module.StudentActivation })));
 
 const ProtectedRoute = ({ children, allowedRoles }: { children: React.ReactNode, allowedRoles?: string[] }) => {
   const { user, role, isLoading, needsMfa, isStudentPortalOpen } = useAuth();
@@ -74,18 +75,18 @@ const ProtectedRoute = ({ children, allowedRoles }: { children: React.ReactNode,
 const CrossFireApp: React.FC = () => {
   const { role, user } = useAuth();
   const [currentView, setCurrentView] = useState<string>(() => {
-    const hash = window.location.hash.replace('#', '');
-    return ['landing','register','events','dashboard','judge','volunteer','admin','leaderboard','account'].includes(hash) ? hash : 'landing';
+    const hash = window.location.hash.slice(1).split('?')[0];
+    return ['landing','register','events','dashboard','judge','volunteer','admin','leaderboard','account','activate'].includes(hash) ? hash : 'landing';
   });
 
   useEffect(() => {
-    window.location.hash = currentView;
+    if (currentView !== 'activate') window.location.hash = currentView;
   }, [currentView]);
 
   useEffect(() => {
     const onHashChange = () => {
-      const hash = window.location.hash.replace('#', '');
-      setCurrentView(['landing','register','events','dashboard','judge','volunteer','admin','leaderboard','account'].includes(hash) ? hash : 'landing');
+      const hash = window.location.hash.slice(1).split('?')[0];
+      setCurrentView(['landing','register','events','dashboard','judge','volunteer','admin','leaderboard','account','activate'].includes(hash) ? hash : 'landing');
     };
     window.addEventListener('hashchange', onHashChange);
     return () => window.removeEventListener('hashchange', onHashChange);
@@ -223,6 +224,7 @@ const CrossFireApp: React.FC = () => {
           <LeaderboardPage />
         )}
         {currentView === 'account' && <ProtectedRoute allowedRoles={['admin','super_admin','judge','volunteer']}><AccountSecurity /></ProtectedRoute>}
+        {currentView === 'activate' && <StudentActivation />}
         </Suspense>
       </main>
 

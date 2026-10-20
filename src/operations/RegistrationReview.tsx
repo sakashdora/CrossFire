@@ -3,6 +3,7 @@ import { ClipboardList, RefreshCw, Search } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import type { RegistrationRequestInput } from '../lib/registrationRequests';
 import { formatTime } from './model';
+import { invitationRequest } from './EmailSettings';
 
 type ReviewStatus = 'pending' | 'reviewed' | 'declined';
 interface RequestRow {
@@ -17,6 +18,8 @@ interface RequestRow {
   updated_at: string;
 }
 interface ReviewPage { items: RequestRow[]; total: number }
+type Invitation = { request_id: string; status: 'preparing'|'ready'|'sending'|'accepted'|'failed'|'uncertain'; failure_code: string | null; provider_id: string | null; student_id: string | null; updated_at: string };
+const invitationLabel = { preparing: 'Preparing · review if stalled', ready: 'Account prepared · awaiting send', sending: 'Sending · review if stalled', accepted: 'Accepted by email provider', failed: 'Invitation failed', uncertain: 'Delivery needs review' };
 const statusLabel = { pending: 'Awaiting review', reviewed: 'Reviewed', declined: 'Declined' };
 
 export function RegistrationReview() {
@@ -28,6 +31,8 @@ export function RegistrationReview() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
+  const [invitations, setInvitations] = useState<Invitation[]>([]);
+  const [inviting, setInviting] = useState<RequestRow | null>(null);
   const [editing, setEditing] = useState<RequestRow | null>(null);
   const [reviewStatus, setReviewStatus] = useState<ReviewStatus>('reviewed');
   const [notes, setNotes] = useState('');
@@ -42,7 +47,9 @@ export function RegistrationReview() {
       const result = await supabase.rpc('crossfire_list_registration_requests', { p_status: status, p_search: query, p_page: page });
       if (result.error) throw result.error;
       if (!Array.isArray(result.data?.items) || typeof result.data.total !== 'number') throw new Error('Incomplete response');
-      if (version === revision.current) setData(result.data as ReviewPage);
+      const delivery = await supabase.rpc('crossfire_invitation_status', { p_requests: result.data.items.map((row: RequestRow)=>row.id) });
+      if (delivery.error || !Array.isArray(delivery.data)) throw delivery.error || new Error('Incomplete invitation status');
+      if (version === revision.current) { setData(result.data as ReviewPage); setInvitations(delivery.data); }
       return true;
     } catch {
       if (version === revision.current) { setData(null); setError('Unable to load registration requests. Check your connection, staff access and authenticator session, then retry.'); }
@@ -74,8 +81,24 @@ export function RegistrationReview() {
     } finally { saving.current = false; setBusy(false); }
   };
 
+  const invite = async () => {
+    if (!inviting || saving.current) return;
+    saving.current = true; setBusy(true); setError(''); setNotice('');
+    try {
+      const result = await invitationRequest({ request_id: inviting.id, resend: invitations.some(item=>item.request_id===inviting.id && item.status==='accepted') });
+      if (!result?.success || result.status !== 'accepted') throw new Error('Invitation outcome could not be confirmed. Refresh before retrying.');
+      setInviting(null);
+      await refresh();
+      setNotice('Student account prepared. The email provider accepted the invitation; inbox delivery is not yet confirmed.');
+    } catch (cause) {
+      setInviting(null);
+      await refresh();
+      setError(cause instanceof Error ? cause.message : 'Invitation could not be confirmed. Review its status before retrying.');
+    } finally { saving.current = false; setBusy(false); }
+  };
+
   return <section className="ops-panel">
-    <p className="ops-panel-note">These student details are unverified submissions. Reviewing a request records the college’s decision; it does not confirm email ownership, reserve an event place, create an account or issue an entry pass.</p>
+    <p className="ops-panel-note">Review the student’s details before sending an invitation. Saving a review alone creates no account or pass. Sending an invitation creates the approved account and event entries; the student verifies email ownership through the private setup link. An existing email account is never overwritten.</p>
     <form className="ops-toolbar" onSubmit={event => { event.preventDefault(); setQuery(search.trim()); setPage(0); setNotice(''); }}>
       <label className="ops-search"><Search size={17} /><input aria-label="Search registration requests" placeholder="Name, reference, email or institute…" maxLength={200} value={search} onChange={event=>setSearch(event.target.value)} disabled={busy} /></label>
       <button type="submit" disabled={busy}>Search</button>
@@ -100,11 +123,22 @@ export function RegistrationReview() {
       </dl>
       {request.review_notes && <p className="ops-note">Staff note: {request.review_notes}</p>}
       {request.reviewed_at && <small>Last reviewed {formatTime(request.reviewed_at)}</small>}
+      {invitations.filter(item=>item.request_id===request.id).map(item=><div className="ops-note" key={item.request_id}>
+        <strong>{invitationLabel[item.status]}</strong>{item.student_id && <p>Student ID: {item.student_id}</p>}
+        <small>Updated {formatTime(item.updated_at)}{item.provider_id && ` · Provider reference: ${item.provider_id}`}</small>
+        {item.failure_code && <p>{item.failure_code.split('_').join(' ')}. Check Email & invitations and contact the project owner if delivery needs review.</p>}
+      </div>)}
       {editing?.id===request.id ? <form className="ops-form" onSubmit={save}>
         <label>Review outcome<select aria-label="Review outcome" value={reviewStatus} disabled={busy} onChange={event=>setReviewStatus(event.target.value as ReviewStatus)}><option value="reviewed">Reviewed</option><option value="declined">Declined</option><option value="pending">Awaiting review</option></select></label>
         <label>Internal review note<textarea aria-label="Internal review note" rows={3} maxLength={2000} minLength={reviewStatus==='declined'?3:undefined} required={reviewStatus==='declined'} value={notes} onChange={event=>setNotes(event.target.value)} disabled={busy}/></label>
         <footer><button type="button" disabled={busy} onClick={()=>setEditing(null)}>Cancel</button><button type="submit" className="primary" disabled={busy}>{busy?'Saving…':'Save review'}</button></footer>
       </form> : <button type="button" disabled={busy} onClick={()=>{setEditing(request);setReviewStatus(request.status==='pending'?'reviewed':request.status);setNotes(request.review_notes);setNotice('');}}>Review request</button>}
+      {request.status==='reviewed' && <div className="ops-actions">
+        {inviting?.id===request.id ? <div className="ops-note"><p>Create or recover this student account and send a private setup link to <strong>{request.profile.email}</strong>?</p><div className="ops-actions"><button type="button" disabled={busy} onClick={()=>setInviting(null)}>Cancel</button><button type="button" className="primary" disabled={busy} onClick={()=>void invite()}>{busy?'Preparing invitation…':'Confirm and send invitation'}</button></div></div> :
+          <button type="button" className="primary" disabled={busy || invitations.some(item=>item.request_id===request.id && ['preparing','ready','sending','uncertain'].includes(item.status))} onClick={()=>{setInviting(request);setEditing(null);setError('');setNotice('');}}>
+            {invitations.some(item=>item.request_id===request.id && item.status==='accepted')?'Send new setup link':'Invite approved student'}
+          </button>}
+      </div>}
     </article>)}</div>
     {data && <div className="ops-toolbar"><span>{data.total} requests · Page {page+1} of {Math.max(1,Math.ceil(data.total/25))}</span><button type="button" disabled={busy || loading || page===0} onClick={()=>setPage(value=>value-1)}>Previous</button><button type="button" disabled={busy || loading || (page+1)*25>=data.total} onClick={()=>setPage(value=>value+1)}>Next</button></div>}
   </section>;

@@ -12,6 +12,8 @@ const base=(await readFile(new URL('../supabase/schema.sql',import.meta.url),'ut
 await db.exec(base);
 for(const file of ['20261019_access_containment.sql','20261016_operations.sql','20261019_production_security.sql','20261019_public_event_access.sql','20261019_rpc_privileges.sql'])await db.exec(await readFile(new URL('../supabase/migrations/'+file,import.meta.url),'utf8'));
 await db.exec(await readFile(new URL('../supabase/migrations/20261019_production_security.sql',import.meta.url),'utf8'));
+for(const file of ['20261020_registration_intake.sql','20261020_student_invitations.sql']) await db.exec(await readFile(new URL('../supabase/migrations/'+file,import.meta.url),'utf8'));
+await db.exec("insert into system_settings(key,value) values('student_portal_open','true') on conflict(key) do update set value='true'");
 const id=Object.fromEntries(['admin','judge','judge2','student','student2','unverified','foreign','e1','e2','r1','r2'].map((name,i)=>[name,`10000000-0000-4000-8000-${String(i+1).padStart(12,'0')}`]));
 for(const [name,role] of [['admin','super_admin'],['judge','judge'],['judge2','judge'],['student','student'],['student2','student'],['unverified','student']]){
   await db.query('insert into auth.users(id,email,email_confirmed_at) values($1,$2,$3)',[id[name],name+'@example.test',name==='unverified'?null:new Date().toISOString()]);

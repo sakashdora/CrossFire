@@ -26,3 +26,17 @@ assert.ok(allowed.ok);assert.equal(allowed.headers.get('Access-Control-Allow-Ori
 const denied=await fetch(endpoint,{method:'OPTIONS',headers:{Origin:'https://untrusted.example.test','Access-Control-Request-Method':'POST'},signal:AbortSignal.timeout(15000)});
 assert.equal(denied.status,403);assert.equal(denied.headers.get('Access-Control-Allow-Origin'),null);passed++;console.log('PASS: deployed Edge endpoint rejects foreign origins');
 console.log(`${passed} live read-only checks passed. No successful sign-in, email delivery or production staff mutations were tested.`);
+for(const table of ['crossfire_mail_settings','crossfire_student_accounts','crossfire_student_invitations']) await check(table+' denies anonymous reads','/rest/v1/'+table+'?select=*&limit=1',{},r=>[401,403].includes(r.status));
+for(const [name,args] of [
+  ['crossfire_mail_configuration',{}],['crossfire_invitation_status',{p_requests:[]}],
+  ['crossfire_prepare_invitation',{p_request_id:null}],['crossfire_provision_student',{p_job_id:null}],
+  ['crossfire_invitation_send_guard',{p_job_id:null}],['crossfire_finish_invitation',{p_job_id:null,p_status:'accepted'}]
+]) await check(name+' denies anonymous calls','/rest/v1/rpc/'+name,{method:'POST',body:JSON.stringify(args)},r=>[401,403].includes(r.status));
+const inviteEndpoint=origin+'/functions/v1/invite-student';
+for(const permitted of [true,false]){
+  const response=await fetch(inviteEndpoint,{method:'OPTIONS',headers:{Origin:permitted?'https://cross-fire-three.vercel.app':'https://untrusted.example.test'},signal:AbortSignal.timeout(15000)});
+  assert.equal(response.status,permitted?200:403);assert.equal(response.headers.get('Access-Control-Allow-Origin'),permitted?'https://cross-fire-three.vercel.app':null);
+  passed++;console.log('PASS: deployed invitation origin '+(permitted?'accepted':'rejected'));
+}
+await check('anonymous invitation request fails before account creation','/functions/v1/invite-student',{method:'POST',body:JSON.stringify({action:'status'})},r=>[401,403].includes(r.status));
+console.log(`${passed} total live checks passed. No real student accounts or emails were created.`);

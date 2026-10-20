@@ -631,7 +631,7 @@ export const RegistrationPage: React.FC<RegistrationPageProps> = ({
                 />
               </div>
               <span className="text-[10px] text-gray-400 mt-1 block">
-                Debate topics and emergency campus alerts will be transmitted directly via WhatsApp.
+                Keep this number accurate so the college team can contact you about the event.
               </span>
             </div>
           </div>

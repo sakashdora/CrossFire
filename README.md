@@ -4,11 +4,11 @@ Responsive event registration and college operations portal, built with React, T
 
 ## Release status — 20 October 2026
 
-The reviewed operations/security/intake database updates and `provision-staff` Edge function are deployed to the confirmed CrossFire Supabase project. The updated frontend is prepared locally; publication to Vercel is pending account access. Students submit directly to a private staff-review queue without email verification or a portal account. Email OTP remains deferred. See [the release checklist](docs/SECURITY_RELEASE.md) for verified results and remaining launch requirements.
+The reviewed operations/security/intake/invitation database updates and `provision-staff` / `invite-student` Edge functions are deployed to the confirmed CrossFire Supabase project. The updated frontend is prepared locally; publication to Vercel is pending account access. Students submit directly to a private review queue without email verification. Managers can configure official email invitations for reviewed students; actual delivery requires the college sender setup. See [the release checklist](docs/SECURITY_RELEASE.md) for verified results and remaining launch requirements.
 
 ## Workflows
 
-- Students submit contact details and competition choices without email verification. PostgreSQL saves a private pending request before returning a submission reference. Admins and super admins review it under **Registration review**. Reviewing does not create an Auth account, reserve a place or issue a pass; students cannot use a submission reference to sign in. Team formation and later account activation remain deferred in `FUTURE_CHANGES.md`.
+- Students submit contact details and competition choices without email verification. PostgreSQL saves a private pending request before returning a submission reference. Admins and super admins review it under **Registration review**. Reviewing alone creates no account or pass. A separate approved invitation creates account/entries and sends a password-setup link once the sender is configured and the portal opens. See [Student invitations](docs/STUDENT_INVITATIONS.md). Team formation remains deferred.
 - All staff require Supabase Auth and authenticator verification. Database roles, active state and duty assignments govern every operation.
 - Super admins manage elevated staff access and system settings. Admins also manage volunteer/judge access, events, student desks and invited VIP/judge guests.
 - Volunteers check in participants, issue one meal, mark room attendance or assist guests within their assigned on-duty station.
@@ -42,6 +42,8 @@ The production preview uses the same security headers defined in `vercel.json`. 
 | `src/pages/AccountSecurity.tsx` | Authenticated staff password updates |
 | `supabase/migrations` | Ordered, tested database changes |
 | `supabase/functions/provision-staff` | Server-only staff account provisioning |
+| `supabase/functions/invite-student` | Reviewed student accounts and official email delivery |
+| `src/pages/StudentActivation.tsx` | Private setup-link verification and student password setup |
 | `scripts/*.test.mjs` | Disposable SQL and Edge-handler tests |
 | `docs/OPERATIONS.md` | Wireframes, role matrix and operational pipeline |
 | `docs/SECURITY_RELEASE.md` | Deployment, recovery and verification evidence |

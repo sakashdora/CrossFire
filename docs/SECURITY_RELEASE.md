@@ -1,15 +1,15 @@
 # CrossFire security release
 
-Status updated on 20 October 2026; operations security migrations were applied on 19 October and the student-intake migration on 20 October. This is a release checklist and verification record, not a claim of complete security certification.
+Status updated on 20 October 2026; operations security migrations were applied on 19 October and the intake/invitation migrations on 20 October. This is a release checklist and verification record, not a claim of complete security certification.
 
 ## Targets and deployed work
 
 - Website: `https://cross-fire-three.vercel.app`.
 - Confirmed Supabase project: `foklyhoplcghivghuebp` (`crossfire`). The project is shared; unrelated applications and Auth users must be preserved.
-- Applied: access containment, operations, production security, public-event access, staff-helper privilege and student-intake migrations. Their checksums are recorded in `public.crossfire_schema_migrations` and ignored `artifacts/security/applied-release.json`.
-- Deployed: `provision-staff`, with JWT verification retained and `CROSSFIRE_ALLOWED_ORIGINS=https://cross-fire-three.vercel.app`.
+- Applied: access containment, operations, production security, public-event access, staff-helper privilege, student-intake and student-invitation migrations. Their checksums are recorded in `public.crossfire_schema_migrations`, ignored `artifacts/security/applied-release.json` and `artifacts/security/applied-invitations-release.json`. The invitation-only release verified six existing ledger checksums before applying the new migration; earlier files were not replayed or overwritten.
+- Deployed: `provision-staff` and `invite-student`, both with JWT verification retained and `CROSSFIRE_ALLOWED_ORIGINS=https://cross-fire-three.vercel.app`. The invitation function was confirmed ACTIVE with `verify_jwt=true`.
 - Frontend publication: pending Vercel access. A local build is not evidence that the public website serves it.
-- Email sender configuration: explicitly deferred by the user on 20 October. Keep `VITE_EMAIL_AUTH_READY=false`. Students submit directly to the staff-review queue without OTP; the student portal/account flow remains unavailable.
+- Email sender configuration: still missing. Keep `VITE_EMAIL_AUTH_READY=false` for registration without OTP. The new student tab, sender settings and reviewed invitation/password-setup flow are implemented. Invitations require a verified Resend sender domain, server key, enabled sender settings and an open student portal. See [Student invitations](STUDENT_INVITATIONS.md).
 - No live fixture accounts, guests, students, registrations, scores or announcements were created by this release.
 
 ## Controls implemented
@@ -34,18 +34,20 @@ Vercel headers set CSP, frame restrictions, MIME protection, referrer policy, HS
 | Edge handler/type contract tests | 16 passed |
 | Public build environment checks | 7 passed |
 | Student intake SQL checks | 27 passed: anonymous persistence, retry handling, private access, validation, rate limits and staff review |
-| Live HTTP checks | 14 passed: public events/rankings, private intake/review denials, invalid intake rejection, deployed CORS |
+| Student invitation SQL checks | 27 passed: role/MFA restrictions, sender validation, closed-portal gate, atomic imports, ownership markers, duplicate/cooldown handling, capacity and uncertain-delivery blocking |
+| Student invitation Edge/type checks | 15 passed: origin/session guards, missing configuration, account ownership, provider acceptance/rejection/uncertainty and no credential disclosure |
+| Live HTTP checks | 26 passed: public events/rankings, private intake/invitation denials, invalid intake rejection and both deployed Edge origins |
 | TypeScript and production build | Passed |
 | Public bundle inspection | No source maps, env files, SQL schema, known server secrets or test credentials detected |
 | npm production dependency audit | Zero reported vulnerabilities |
 | Desktop browser preview (1366 × 900) | Six live events and Quiz criteria rendered; Register Now opened registration without team-entry fields |
-| Student intake browser controls | Submit-for-review enabled after live events loaded; no email-code field or verification button; sign-in opens staff credentials only |
+| Current login browser controls | Student Login and Staff & Admin tabs verified; closed-portal notice and registration CTA verified on desktop and mobile; activation route shows missing-link guidance; no browser warnings/errors observed |
 | Current mobile intake preview (390 × 844) | No horizontal overflow; submit-for-review action fits; no browser warnings/errors observed in the fresh preview tab |
 | Anonymous admin browser route | Access denied; no operations data rendered |
 
 SQL tests execute actual functions and RLS in disposable PGlite databases. Edge tests exercise the actual handler with fake Auth/database providers. They do not prove production load capacity, real email delivery, real-user sign-in/MFA, camera scanning or successful privileged hosted mutations. No such outcomes are claimed.
 
-The complete security suite now has 131 passing checks. Intake persistence and admin-review mutations were exercised in the disposable SQL database; live HTTP checks confirmed private-access denial and invalid-input rejection. No test student was submitted through the production HTTP endpoint, and no real staff review session was performed.
+The security checks total 173 passing cases. The complete suite passed before one additional capacity regression was added; the expanded 27-case invitation SQL suite then passed. Intake, review and account conversion were exercised in disposable SQL databases; hosted checks confirmed access denials and public data availability. No test student was submitted through production, no real invitation was sent, and no real staff review session was performed.
 
 Browser checks used the local production build with the configured Vercel security headers, connected to the intended Supabase project. Screenshots are saved under ignored `artifacts/security/`. This does not verify the currently published Vercel frontend or every responsive route.
 
@@ -56,7 +58,7 @@ The database advisor's mutable search-path findings were fixed. Remaining intend
 ## Required before launch
 
 1. **Rotate any previously exposed staff credentials and revoke old sessions.** Removed legacy scripts included embedded credentials and unsafe setup paths. Git history and previous deployments may retain those values. Removing source files and adding MFA do not undo exposure. The verified account owner should reset passwords through trusted Supabase administration, review enrolled MFA factors and revoke sessions. Do not paste passwords, service keys or SMTP credentials into chat. Never change another shared application's account by email-name assumptions.
-2. **Configure a custom email sender.** Supabase's default sender is restricted to project-team addresses. Configure SMTP in Supabase using a verified sender domain, then update the appropriate email templates to show `{{ .Token }}`. Preserve other applications' redirect URLs; add the CrossFire production origin and required CrossFire callback paths. Review Auth rate limits and abuse controls. Test signup, existing-user code login, incorrect/expired codes, resend behavior and recovery using an approved real recipient. Enable `VITE_EMAIL_AUTH_READY=true` in Vercel only after delivery and verification succeed. This step is deferred for the current intake-only release. Keep the readiness flag false: submissions go to staff review and no student account is created. The linked backup Google Form is separate and does not populate the CrossFire queue automatically. Obtain college approval and define safe identity matching for existing intake records before switching to verified-account registration.
+2. **Configure the official invitation sender.** Follow [Student invitations](STUDENT_INVITATIONS.md): verify the college domain in Resend, add the server-only API key, save the official sender/reply-to in either admin portal, and test with an explicitly approved recipient. The CrossFire-specific integration does not modify shared-project SMTP. Verify expired links, password setup, login, portal closure and recovery. Keep `VITE_EMAIL_AUTH_READY=false`; unverified public intake remains separate from account invitations. The Google Form backup does not populate CrossFire automatically.
 3. **Publish the reviewed frontend to the existing Vercel project.** Set only the public URL/key and readiness flag. Build with `npm ci` and `npm run build`. Verify the deployment headers and correct project URL. Do not add service keys or database credentials to frontend variables.
 4. **Run staff acceptance tests using authorized accounts.** Verify super-admin/admin differences, MFA, staff suspension from a second session, assigned volunteers, one-time meals, guest lifecycle, actual judge submissions and completed-event publication. Use explicitly approved disposable records, then archive/clean them with approval. Confirm event venues, eligibility, schedules and media submission deadlines with the college: baseline media deadlines currently use registration deadlines, while the published brief describes on-campus creation.
 5. **Confirm operational ownership.** The college needs a documented account-recovery contact, backup/restore procedure and retention policy for student and guest records. This repository does not claim that provider backup scheduling or restore drills have been configured.
@@ -69,15 +71,16 @@ npm run test:security
 npm run build
 npm run security:bundle
 npm audit --omit=dev
-node scripts/prepare-security-release.mjs
+node scripts/prepare-security-release.mjs --only 20261020_student_invitations.sql
 ```
 
-The preparer only writes ignored `artifacts/security/release.sql` and prints checksums. It applies the ordered reviewed migration set in one transaction when submitted to the intended project, uses an advisory lock/timeouts, and rejects changes to previously recorded migration checksums. Add a new migration for subsequent changes. Never deploy the operations migration alone after MFA hardening.
+The preparer only writes ignored `artifacts/security/release.sql` and prints checksums. The incremental command checks the existing ledger against the reviewed deployment history, applies only the selected migration in one transaction and records its checksum. Checked-out historical text has a checksum discrepancy, so this update intentionally did not replay it. Add a new migration for subsequent changes; never overwrite deployed checksums or deploy the old operations migration alone after MFA hardening.
 
 ```powershell
 supabase db query --linked --file scripts/security-checkpoint.sql --output json
 supabase db query --linked --file artifacts/security/release.sql --output json
 supabase functions deploy provision-staff --project-ref foklyhoplcghivghuebp --use-api
+supabase functions deploy invite-student --project-ref foklyhoplcghivghuebp --use-api
 node scripts/security-smoke-live.mjs
 ```
 

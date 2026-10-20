@@ -77,6 +77,7 @@ Invited or confirmed guests can decline; an admin may invite a declined guest ag
 - **Registration review** is a separate private queue for student submissions made without email verification. Admins and super admins can search, filter and page through requests, save an internal note, mark reviewed/declined or return a request to pending. Stale reviews are rejected; declined requests require a reason. All reviews are audited. These actions never create Auth users, confirm email addresses, reserve event places, issue passes or send messages.
 - `crossfire_submit_registration_request` validates the entire input and event windows, bounds submissions per email/phone and globally, and returns only a receipt. Retrying the same request ID and unchanged details is idempotent. Requests are not visible to volunteers or judges and cannot be read directly through REST.
 - Use **Refresh requests** to reload the review queue. Its pagination is server-side (25 records), and filtering never downloads the entire student intake into the browser.
+- **Email & invitations** is available to admins and super admins. Configure the official sender, then separately invite reviewed students after the super admin opens the portal. Invitations create the approved account and entries, deliver a private password-setup link through the configured provider, and retain delivery status. Provider acceptance does not prove inbox delivery. The sender service is not configured yet; see [Student invitations](STUDENT_INVITATIONS.md) for setup and recovery.
 
 - Live routes: `#admin` and `#volunteer`, both rendered by `src/operations/OperationsDashboard.tsx`.
 - `crossfire_ops_snapshot()` returns the caller's permitted records. The screen refreshes after a successful write, on focus, and every 15 seconds while visible.
@@ -95,7 +96,7 @@ Run `npm run test:security` for disposable PGlite authorization/persistence test
 
 There is no demo route or role switcher. To review staff screens, use an authorized real staff account and authenticator. The old fictional preview screenshots are not evidence of a production workflow.
 
-See [SECURITY_RELEASE.md](SECURITY_RELEASE.md) for deployment status, release commands, email configuration and credential recovery. The connected project is shared: never reset it or rerun the historical base schema. Changes must be limited to CrossFire objects and the named Edge endpoint.
+See [SECURITY_RELEASE.md](SECURITY_RELEASE.md) for deployment status, release commands, email configuration and credential recovery. The connected project is shared: never reset it or rerun the historical base schema. Changes must be limited to CrossFire objects and the named Edge endpoints.
 
 Staff password updates are available under **Account security** after authenticator verification. The creation password is not claimed to expire automatically. Lost authenticators require administrator identity verification and recovery through Supabase; the application cannot bypass MFA.
 
