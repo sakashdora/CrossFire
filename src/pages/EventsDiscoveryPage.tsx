@@ -64,7 +64,7 @@ function EventCriteria({ event, onClose, onRegister }: { event: EventItem; onClo
           {otherPrizes.length > 0 && <p className="cf-event-other-prizes">{otherPrizes.map(([place, amount]) => `${place} place: ${money(amount)}`).join(' · ')}</p>}
         </section>
         <section className="cf-event-rubric" aria-labelledby="event-rubric-title">
-          <div className="cf-event-detail-heading"><h3 id="event-rubric-title">Official scoring rubric</h3><span>Max score: 100 pts</span></div>
+          <div className="cf-event-detail-heading"><h3 id="event-rubric-title">Official scoring rubric</h3><span>Max score: {event.scoring_rubric.criteria.reduce((total,criterion)=>total+criterion.max,0)} pts</span></div>
           <ul>{event.scoring_rubric.criteria.map(criterion => <li key={criterion.name}>
             <div><h4>{criterion.name}</h4><span>{criterion.weight} pts ({criterion.weight}%)</span></div>
             {criterion.description && <p>{criterion.description}</p>}
@@ -77,7 +77,7 @@ function EventCriteria({ event, onClose, onRegister }: { event: EventItem; onClo
 }
 
 export function EventsDiscoveryPage({ initialEvent = null, userRegistrations, onRegister }: EventsDiscoveryPageProps) {
-  const { events } = useEvents();
+  const { events, isLoading, error } = useEvents();
   const [filter, setFilter] = useState<'all' | 'solo' | 'team'>('all');
   const [selectedEvent, setSelectedEvent] = useState<EventItem | null>(initialEvent);
   const registeredEventIds = new Set(userRegistrations.map(registration => registration.event_id));
@@ -101,8 +101,8 @@ export function EventsDiscoveryPage({ initialEvent = null, userRegistrations, on
         </div>
         <div className="cf-events-overview">
           <dl className="cf-events-stats">
-            <div><dt>Events</dt><dd>{String(events.length).padStart(2, '0')}</dd></div>
-            <div><dt>Prize pool</dt><dd>{money(prizePool)}</dd></div>
+            <div><dt>Events</dt><dd>{isLoading || error ? '—' : String(events.length).padStart(2, '0')}</dd></div>
+            <div><dt>Prize pool</dt><dd>{isLoading || error ? '—' : money(prizePool)}</dd></div>
             <div><dt>Entry</dt><dd>Free</dd></div>
           </dl>
           <div className="cf-events-meta"><span><CalendarDays size={15} /><time dateTime="2026-11-15">15 November 2026</time></span><i aria-hidden="true" /><span><MapPin size={15} />Srusti Campus, Bhubaneswar</span></div>
@@ -141,7 +141,8 @@ export function EventsDiscoveryPage({ initialEvent = null, userRegistrations, on
           </article>;
         })}
       </div>
-      {filteredEvents.length === 0 && <div className="cf-events-empty"><p>No events in this category.</p><button onClick={() => setFilter('all')}>View all events <ArrowRight size={16} /></button></div>}
+      {(isLoading || error) && <p className="cf-events-empty" role="status">{isLoading ? 'Loading event information…' : error}</p>}
+      {!isLoading && !error && filteredEvents.length === 0 && <div className="cf-events-empty"><p>No events in this category.</p><button onClick={() => setFilter('all')}>View all events <ArrowRight size={16} /></button></div>}
 
       <section className="cf-events-ticket" aria-labelledby="events-ticket-title">
         <span className="cf-events-ticket-star" aria-hidden="true">✳</span>

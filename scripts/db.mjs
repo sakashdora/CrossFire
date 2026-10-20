@@ -8,12 +8,12 @@ export function getClient() {
   if (!url) {
     throw new Error('DIRECT_URL is not set in .env');
   }
-  // pg treats sslmode=require as verify-full; strip it and configure TLS explicitly.
+  // Require a verified TLS chain. A private CA may be supplied via NODE_EXTRA_CA_CERTS.
   const parsed = new URL(url);
   parsed.searchParams.delete('sslmode');
   return new pg.Client({
     connectionString: parsed.toString(),
-    ssl: { rejectUnauthorized: false },
+    ssl: { rejectUnauthorized: true },
     connectionTimeoutMillis: 15000,
   });
 }

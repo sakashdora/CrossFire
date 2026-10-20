@@ -28,6 +28,10 @@ export interface UserProfile {
   terms_accepted?: boolean;
   selected_competitions?: string[];
   created_at?: string;
+  active?: boolean;
+  pass_code?: string;
+  checked_in_at?: string | null;
+  food_redeemed_at?: string | null;
 }
 
 export interface RubricCriterion {
@@ -91,6 +95,7 @@ export interface Registration {
   media_submitted_at?: string;
   score?: number;
   score_locked?: boolean;
+  room_reported_at?: string | null;
   final_rank?: number;
   created_at: string;
 }

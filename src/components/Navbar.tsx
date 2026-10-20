@@ -10,17 +10,9 @@ import {
   X, 
   ChevronDown, 
   UserPlus,
-  CheckCheck,
-  Megaphone,
-  MessageSquare,
-  Ticket,
-  Clock,
-  Award,
-  RefreshCw,
-  ChevronRight
+  CheckCheck
 } from 'lucide-react';
-import { useNotifications, formatNotificationTime } from '../hooks/useNotifications';
-import { NotificationItem } from '../types';
+import { useNotifications } from '../hooks/useNotifications';
 import { motion, AnimatePresence } from 'framer-motion';
 import './navigation.css';
 
@@ -40,76 +32,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
-  const [notifFilter, setNotifFilter] = useState<'all' | 'unread'>('all');
-
-  const { 
-    notifications, 
-    unreadCount, 
-    markAsRead, 
-    markAsUnread,
-    markAllAsRead, 
-    deleteNotification, 
-    clearAllNotifications, 
-    resetToDefaultNotifications 
-  } = useNotifications();
-
-  const handleNotificationClick = (item: NotificationItem) => {
-    if (!item.read_at) {
-      markAsRead(item.id);
-    }
-    if (item.action_view) {
-      setCurrentView(item.action_view);
-      setNotificationsOpen(false);
-    }
-  };
-
-  const handleNotificationAction = (item: NotificationItem, e: React.MouseEvent) => {
-    e.stopPropagation();
-    markAsRead(item.id);
-    if (item.action_view) {
-      setCurrentView(item.action_view);
-      setNotificationsOpen(false);
-    }
-  };
-
-  const getCategoryIcon = (type: NotificationItem['type']) => {
-    switch (type) {
-      case 'announcement':
-        return <Megaphone className="w-3.5 h-3.5 text-cyan-600" />;
-      case 'debate_topic':
-        return <MessageSquare className="w-3.5 h-3.5 text-purple-600" />;
-      case 'registration':
-        return <Ticket className="w-3.5 h-3.5 text-emerald-600" />;
-      case 'event_reminder':
-        return <Clock className="w-3.5 h-3.5 text-amber-600" />;
-      case 'score':
-        return <Award className="w-3.5 h-3.5 text-orange-600" />;
-      default:
-        return <Bell className="w-3.5 h-3.5 text-cyan-600" />;
-    }
-  };
-
-  const getCategoryBadgeClass = (type: NotificationItem['type']) => {
-    switch (type) {
-      case 'announcement':
-        return 'bg-cyan-50 border-cyan-200 text-cyan-700';
-      case 'debate_topic':
-        return 'bg-purple-50 border-purple-200 text-purple-700';
-      case 'registration':
-        return 'bg-emerald-50 border-emerald-200 text-emerald-700';
-      case 'event_reminder':
-        return 'bg-amber-50 border-amber-200 text-amber-700';
-      case 'score':
-        return 'bg-orange-50 border-orange-200 text-orange-700';
-      default:
-        return 'bg-gray-100 border-gray-200 text-gray-700';
-    }
-  };
-
-  const displayedNotifications = notifications.filter(n => {
-    if (notifFilter === 'unread') return !n.read_at;
-    return true;
-  });
+  const { notifications, unreadCount, markAsRead, markAllAsRead, error: notificationError } = useNotifications();
   
   // Track scroll position smoothly without layout shift
   const [scrolled, setScrolled] = useState(false);
@@ -284,46 +207,34 @@ export const Navbar: React.FC<NavbarProps> = ({
                   aria-label="View notifications"
                 >
                   <Bell className="w-5 h-5" />
-                  {unreadCount > 0 && (
-                    <span className="absolute top-1.5 right-1.5 min-w-[17px] h-[17px] px-1 bg-gradient-to-r from-orange-500 to-amber-500 text-white text-[10px] font-black rounded-full flex items-center justify-center ring-2 ring-[#000d1a] shadow-sm animate-pulse">
-                      {unreadCount}
-                    </span>
-                  )}
+                  {unreadCount > 0 && <span className="absolute top-1.5 right-1.5 w-4 h-4 bg-orange-500 text-white text-[10px] font-black rounded-full flex items-center justify-center ring-2 ring-[#000d1a]">{unreadCount}</span>}
                 </button>
                 
-                {/* Working Dynamic Notifications Dropdown UI */}
+                {/* Working Notifications Dropdown UI */}
                 <AnimatePresence>
                   {notificationsOpen && (
                     <motion.div
-                      initial={{ opacity: 0, y: 10, scale: 0.96 }}
+                      initial={{ opacity: 0, y: 10, scale: 0.95 }}
                       animate={{ opacity: 1, y: 0, scale: 1 }}
-                      exit={{ opacity: 0, y: 10, scale: 0.96 }}
+                      exit={{ opacity: 0, y: 10, scale: 0.95 }}
                       transition={{ duration: 0.18 }}
                       id="notifications-panel"
-                      className="cf-notification-panel absolute right-0 mt-3 w-84 sm:w-[420px] bg-white/95 backdrop-blur-2xl rounded-2xl shadow-2xl border border-gray-200/90 z-50 text-gray-800 flex flex-col"
+                      className="cf-notification-panel absolute right-0 mt-3 w-80 sm:w-96 bg-white/95 backdrop-blur-2xl rounded-2xl shadow-2xl border border-gray-200 py-3 z-50 text-gray-800"
                     >
-                      {/* Top Header */}
-                      <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between bg-white/80">
-                        <div className="flex items-center gap-2.5">
-                          <div className="w-7 h-7 rounded-xl bg-orange-500 text-white flex items-center justify-center shadow-xs">
-                            <Bell className="w-3.5 h-3.5" />
-                          </div>
-                          <div>
-                            <div className="flex items-center gap-2">
-                              <span className="font-black text-sm text-[#001F3F]">Notifications</span>
-                              {unreadCount > 0 && (
-                                <span className="px-2 py-0.5 rounded-full bg-orange-100 text-orange-600 text-[10px] font-black">
-                                  {unreadCount} new
-                                </span>
-                              )}
-                            </div>
-                          </div>
+                      <div className="px-4 py-2.5 border-b border-gray-100 flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <Bell className="w-4 h-4 text-orange-500" />
+                          <span className="font-black text-sm text-navy">Notifications</span>
+                          {unreadCount > 0 && (
+                            <span className="px-1.5 py-0.5 rounded-full bg-orange-100 text-orange-600 text-[10px] font-black">
+                              {unreadCount} new
+                            </span>
+                          )}
                         </div>
-
                         {unreadCount > 0 && (
                           <button
                             onClick={() => markAllAsRead()}
-                            className="flex items-center gap-1 text-[11px] font-bold text-orange-600 hover:text-orange-700 hover:underline px-2 py-1 rounded-md hover:bg-orange-50 transition-colors"
+                            className="flex items-center gap-1 text-[11px] font-bold text-orange-600 hover:text-orange-700 hover:underline"
                           >
                             <CheckCheck className="w-3.5 h-3.5" />
                             Mark all read
@@ -331,176 +242,32 @@ export const Navbar: React.FC<NavbarProps> = ({
                         )}
                       </div>
 
-                      {/* Filter & Controls Bar */}
-                      <div className="px-4 py-2 bg-gray-50/80 border-b border-gray-100 flex items-center justify-between text-xs">
-                        <div className="flex items-center gap-1.5">
-                          <button
-                            onClick={() => setNotifFilter('all')}
-                            className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all ${
-                              notifFilter === 'all'
-                                ? 'bg-[#001F3F] text-white shadow-xs'
-                                : 'text-gray-500 hover:text-gray-800 hover:bg-gray-200/60'
-                            }`}
-                          >
-                            All ({notifications.length})
-                          </button>
-                          <button
-                            onClick={() => setNotifFilter('unread')}
-                            className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all ${
-                              notifFilter === 'unread'
-                                ? 'bg-orange-500 text-white shadow-xs'
-                                : 'text-gray-500 hover:text-gray-800 hover:bg-gray-200/60'
-                            }`}
-                          >
-                            Unread ({unreadCount})
-                          </button>
-                        </div>
-
-                        {notifications.length > 0 && (
-                          <button
-                            onClick={() => clearAllNotifications()}
-                            className="text-[11px] text-gray-400 hover:text-red-600 font-medium transition-colors"
-                          >
-                            Clear all
-                          </button>
-                        )}
-                      </div>
-
-                      {/* Dynamic Notifications Scroll List */}
-                      <div className="max-h-80 overflow-y-auto divide-y divide-gray-100/90 overscroll-contain">
-                        {displayedNotifications.length === 0 ? (
-                          notifFilter === 'unread' && notifications.length > 0 ? (
-                            <div className="py-8 px-6 text-center">
-                              <div className="w-10 h-10 mx-auto rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center mb-2.5">
-                                <CheckCheck className="w-5 h-5" />
-                              </div>
-                              <h4 className="text-sm font-bold text-gray-800">You're All Caught Up!</h4>
-                              <p className="text-xs text-gray-500 mt-1">
-                                No unread circulars. All {notifications.length} notifications are marked read.
-                              </p>
-                              <button
-                                onClick={() => setNotifFilter('all')}
-                                className="mt-3 text-xs font-bold text-orange-600 hover:underline"
-                              >
-                                View All ({notifications.length})
-                              </button>
-                            </div>
-                          ) : (
-                            <div className="py-10 px-6 text-center">
-                              <div className="w-12 h-12 mx-auto rounded-full bg-gray-100 flex items-center justify-center text-gray-400 mb-3">
-                                <Bell className="w-6 h-6" />
-                              </div>
-                              <h4 className="text-sm font-bold text-gray-800">No Notifications Yet</h4>
-                              <p className="text-xs text-gray-500 mt-1 max-w-xs mx-auto">
-                                Official circulars, debate topics, and event schedules will appear dynamically here.
-                              </p>
-                              <button
-                                onClick={() => resetToDefaultNotifications()}
-                                className="mt-4 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#001F3F] text-white text-xs font-bold hover:bg-orange-600 transition-colors shadow-sm"
-                              >
-                                <RefreshCw className="w-3.5 h-3.5" />
-                                <span>Reset Default Circulars</span>
-                              </button>
-                            </div>
-                          )
+                      {notificationError && <p role="alert" className="px-4 py-3 text-xs text-red-700">{notificationError}</p>}
+                      <div className="max-h-72 overflow-y-auto divide-y divide-gray-100">
+                        {notifications.length === 0 ? (
+                          <div className="py-8 text-center text-xs text-gray-400 font-medium">
+                            No notifications yet
+                          </div>
                         ) : (
-                          displayedNotifications.map((item) => (
-                            <div
+                          notifications.slice(0, 5).map((item) => (
+                            <button
                               key={item.id}
-                              onClick={() => handleNotificationClick(item)}
-                              className={`group relative p-3.5 sm:p-4 text-left hover:bg-orange-50/40 transition-colors cursor-pointer ${
-                                !item.read_at ? 'bg-orange-50/25' : 'bg-white'
-                              }`}
+                              onClick={() => markAsRead(item.id)}
+                              className={`w-full text-left p-3.5 hover:bg-orange-50/50 transition-colors cursor-pointer ${!item.read_at ? 'bg-orange-50/30' : ''}`}
                             >
-                              <div className="flex items-start gap-3">
-                                {/* Category Icon Badge */}
-                                <div
-                                  className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 border mt-0.5 ${getCategoryBadgeClass(
-                                    item.type
-                                  )}`}
-                                >
-                                  {getCategoryIcon(item.type)}
-                                </div>
-
-                                {/* Body */}
-                                <div className="flex-1 min-w-0">
-                                  <div className="flex items-start justify-between gap-2">
-                                    <div className="flex items-center gap-1.5 flex-wrap">
-                                      <h4 className="text-xs sm:text-sm font-bold text-[#001F3F] leading-snug group-hover:text-orange-600 transition-colors">
-                                        {item.title}
-                                      </h4>
-                                      {item.tag && (
-                                        <span className="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider bg-gray-100 text-gray-600">
-                                          {item.tag}
-                                        </span>
-                                      )}
-                                    </div>
-
-                                    {/* Unread indicator / Dismiss */}
-                                    <div className="flex items-center gap-1 shrink-0">
-                                      {!item.read_at && (
-                                        <span className="w-2 h-2 rounded-full bg-orange-500 shrink-0" title="Unread" />
-                                      )}
-                                      <button
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          deleteNotification(item.id);
-                                        }}
-                                        className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-red-50 text-gray-400 hover:text-red-500 transition-opacity"
-                                        title="Dismiss notification"
-                                        aria-label="Dismiss notification"
-                                      >
-                                        <X className="w-3.5 h-3.5" />
-                                      </button>
-                                    </div>
-                                  </div>
-
-                                  <p className="text-[11px] sm:text-xs text-gray-600 mt-1 leading-relaxed">
-                                    {item.message}
-                                  </p>
-
-                                  {/* Footer with dynamic relative time and action */}
-                                  <div className="mt-2.5 flex items-center justify-between gap-2 pt-1 border-t border-gray-100/70">
-                                    <span className="text-[10px] text-gray-400 font-medium">
-                                      {formatNotificationTime(item.created_at)}
-                                    </span>
-
-                                    {item.action_view ? (
-                                      <button
-                                        onClick={(e) => handleNotificationAction(item, e)}
-                                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-[#001F3F] hover:bg-orange-600 text-white text-[10px] font-bold transition-all shadow-xs"
-                                      >
-                                        <span>{item.action_label || 'View'}</span>
-                                        <ChevronRight className="w-3 h-3" />
-                                      </button>
-                                    ) : (
-                                      <button
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          item.read_at ? markAsUnread(item.id) : markAsRead(item.id);
-                                        }}
-                                        className="text-[10px] text-gray-400 hover:text-gray-700 font-medium hover:underline"
-                                      >
-                                        {item.read_at ? 'Mark unread' : 'Mark read'}
-                                      </button>
-                                    )}
-                                  </div>
-                                </div>
+                              <div className="flex items-start justify-between gap-2">
+                                <h4 className="text-xs font-bold text-navy leading-tight">{item.title}</h4>
+                                {!item.read_at && (
+                                  <span className="w-2 h-2 rounded-full bg-orange-500 shrink-0 mt-0.5" />
+                                )}
                               </div>
-                            </div>
+                              <p className="text-[11px] text-gray-600 mt-1 leading-normal">{item.message}</p>
+                              <span className="text-[10px] text-gray-400 mt-1.5 block">
+                                {new Date(item.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                              </span>
+                            </button>
                           ))
                         )}
-                      </div>
-
-                      {/* Bottom Status Bar */}
-                      <div className="px-4 py-2.5 bg-gray-50/90 border-t border-gray-100 flex items-center justify-between text-[11px]">
-                        <div className="flex items-center gap-1.5 truncate">
-                          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0" />
-                          <span className="text-gray-500 font-semibold truncate">Srusti Academy • CrossFire Feed</span>
-                        </div>
-                        <div className="text-[10px] text-gray-500 font-medium shrink-0 ml-2">
-                          Design and build by <span className="font-bold text-gray-800">"True Inspire"</span>
-                        </div>
                       </div>
                     </motion.div>
                   )}
@@ -554,6 +321,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                         </div>
 
                         <div className="border-t border-gray-100 pt-2 pb-1">
+                          {role !== 'student' && <button className="w-full text-left px-5 py-2.5 text-sm font-bold text-gray-700 hover:bg-orange-50" onClick={()=>{setUserDropdownOpen(false);setCurrentView('account');}}>Account security</button>}
                           <button
                             onClick={() => {
                               setUserDropdownOpen(false);
@@ -642,6 +410,7 @@ export const Navbar: React.FC<NavbarProps> = ({
 
 
 
+                {user && role !== 'student' && <button className="text-sm text-white font-bold py-2" onClick={()=>{setMobileMenuOpen(false);setCurrentView('account');}}>Account security</button>}
                 {/* User Status / Quick Auth in Mobile Menu */}
                 <div className="pt-3 mt-2 border-t border-white/10 flex items-center justify-between">
                   {user ? (

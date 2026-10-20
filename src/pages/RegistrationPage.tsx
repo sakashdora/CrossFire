@@ -1,7 +1,9 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { CourseStream, FoodPreference, EventItem, SchoolBoard } from '../types';
-import { studentDataService } from '../services/studentDataService';
+import { escapeHtml } from '../lib/security';
+import { isEmailAuthReady } from '../lib/supabase';
+import { submitRegistrationRequest } from '../lib/registrationRequests';
 
 
 import { 
@@ -38,8 +40,8 @@ export const RegistrationPage: React.FC<RegistrationPageProps> = ({
   onSuccess,
   setCurrentView,
 }) => {
-  const { user, signUp } = useAuth();
-  const { events } = useEvents();
+  const { user, signUp, requestEmailCode, verifyEmailCode, logout } = useAuth();
+  const { events, error: eventsError, isLoading: eventsLoading } = useEvents();
 
   // Form Fields from Google Form - Start empty for new visitors
   const isExistingStudent = Boolean(user && user.role === 'student' && user.email);
@@ -53,7 +55,12 @@ export const RegistrationPage: React.FC<RegistrationPageProps> = ({
   const [courseStream, setCourseStream] = useState<CourseStream>(isExistingStudent && user ? user.course_stream : '12th Science');
   const [board, setBoard] = useState<SchoolBoard>(isExistingStudent && user ? (user.board || 'CBSE') : 'CBSE');
   const [foodPreference, setFoodPreference] = useState<FoodPreference>(isExistingStudent && user ? user.food_preference : 'Veg');
-  const [sendCopy, setSendCopy] = useState(true);
+  const [consent, setConsent] = useState(false);
+  const [emailCode, setEmailCode] = useState('');
+  const [codeSentTo, setCodeSentTo] = useState('');
+  const [website, setWebsite] = useState('');
+  const [submittedForReview, setSubmittedForReview] = useState(false);
+  const intakeAttempt = useRef<{ id: string; payload: string } | null>(null);
 
   // Group A & Group B Selections: Choose any two from Group A & any two from Group B
   const [selectedCompetitions, setSelectedCompetitions] = useState<string[]>(
@@ -64,6 +71,18 @@ export const RegistrationPage: React.FC<RegistrationPageProps> = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [confirmedStudentId, setConfirmedStudentId] = useState<string>('');
+  const draftEdited = useRef(false);
+  const hydratedUser = useRef(user?.id);
+  useEffect(()=>{
+    if (!user || user.role !== 'student' || hydratedUser.current === user.id) return;
+    hydratedUser.current = user.id;
+    if(draftEdited.current) return;
+    setStudentName(`${user.first_name} ${user.last_name || ''}`.trim());
+    setContactNo(user.contact_number || '');setEmailId(user.email);setWhatsappNo(user.whatsapp_number || '');
+    setInstituteName(user.institute_name || '');setCityTown(user.city_town || '');
+    setCourseStream(user.course_stream || '12th Science');setBoard(user.board || 'CBSE');setFoodPreference(user.food_preference || 'Veg');
+    setSelectedCompetitions(user.selected_competitions || []);
+  },[user]);
 
   const groupAEvents = events.filter(e => e.group === 'Group A');
   const groupBEvents = events.filter(e => e.group === 'Group B');
@@ -73,6 +92,7 @@ export const RegistrationPage: React.FC<RegistrationPageProps> = ({
 
   const handleCompetitionToggle = (eventName: string, group: 'Group A' | 'Group B') => {
     setErrorMessage(null);
+    if (isSubmitting) return;
     if (selectedCompetitions.includes(eventName)) {
       setSelectedCompetitions(prev => prev.filter(name => name !== eventName));
     } else {
@@ -98,6 +118,9 @@ export const RegistrationPage: React.FC<RegistrationPageProps> = ({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage(null);
+    if (isSubmitting) return;
+    if (!consent) { setErrorMessage('Please confirm the participation terms and parent/guardian consent.'); return; }
+    if (user && user.role !== 'student') { setErrorMessage('Sign out of your staff account before registering a student.'); return; }
 
     // Validation
     if (!studentName.trim()) {
@@ -135,6 +158,31 @@ export const RegistrationPage: React.FC<RegistrationPageProps> = ({
 
     setIsSubmitting(true);
     try {
+      if (!isEmailAuthReady) {
+        const profile = {
+          student_name: studentName.trim(), email: emailId.trim(), contact_number: contactNo.trim(),
+          whatsapp_number: whatsappNo.trim() || contactNo.trim(), institute_name: instituteName.trim(),
+          city_town: cityTown.trim(), course_stream: courseStream, board, food_preference: foodPreference,
+          selected_competitions: [...selectedCompetitions].sort(), parent_consent: consent, terms_accepted: consent, website,
+        };
+        const payload = JSON.stringify(profile);
+        if (intakeAttempt.current?.payload !== payload) intakeAttempt.current = { id: crypto.randomUUID(), payload };
+        const reference = await submitRegistrationRequest(intakeAttempt.current.id, profile);
+        setConfirmedStudentId(reference);
+        setSubmittedForReview(true);
+        setSubmitted(true);
+        return;
+      }
+      if (user?.email.toLowerCase() !== emailId.trim().toLowerCase()) {
+        if (codeSentTo !== emailId.trim().toLowerCase()) {
+          const sent = await requestEmailCode(emailId, true);
+          if (!sent.success) setErrorMessage(sent.error || 'Unable to send verification code.');
+          else setCodeSentTo(emailId.trim().toLowerCase());
+          return;
+        }
+        const verified = await verifyEmailCode(emailId, emailCode);
+        if (!verified.success) { setErrorMessage(verified.error || 'Email verification failed.'); return; }
+      }
       const parts = studentName.trim().split(' ');
       const firstName = parts[0] || 'Student';
       const lastName = parts.slice(1).join(' ') || '';
@@ -151,13 +199,14 @@ export const RegistrationPage: React.FC<RegistrationPageProps> = ({
         board: board,
         food_preference: foodPreference,
         selected_competitions: selectedCompetitions,
-        parent_consent: true,
-        terms_accepted: true,
+        parent_consent: consent,
+        terms_accepted: consent,
       });
 
       if (res.success) {
-        const student = studentDataService.findStudentByEmail(emailId.trim());
-        setConfirmedStudentId(student?.id || 'CF26-1001');
+        if (!res.passId) { setErrorMessage('Your registration receipt could not be verified. Please review your account.'); return; }
+        setConfirmedStudentId(res.passId);
+        setEmailCode('');
         setSubmitted(true);
         confetti({
           particleCount: 150,
@@ -213,7 +262,7 @@ export const RegistrationPage: React.FC<RegistrationPageProps> = ({
 </head>
 <body>
   <div style="text-align: right; margin-bottom: 10px;" class="no-print">
-    <button onclick="window.print()" style="padding: 8px 16px; background: #ff5722; color: #fff; font-weight: bold; border: none; border-radius: 8px; cursor: pointer;">
+    <button id="print-slip" style="padding: 8px 16px; background: #ff5722; color: #fff; font-weight: bold; border: none; border-radius: 8px; cursor: pointer;">
       Print Slip
     </button>
   </div>
@@ -224,25 +273,25 @@ export const RegistrationPage: React.FC<RegistrationPageProps> = ({
       <div class="subtitle">STATE-LEVEL TALENT HUNT • OFFICIAL REGISTRATION ACKNOWLEDGEMENT SLIP</div>
     </div>
     <div class="badge-bar">
-      <div>Registration ID: <span class="badge-value">${confirmedStudentId || 'CF26-PENDING'}</span></div>
+      <div>${submittedForReview ? 'Submission reference' : 'Registration ID'}: <span class="badge-value">${escapeHtml(confirmedStudentId)}</span></div>
       <div>Event Date: <span class="badge-item">Nov 15, 2026</span></div>
-      <div>Dietary Token: <span class="badge-item">${foodPreference}</span></div>
+      <div>Dietary Token: <span class="badge-item">${escapeHtml(foodPreference)}</span></div>
     </div>
     <div class="section-title">Registered Candidate Dossier</div>
     <div class="grid">
-      <div><div class="field-label">Student Name</div><div class="field-value">${studentName}</div></div>
-      <div><div class="field-label">Email Address</div><div class="field-value">${emailId}</div></div>
-      <div><div class="field-label">Contact Number</div><div class="field-value">${contactNo}</div></div>
-      <div><div class="field-label">WhatsApp Number</div><div class="field-value">${whatsappNo || contactNo}</div></div>
-      <div><div class="field-label">Institute / School</div><div class="field-value">${instituteName}</div></div>
-      <div><div class="field-label">City / Town</div><div class="field-value">${cityTown}</div></div>
-      <div><div class="field-label">Stream &amp; Board</div><div class="field-value">${courseStream} (${board})</div></div>
-      <div><div class="field-label">Competitions</div><div class="field-value">${selectedCompetitions.join(' &amp; ')}</div></div>
+      <div><div class="field-label">Student Name</div><div class="field-value">${escapeHtml(studentName)}</div></div>
+      <div><div class="field-label">Email Address</div><div class="field-value">${escapeHtml(emailId)}</div></div>
+      <div><div class="field-label">Contact Number</div><div class="field-value">${escapeHtml(contactNo)}</div></div>
+      <div><div class="field-label">WhatsApp Number</div><div class="field-value">${escapeHtml(whatsappNo || contactNo)}</div></div>
+      <div><div class="field-label">Institute / School</div><div class="field-value">${escapeHtml(instituteName)}</div></div>
+      <div><div class="field-label">City / Town</div><div class="field-value">${escapeHtml(cityTown)}</div></div>
+      <div><div class="field-label">Stream &amp; Board</div><div class="field-value">${escapeHtml(courseStream)} (${escapeHtml(board)})</div></div>
+      <div><div class="field-label">Competitions</div><div class="field-value">${selectedCompetitions.map(escapeHtml).join(' &amp; ')}</div></div>
     </div>
     <div class="notice">
-      <strong>Important Instructions for Registered Participants:</strong><br/>
-      1. Keep this official acknowledgement slip saved or printed for physical campus entry on Nov 15, 2026 at Srusti Campus, Chandrasekharpur, Bhubaneswar.<br/>
-      2. Student Portal login will open once registrations conclude. Your unique login credentials will be dispatched to your registered Email &amp; WhatsApp.<br/>
+      <strong>${submittedForReview ? 'Submission received — awaiting staff review' : 'Important Instructions for Registered Participants'}:</strong><br/>
+      1. ${submittedForReview ? 'Keep this reference for enquiries. This receipt is not an entry pass or a confirmed event place.' : 'Keep this official acknowledgement slip saved or printed for physical campus entry on Nov 15, 2026 at Srusti Campus, Chandrasekharpur, Bhubaneswar.'}<br/>
+      2. ${submittedForReview ? 'Your details have been submitted for college staff to review. No student portal account has been created.' : 'Use your registered email and a one-time code to sign in. Your pass ID is not a password. Portal tools open when enabled by the organisers.'}<br/>
       3. For any queries or verification, contact Event Coordinators Mr. N.R. Swain (+91-7008671339) or Mr. A. Meher (+91-8455090984).
     </div>
     <div class="footer">
@@ -255,6 +304,7 @@ export const RegistrationPage: React.FC<RegistrationPageProps> = ({
     slipWindow.document.open();
     slipWindow.document.write(html);
     slipWindow.document.close();
+    slipWindow.document.getElementById('print-slip')?.addEventListener('click',()=>slipWindow.print());
   };
 
   const getEventIcon = (iconName: string) => {
@@ -272,6 +322,7 @@ export const RegistrationPage: React.FC<RegistrationPageProps> = ({
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10 pb-28 lg:pb-16">
       
+      {!isEmailAuthReady && <p className="p-4 mb-5 rounded-xl border border-blue-200 bg-blue-50 text-sm text-navy">Submit your details below for the college team to review. Keep your submission reference for enquiries. Student portal access is not included at this stage.</p>}
       {/* Srusti Official Branding Header */}
       <div className="bg-white rounded-3xl border border-gray-200 shadow-xl overflow-hidden mb-6 sm:mb-8">
         <div className="bg-navy p-5 sm:p-7 md:p-8 text-white relative overflow-hidden">
@@ -368,13 +419,13 @@ export const RegistrationPage: React.FC<RegistrationPageProps> = ({
             </div>
             <div className="text-center sm:text-left flex-1">
               <span className="px-3 py-1 bg-emerald-100 text-emerald-800 rounded-full font-black text-[10px] uppercase tracking-wider inline-block mb-1">
-                Official Registration Confirmed
+                {submittedForReview ? 'Awaiting Staff Review' : 'Official Registration Confirmed'}
               </span>
               <h2 className="font-black text-xl sm:text-2xl text-navy">
-                Registration Successfully Recorded!
+                {submittedForReview ? 'Submission received!' : 'Registration Successfully Recorded!'}
               </h2>
               <p className="text-xs text-gray-600 mt-1">
-                Your entry has been securely stored in the CrossFire 2026 Supabase database and reflected on the Admin Command Center.
+                {submittedForReview ? 'Your details are saved in CrossFire for the college team to review.' : 'Your registration has been saved in CrossFire.'}
               </p>
             </div>
           </div>
@@ -382,8 +433,8 @@ export const RegistrationPage: React.FC<RegistrationPageProps> = ({
           {/* Registration Dossier Summary */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 bg-white p-5 rounded-2xl border border-gray-200 shadow-sm text-xs">
             <div>
-              <span className="text-[10px] font-bold uppercase text-gray-400 block mb-0.5">Registration Pass ID</span>
-              <span className="font-black text-lg text-orange-600 font-mono">{confirmedStudentId}</span>
+              <span className="text-[10px] font-bold uppercase text-gray-400 block mb-0.5">{submittedForReview ? 'Submission Reference' : 'Registration Pass ID'}</span>
+              <span className="font-black text-lg text-orange-600 font-mono break-all">{confirmedStudentId}</span>
             </div>
             <div>
               <span className="text-[10px] font-bold uppercase text-gray-400 block mb-0.5">Candidate Name</span>
@@ -401,14 +452,13 @@ export const RegistrationPage: React.FC<RegistrationPageProps> = ({
           <div className="p-4 bg-amber-50 border border-amber-200 rounded-2xl text-xs text-amber-950 space-y-2">
             <div className="flex items-center gap-2 font-black text-amber-900 text-xs uppercase tracking-wide">
               <Lock className="w-4 h-4 text-amber-700 shrink-0" />
-              <span>Next Steps: Portal Login Credentials</span>
+              <span>{submittedForReview ? 'Next steps: Keep your reference' : 'Next steps: Keep your pass ID'}</span>
             </div>
             <p className="text-[11px] leading-relaxed text-amber-900">
-              Student Portal access is currently <strong>LOCKED</strong> while public registrations are active. Once the registration phase closes, the CrossFire Event Administration will dispatch your official <strong>Student Login ID</strong> and <strong>secure password</strong> to:
+              {submittedForReview ? 'The college team will review your details. This receipt is not an entry pass or a confirmed event place. No student portal account has been created. Contact the organisers with your reference if you need to make a correction.' : 'Your registration is saved. Sign in using a one-time code sent to your verified email. No password is needed. Passes and event tools become available when the organisers open the student portal.'}
             </p>
             <div className="flex flex-wrap gap-2 text-[11px] font-bold text-navy">
               <span className="bg-white/80 px-2.5 py-1 rounded-lg border border-amber-200">📧 {emailId}</span>
-              <span className="bg-white/80 px-2.5 py-1 rounded-lg border border-amber-200">📱 WhatsApp: {whatsappNo || contactNo}</span>
             </div>
           </div>
 
@@ -431,13 +481,17 @@ export const RegistrationPage: React.FC<RegistrationPageProps> = ({
             </button>
             <button
               type="button"
-              onClick={() => {
+              onClick={async () => {
+                if (!submittedForReview) await logout();
                 setSubmitted(false);
                 setStudentName('');
                 setEmailId('');
                 setContactNo('');
                 setWhatsappNo('');
                 setSelectedCompetitions([]);
+                setInstituteName('');setCityTown('');setConsent(false);setEmailCode('');setCodeSentTo('');
+                setConfirmedStudentId('');draftEdited.current=false;hydratedUser.current=undefined;
+                setSubmittedForReview(false);setWebsite('');intakeAttempt.current=null;
               }}
               className="py-3.5 px-4 bg-orange-50 hover:bg-orange-100 text-orange-700 font-bold text-xs rounded-xl transition-all cursor-pointer text-center"
             >
@@ -447,7 +501,8 @@ export const RegistrationPage: React.FC<RegistrationPageProps> = ({
         </div>
       ) : (
         /* Main Registration Form */
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form onSubmit={handleSubmit} onChange={()=>{draftEdited.current=true;}} className="space-y-6">
+          <div className="absolute -left-[10000px]" aria-hidden="true"><label>Website<input type="text" name="website" value={website} onChange={e=>setWebsite(e.target.value)} tabIndex={-1} autoComplete="off" /></label></div>
           
           {/* Error Alerts with Google Form Emergency Link */}
           {errorMessage && (
@@ -520,7 +575,7 @@ export const RegistrationPage: React.FC<RegistrationPageProps> = ({
                   />
                 </div>
                 <span className="text-[10px] text-gray-400 mt-1 block">
-                  A verification copy will be dispatched to this email address.
+                  {isEmailAuthReady ? 'Use your own email address. We will verify it with a one-time code before saving your registration.' : 'Enter an email address the college team can use to contact you.'}
                 </span>
               </div>
 
@@ -853,20 +908,23 @@ export const RegistrationPage: React.FC<RegistrationPageProps> = ({
             <label className="flex items-center gap-2.5 text-xs text-gray-600 cursor-pointer">
               <input
                 type="checkbox"
-                checked={sendCopy}
-                onChange={(e) => setSendCopy(e.target.checked)}
+                required
+                checked={consent}
+                onChange={(e) => setConsent(e.target.checked)}
                 className="w-4 h-4 rounded border-gray-300 text-orange-500 focus:ring-orange-500"
               />
-              <span>Send me a copy of my responses to {emailId || 'my email'}.</span>
+              <span>I confirm these details are accurate, accept the event rules, and have parent or guardian consent where required.</span>
             </label>
           </div>
         </div>
 
         {/* SUBMIT BUTTON */}
         <div className="pt-2">
+          {(eventsError || eventsLoading) && <p role="status" className="p-3 mb-3 text-sm text-slate-600">{eventsError || 'Loading available competitions…'}</p>}
+          {codeSentTo === emailId.trim().toLowerCase() && codeSentTo && user?.email.toLowerCase() !== codeSentTo && <div className="p-5 mb-4 bg-blue-50 border border-blue-200 rounded-xl"><label className="block text-sm font-bold text-navy">Email verification code<input required inputMode="numeric" autoComplete="one-time-code" pattern="[0-9]{6,10}" maxLength={10} value={emailCode} onChange={e=>setEmailCode(e.target.value)} className="w-full mt-2 p-3 border rounded-xl bg-white" /></label><p className="text-xs text-slate-600 mt-2">Check the inbox for {codeSentTo}. Your details are saved only after verification.</p><button type="button" className="text-xs underline mt-3" onClick={()=>{setCodeSentTo('');setEmailCode('');}}>Request a new code</button></div>}
           <button
             type="submit"
-            disabled={isSubmitting || submitted}
+            disabled={isSubmitting || submitted || eventsLoading || Boolean(eventsError)}
             className="w-full py-4 px-6 bg-orange-500 hover:bg-orange-600 text-white font-black text-base rounded-2xl shadow-xl shadow-orange-500/25 hover:shadow-orange-500/40 hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2.5 disabled:opacity-50"
           >
             {isSubmitting ? (
@@ -874,13 +932,13 @@ export const RegistrationPage: React.FC<RegistrationPageProps> = ({
             ) : (
               <>
                 <Send className="w-5 h-5" />
-                <span>Submit Srusti CrossFire Registration</span>
+                <span>{!isEmailAuthReady ? 'Submit registration for review' : user?.email.toLowerCase() === emailId.trim().toLowerCase() ? 'Save CrossFire registration' : codeSentTo === emailId.trim().toLowerCase() && codeSentTo ? 'Verify email and register' : 'Verify email to register'}</span>
                 <ArrowRight className="w-5 h-5 ml-1" />
               </>
             )}
           </button>
           <p className="text-center text-[11px] text-gray-400 mt-3">
-            Secure submission powered by Supabase Auth & Database • Srusti Academy of Graduate Studies
+            Srusti Academy of Management & Technology • CrossFire 2026
           </p>
 
           {/* Alternative Google Form Registration Support Card */}

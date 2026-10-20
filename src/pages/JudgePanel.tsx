@@ -1,7 +1,10 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { useEvents } from '../context/EventsContext';
-import { studentDataService, StudentRegistrationRecord, REGISTRATION_EVENT_KEY } from '../services/studentDataService';
+import { mapEvent } from '../context/EventsContext';
+import type { EventItem } from '../types';
+import { supabase } from '../lib/supabase';
+import { safeMediaUrl } from '../lib/security';
+
 import { 
   Gavel, 
   Lock, 
@@ -13,7 +16,7 @@ import {
 } from 'lucide-react';
 
 interface CandidateEvaluation {
-  id: string;
+  id: string; event_id: string;
   studentId: string;
   name: string;
   institute: string;
@@ -32,7 +35,7 @@ interface CandidateEvaluation {
 
 export const JudgePanel: React.FC = () => {
   const { user } = useAuth();
-  const { events } = useEvents();
+  const [events, setEvents] = useState<EventItem[]>([]);
   
   // Selected competition track slug
   const [selectedEventSlug, setSelectedEventSlug] = useState<string>('quiz');
@@ -47,63 +50,31 @@ export const JudgePanel: React.FC = () => {
   const [comments, setComments] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Real student list from studentDataService
-  const [allStudents, setAllStudents] = useState<StudentRegistrationRecord[]>(() => studentDataService.getAllStudents());
-
-  const refreshStudents = () => {
-    setAllStudents(studentDataService.getAllStudents());
-  };
-
+  const [allCandidates, setCandidates] = useState<CandidateEvaluation[]>([]);
+  const [error, setError] = useState('');
+  const [notice, setNotice] = useState('');
+  const [loading, setLoading] = useState(true);
+  const revision = useRef(0);
+  const refreshStudents = useCallback(async () => {
+    const current = ++revision.current;
+    try {
+      const {data,error: failure} = await supabase.rpc('crossfire_judge_snapshot');
+      if(current !== revision.current) return;
+      if(failure) throw failure;
+      setEvents((data.events || []).map(mapEvent));
+      setCandidates((data.candidates || []).map((item: CandidateEvaluation) => ({...item,submissionUrl:safeMediaUrl(item.submissionUrl)})));
+      setError('');
+    } catch { if(current === revision.current) {setCandidates([]);setError('Your judging assignments could not be loaded. Refresh before scoring.');} }
+    finally { if(current === revision.current) setLoading(false); }
+  },[]);
   useEffect(() => {
-    refreshStudents();
-    window.addEventListener(REGISTRATION_EVENT_KEY, refreshStudents);
-    return () => {
-      window.removeEventListener(REGISTRATION_EVENT_KEY, refreshStudents);
-    };
-  }, []);
-
-  // Find active event metadata
-  const activeEvent = useMemo(() => {
-    return events.find(e => e.slug === selectedEventSlug || e.id === selectedEventSlug) || events[0];
-  }, [events, selectedEventSlug]);
-
-  // Candidates for selected track
-  const candidatesForTrack: CandidateEvaluation[] = useMemo(() => {
-    if (!activeEvent) return [];
-    const eventName = activeEvent.name.toLowerCase();
-    const eventSlug = activeEvent.slug.toLowerCase();
-
-    return allStudents
-      .filter(s => s.selected_competitions.some(c => 
-        c.toLowerCase() === eventName || 
-        c.toLowerCase().includes(eventName) || 
-        eventName.includes(c.toLowerCase()) ||
-        c.toLowerCase().replace(/[^a-z0-9]/g, '-') === eventSlug
-      ))
-      .map(s => {
-        const scoreInfo = s.scores?.[eventSlug];
-        const mediaUrl = s.media_urls?.[eventSlug];
-        const isReported = Boolean(s.room_reported?.[eventSlug] || (s.room_reported && Object.values(s.room_reported).some(Boolean)));
-
-        return {
-          id: s.id,
-          studentId: s.id,
-          name: `${s.first_name} ${s.last_name || ''}`.trim(),
-          institute: s.institute_name,
-          city: s.city_town,
-          course: s.course_stream,
-          board: s.board || 'CBSE',
-          submissionUrl: mediaUrl,
-          checkedIn: Boolean(s.checked_in_at),
-          roomReported: isReported,
-          scoreLocked: Boolean(scoreInfo?.locked),
-          finalScore: scoreInfo?.total,
-          rubricScores: scoreInfo?.rubric,
-          comments: scoreInfo?.comments
-        };
-      });
-  }, [allStudents, activeEvent]);
-
+    void refreshStudents();
+    const update=()=>{if(!document.hidden)void refreshStudents();};
+    const timer=window.setInterval(update,15000);window.addEventListener('focus',update);
+    return()=>{revision.current++;clearInterval(timer);window.removeEventListener('focus',update);};
+  },[refreshStudents]);
+  const activeEvent=useMemo(()=>events.find(event=>event.slug===selectedEventSlug)||events[0],[events,selectedEventSlug]);
+  const candidatesForTrack=useMemo(()=>allCandidates.filter(candidate=>candidate.event_id===activeEvent?.id),[allCandidates,activeEvent]);
   // Selected candidate object
   const activeCandidate = useMemo(() => {
     if (selectedCandidateId) {
@@ -130,13 +101,13 @@ export const JudgePanel: React.FC = () => {
         // Initialize with standard mid-scores
         const initialScores: Record<string, number> = {};
         activeEvent.scoring_rubric.criteria.forEach(crit => {
-          initialScores[crit.name] = Math.round(crit.max * 0.75);
+          initialScores[crit.name] = 0;
         });
         setRubricScores(initialScores);
         setComments('');
       }
     }
-  }, [activeCandidate?.id, activeEvent?.slug]);
+  }, [activeCandidate?.id, activeCandidate?.scoreLocked, activeEvent?.slug]);
 
   // Calculate live total score
   const totalScore = useMemo(() => {
@@ -152,35 +123,18 @@ export const JudgePanel: React.FC = () => {
     }));
   };
 
-  // Submit and lock score
-  const handleSubmitEvaluation = () => {
-    if (!activeCandidate || !activeEvent) return;
-    setIsSubmitting(true);
-
+  // Save the current judge's final evaluation using the server-owned rubric and lock.
+  const handleSubmitEvaluation = async () => {
+    if (!activeCandidate || !activeEvent || isSubmitting) return;
+    setIsSubmitting(true);setError('');setNotice('');
     try {
-      studentDataService.recordScore(
-        activeCandidate.studentId,
-        activeEvent.slug,
-        rubricScores,
-        totalScore,
-        comments
-      );
-
-      refreshStudents();
-      setTimeout(() => {
-        setIsSubmitting(false);
-        // Advance to next unscored candidate if available
-        const unscored = candidatesForTrack.find(c => !c.scoreLocked && c.id !== activeCandidate.id);
-        if (unscored) {
-          setSelectedCandidateId(unscored.id);
-        }
-      }, 800);
-    } catch (e) {
-      console.error('[CROSSFIRE] Error saving score:', e);
-      setIsSubmitting(false);
-    }
+      const {error: failure}=await supabase.rpc('submit_score',{p_registration_id:activeCandidate.id,p_rubric_scores:rubricScores,p_comments:comments});
+      if(failure){setError(failure.message || 'Your score was not saved.');return;}
+      setNotice('Your final evaluation is saved and locked.');
+      await refreshStudents();
+    } catch {setError('The score could not be verified. Refresh before retrying.');}
+    finally {setIsSubmitting(false);}
   };
-
   // Search filtered candidates
   const filteredCandidates = useMemo(() => {
     return candidatesForTrack.filter(c => {
@@ -211,7 +165,7 @@ export const JudgePanel: React.FC = () => {
                 Official Jury Panel
               </span>
               <span className="text-xs text-gray-300 font-bold">
-                Jury Evaluator: {user?.first_name || 'Dr. Meera'} {user?.last_name || 'Senapati'}
+                Jury Evaluator: {user?.first_name} {user?.last_name}
               </span>
             </div>
             <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-white">
@@ -243,7 +197,7 @@ export const JudgePanel: React.FC = () => {
         </div>
       </div>
 
-      {/* Mobile Tab Navigation */}
+      {loading && <p role="status" className="text-sm text-slate-600">Loading judging assignments…</p>}{error && <p role="alert" className="p-4 bg-red-50 text-red-700 rounded-xl">{error}</p>}{notice && <p role="status" className="p-4 bg-emerald-50 text-emerald-800 rounded-xl">{notice}</p>}{!loading && !events.length && !error && <p className="p-5 bg-white border rounded-xl text-slate-600">No judging events have been assigned to your account yet.</p>}{/* Mobile Tab Navigation */}
       <div className="lg:hidden flex border-b border-gray-200 bg-white rounded-2xl p-1 shadow-sm">
         <button
           onClick={() => setMobileTab('roster')}
@@ -426,7 +380,7 @@ export const JudgePanel: React.FC = () => {
                 </h3>
 
                 {activeEvent?.scoring_rubric.criteria.map((crit) => {
-                  const val = rubricScores[crit.name] ?? Math.round(crit.max * 0.75);
+                  const val = rubricScores[crit.name] ?? 0;
                   const isLocked = activeCandidate.scoreLocked;
 
                   return (
@@ -465,6 +419,7 @@ export const JudgePanel: React.FC = () => {
                 </label>
                 <textarea
                   value={comments}
+                  maxLength={2000}
                   disabled={activeCandidate.scoreLocked}
                   onChange={(e) => setComments(e.target.value)}
                   rows={2}
@@ -477,7 +432,7 @@ export const JudgePanel: React.FC = () => {
               <div className="pt-2 border-t border-gray-100 flex items-center justify-between gap-4">
                 <div>
                   <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">Total Evaluation</span>
-                  <span className="text-2xl font-black text-navy">{totalScore} <span className="text-xs font-normal text-gray-400">/ 100</span></span>
+                  <span className="text-2xl font-black text-navy">{totalScore} <span className="text-xs font-normal text-gray-400">/ {activeEvent?.scoring_rubric.criteria.reduce((sum, criterion)=>sum+criterion.max,0)}</span></span>
                 </div>
 
                 {!activeCandidate.scoreLocked ? (

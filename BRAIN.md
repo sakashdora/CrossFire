@@ -1,3 +1,5 @@
+> Historical design reference. Authentication, persistence and deployment details below are superseded by [README.md](README.md) and [docs/SECURITY_RELEASE.md](docs/SECURITY_RELEASE.md). Do not use old demo credentials or setup procedures.
+
 # 🧠 CROSSFIRE 2026 — MASTER PROJECT BRAIN & ARCHITECTURE SPECIFICATION
 
 > **Single Source of Truth (SSOT)** for AI Agents and Developers.  

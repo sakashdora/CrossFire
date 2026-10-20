@@ -3,10 +3,17 @@
   "private": true,
   "version": "1.0.0",
   "type": "module",
+  "overrides": {
+    "postcss-selector-parser": "7.1.6"
+  },
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test:operations": "node scripts/operations.test.mjs && node scripts/operations-edge.test.mjs",
+    "test:security": "node scripts/containment.test.mjs && node scripts/production-security.test.mjs && node scripts/operations.test.mjs && node scripts/operations-edge.test.mjs && node scripts/build-security.test.mjs && node scripts/registration-intake.test.mjs",
+    "test:intake": "node scripts/registration-intake.test.mjs",
+    "security:bundle": "node scripts/check-production-bundle.mjs"
   },
   "dependencies": {
     "@react-three/drei": "^9.122.0",
@@ -24,6 +31,7 @@
     "three": "^0.186.1"
   },
   "devDependencies": {
+    "@electric-sql/pglite": "^0.5.10",
     "@types/canvas-confetti": "^1.9.0",
     "@types/react": "^18.3.18",
     "@types/react-dom": "^18.3.5",

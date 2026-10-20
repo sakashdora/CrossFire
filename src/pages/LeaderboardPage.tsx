@@ -16,7 +16,7 @@ import confetti from 'canvas-confetti';
 
 export const LeaderboardPage: React.FC = () => {
   const { user } = useAuth();
-  const { leaderboard } = useLeaderboard();
+  const { leaderboard, error, isLoading } = useLeaderboard();
   const [searchQuery, setSearchQuery] = useState('');
   const [boardFilter, setBoardFilter] = useState<'all' | 'CBSE' | 'ICSE' | 'CHSE'>('all');
 
@@ -49,21 +49,21 @@ export const LeaderboardPage: React.FC = () => {
             {leaderboard.length > 0 ? (
               <span className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-bold uppercase tracking-wider">
                 <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                Live Real-Time Scoring Broadcast
+                Published Results • Updates Automatically
               </span>
             ) : (
               <span className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-800 text-[10px] font-bold uppercase tracking-wider">
                 <Clock className="w-3 h-3 text-amber-600 animate-pulse" />
-                Pre-Event Standby • Festival Scheduled Nov 15, 2026
+                {error ? 'Results Unavailable' : isLoading ? 'Loading Results' : 'Awaiting Published Results'} • Nov 15, 2026
               </span>
             )}
           </div>
           <h1 className="text-2xl sm:text-3xl font-black text-navy flex items-center gap-2">
             <Trophy className="w-7 h-7 text-orange-500" />
-            <span>CrossFire 2026 Live Leaderboard</span>
+            <span>CrossFire 2026 Leaderboard</span>
           </h1>
           <p className="text-xs sm:text-sm text-gray-600 mt-1">
-            State-level aggregated scores across preliminary heats and campus finals at Srusti Academy.
+            Published scores from completed CrossFire events at Srusti Academy.
           </p>
         </div>
 
@@ -78,8 +78,8 @@ export const LeaderboardPage: React.FC = () => {
         )}
       </div>
 
-      {leaderboard.length === 0 ? (
-        /* Standby State: Shown when the program has not started yet */
+      {error ? <p role="alert" className="bg-red-50 text-red-700 rounded-xl p-5">{error}</p> : isLoading ? <p role="status" className="p-5 text-slate-600">Loading published results…</p> : leaderboard.length === 0 ? (
+        /* Empty state reflects published results, not whether the festival has started. */
         <div className="bg-white rounded-3xl border border-gray-200/80 p-8 sm:p-14 text-center shadow-sm space-y-6 max-w-3xl mx-auto my-6">
           <div className="w-20 h-20 bg-gradient-to-tr from-amber-50 to-orange-100 text-orange-500 rounded-3xl flex items-center justify-center mx-auto shadow-inner border border-orange-200">
             <Trophy className="w-10 h-10 text-orange-500" />
@@ -88,14 +88,14 @@ export const LeaderboardPage: React.FC = () => {
           <div className="space-y-2">
             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-navy/5 text-navy text-xs font-bold uppercase tracking-wider">
               <Clock className="w-3.5 h-3.5 text-orange-500" />
-              <span>Program Has Not Started Yet</span>
+              <span>No Results Published Yet</span>
             </div>
             <h2 className="text-2xl sm:text-3xl font-black text-navy tracking-tight">
-              Official Leaderboard on Pre-Event Standby
+              Official Results Will Appear Here
             </h2>
             <p className="text-xs sm:text-sm text-gray-500 max-w-lg mx-auto leading-relaxed">
               CrossFire 2026 state-level heats and campus grand finals take place on <strong>Sunday, November 15, 2026</strong> at Srusti Academy of Graduate Studies. 
-              Official candidate scores, jury rubrics, and podium standings will broadcast here in real time once live evaluations commence on festival day.
+              Scores and standings appear here after each event is completed. Evaluations stay private while judging is in progress.
             </p>
           </div>
 
@@ -111,9 +111,9 @@ export const LeaderboardPage: React.FC = () => {
               <span className="text-[10px] text-gray-500 mt-0.5 block">Gate Entry & Check-In at 09:30 AM</span>
             </div>
             <div className="bg-gray-50 p-4 rounded-2xl border border-gray-100">
-              <span className="text-[10px] uppercase font-bold text-gray-400 block">Live Scoring Engine</span>
-              <span className="text-xs font-black text-emerald-600 mt-1 block font-mono">Synchronized Jury Sync</span>
-              <span className="text-[10px] text-gray-500 mt-0.5 block">Locked on Official Submission</span>
+              <span className="text-[10px] uppercase font-bold text-gray-400 block">Official Results</span>
+              <span className="text-xs font-black text-emerald-600 mt-1 block">Completed Events Only</span>
+              <span className="text-[10px] text-gray-500 mt-0.5 block">Standings update automatically</span>
             </div>
           </div>
 
@@ -252,7 +252,7 @@ export const LeaderboardPage: React.FC = () => {
                   {filteredEntries.length === 0 ? (
                     <tr>
                       <td colSpan={6} className="py-12 text-center text-gray-400 font-medium">
-                        No leaderboard scores found. Standings will populate live as jury evaluations are submitted.
+                        No published scores yet. Standings appear after organisers complete an event.
                       </td>
                     </tr>
                   ) : (
@@ -261,7 +261,7 @@ export const LeaderboardPage: React.FC = () => {
 
                       return (
                         <tr
-                          key={entry.rank}
+                          key={entry.user_id}
                           className={`transition-colors ${
                             isCurrent
                               ? 'bg-orange-100/80 font-bold border-l-4 border-l-orange-500'

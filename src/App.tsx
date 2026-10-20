@@ -4,6 +4,7 @@ import { EventsProvider, useEvents } from './context/EventsContext';
 import { Navbar } from './components/Navbar';
 import { Footer } from './components/Footer';
 import { AuthModal } from './components/AuthModal';
+import { StaffVerification } from './components/StaffVerification';
 import { CinematicIntro } from './components/CinematicIntro';
 import { LandingPage } from './pages/LandingPage';
 import { EventItem } from './types';
@@ -15,13 +16,14 @@ import { ShieldAlert } from 'lucide-react';
 const EventsDiscoveryPage = lazy(() => import('./pages/EventsDiscoveryPage').then(module => ({ default: module.EventsDiscoveryPage })));
 const StudentDashboard = lazy(() => import('./pages/StudentDashboard').then(module => ({ default: module.StudentDashboard })));
 const JudgePanel = lazy(() => import('./pages/JudgePanel').then(module => ({ default: module.JudgePanel })));
-const AdminDashboard = lazy(() => import('./pages/AdminDashboard').then(module => ({ default: module.AdminDashboard })));
-const VolunteerDashboard = lazy(() => import('./pages/VolunteerDashboard').then(module => ({ default: module.VolunteerDashboard })));
+const AdminDashboard = lazy(() => import('./operations/OperationsDashboard').then(module => ({ default: module.OperationsDashboard })));
+const VolunteerDashboard = AdminDashboard;
+const AccountSecurity = lazy(() => import('./pages/AccountSecurity').then(module => ({ default: module.AccountSecurity })));
 const LeaderboardPage = lazy(() => import('./pages/LeaderboardPage').then(module => ({ default: module.LeaderboardPage })));
 const RegistrationPage = lazy(() => import('./pages/RegistrationPage').then(module => ({ default: module.RegistrationPage })));
 
 const ProtectedRoute = ({ children, allowedRoles }: { children: React.ReactNode, allowedRoles?: string[] }) => {
-  const { user, role, isLoading } = useAuth();
+  const { user, role, isLoading, needsMfa, isStudentPortalOpen } = useAuth();
   
   if (isLoading) {
     return (
@@ -64,6 +66,8 @@ const ProtectedRoute = ({ children, allowedRoles }: { children: React.ReactNode,
     );
   }
 
+  if (needsMfa) return <StaffVerification />;
+  if (role === 'student' && !isStudentPortalOpen) return <section className="max-w-lg mx-auto my-16 bg-white p-8 rounded-2xl border text-center"><h1 className="text-2xl font-bold text-navy">Your student portal opens soon</h1><p className="text-slate-600 mt-3">Your registration remains saved. The organisers will open passes and event tools when ready.</p><button className="mt-5 text-orange-600 font-bold" onClick={()=>window.location.hash='register'}>View or update registration</button></section>;
   return <>{children}</>;
 };
 
@@ -71,7 +75,7 @@ const CrossFireApp: React.FC = () => {
   const { role, user } = useAuth();
   const [currentView, setCurrentView] = useState<string>(() => {
     const hash = window.location.hash.replace('#', '');
-    return hash || 'landing';
+    return ['landing','register','events','dashboard','judge','volunteer','admin','leaderboard','account'].includes(hash) ? hash : 'landing';
   });
 
   useEffect(() => {
@@ -81,7 +85,7 @@ const CrossFireApp: React.FC = () => {
   useEffect(() => {
     const onHashChange = () => {
       const hash = window.location.hash.replace('#', '');
-      setCurrentView(hash || 'landing');
+      setCurrentView(['landing','register','events','dashboard','judge','volunteer','admin','leaderboard','account'].includes(hash) ? hash : 'landing');
     };
     window.addEventListener('hashchange', onHashChange);
     return () => window.removeEventListener('hashchange', onHashChange);
@@ -187,7 +191,7 @@ const CrossFireApp: React.FC = () => {
         )}
 
         {currentView === 'dashboard' && (
-          <ProtectedRoute allowedRoles={['student', 'admin', 'super_admin']}>
+          <ProtectedRoute allowedRoles={['student']}>
             <StudentDashboard
               userRegistrations={userRegistrations}
               onWithdrawEvent={handleWithdrawEvent}
@@ -218,6 +222,7 @@ const CrossFireApp: React.FC = () => {
         {currentView === 'leaderboard' && (
           <LeaderboardPage />
         )}
+        {currentView === 'account' && <ProtectedRoute allowedRoles={['admin','super_admin','judge','volunteer']}><AccountSecurity /></ProtectedRoute>}
         </Suspense>
       </main>
 

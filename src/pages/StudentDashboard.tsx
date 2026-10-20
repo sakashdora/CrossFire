@@ -3,6 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import { Registration } from '../types';
 import { useNotifications } from '../hooks/useNotifications';
 import { StudentQRCode } from '../components/StudentQRCode';
+import { useEvents } from '../context/EventsContext';
 import { 
   Trophy, 
   Upload, 
@@ -31,8 +32,8 @@ import {
 
 interface StudentDashboardProps {
   userRegistrations: Registration[];
-  onWithdrawEvent: (registrationId: string) => void;
-  onSubmitMedia: (registrationId: string, url: string) => void;
+  onWithdrawEvent: (registrationId: string) => Promise<boolean>;
+  onSubmitMedia: (registrationId: string, url: string) => Promise<boolean>;
   setCurrentView: (view: string) => void;
 }
 
@@ -44,89 +45,9 @@ interface CampusVenue {
   events: string[];
   coordinator: string;
   phone: string;
-  status: 'Open' | 'Check-in Live' | 'Evaluating';
+  status: string;
   capacity: string;
 }
-
-const CAMPUS_VENUES: CampusVenue[] = [
-  {
-    id: 'auditorium-a',
-    name: 'Auditorium A',
-    block: 'Main Academic Block',
-    floor: 'Ground Floor',
-    events: ['Quiz (Written Selection & Finals)'],
-    coordinator: 'Mr. N.R. Swain',
-    phone: '+91 7008671339',
-    status: 'Check-in Live',
-    capacity: '400 Seats (Full AC)'
-  },
-  {
-    id: 'amphitheatre',
-    name: 'Srusti Open Amphitheatre',
-    block: 'Central Courtyard East',
-    floor: 'Ground Level',
-    events: ['Ramp Walk'],
-    coordinator: 'Mr. A. Meher',
-    phone: '+91 8455090984',
-    status: 'Open',
-    capacity: '800 Standing / Seated'
-  },
-  {
-    id: 'seminar-hall',
-    name: 'Management Seminar Hall B',
-    block: 'Management Wing',
-    floor: '1st Floor',
-    events: ['Debate'],
-    coordinator: 'Mr. N.R. Swain',
-    phone: '+91 7008671339',
-    status: 'Open',
-    capacity: '150 Seats'
-  },
-  {
-    id: 'media-lab',
-    name: 'Media Lab & Studio Block',
-    block: 'Media Wing Block C',
-    floor: '2nd Floor',
-    events: ['Reels Screening', 'Poster Making'],
-    coordinator: 'Mr. A. Meher',
-    phone: '+91 8455090984',
-    status: 'Evaluating',
-    capacity: 'Studio Screening Hall'
-  },
-  {
-    id: 'central-quad',
-    name: 'Central Campus Quadrangle',
-    block: 'Outdoor Campus Grounds',
-    floor: 'Ground Level',
-    events: ['Treasure Hunt'],
-    coordinator: 'Mr. N.R. Swain',
-    phone: '+91 7008671339',
-    status: 'Open',
-    capacity: 'Outdoor Campus Area'
-  },
-  {
-    id: 'dining-courtyard',
-    name: 'Dining Courtyard & Cafeteria',
-    block: 'Student Recreation Wing',
-    floor: 'Ground Floor',
-    events: ['Complimentary Student & Teacher Lunch (12:30 PM - 01:30 PM)'],
-    coordinator: 'SAGS Catering Services',
-    phone: '+91 8455090984',
-    status: 'Open',
-    capacity: '6 Food Counters (Veg & Non-Veg)'
-  },
-  {
-    id: 'gate-1',
-    name: 'Security Gate 1 & Welcome Desk',
-    block: 'Campus Main Entrance',
-    floor: 'Ground Level',
-    events: ['Entry QR Badge Verification, Kit Collection & Teacher Escorts'],
-    coordinator: 'Student Volunteer Helpdesk',
-    phone: '+91 7008671339',
-    status: 'Open',
-    capacity: 'All Registered Delegates'
-  }
-];
 
 export const StudentDashboard: React.FC<StudentDashboardProps> = ({
   userRegistrations,
@@ -135,6 +56,8 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
   setCurrentView,
 }) => {
   const { user } = useAuth();
+  const { events, error: dataError } = useEvents();
+  const campusVenues: CampusVenue[] = events.map(event => ({id:event.id,name:event.venue_location || 'Venue to be confirmed',block:'Confirm directions at the campus helpdesk',floor:'Campus venue',events:[event.name],coordinator:'Campus helpdesk',phone:'',status:({open:'Registration open',closed:'Registration closed',in_progress:'In progress',completed:'Completed',upcoming:'Upcoming'} as Record<string,string>)[event.status] || event.status,capacity:String(event.max_participants)}));
   const [activeTab, setActiveTab] = useState<'tracks' | 'schedule' | 'venues' | 'alerts' | 'essentials'>('tracks');
   
   // Modals state
@@ -144,19 +67,22 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
   const [mediaModalRegId, setMediaModalRegId] = useState<string | null>(null);
   const [mediaLink, setMediaLink] = useState('');
   const [uploadSuccess, setUploadSuccess] = useState(false);
+  const [uploadBusy, setUploadBusy] = useState(false);
+  const [uploadError, setUploadError] = useState('');
   
   // Copy feedback state
   const [copiedPassId, setCopiedPassId] = useState(false);
-  const [copiedWifi, setCopiedWifi] = useState(false);
 
   const { notifications } = useNotifications();
-  const passId = "CF-" + (user?.id?.substring(0, 5).toUpperCase() || "XXXX");
+  const passId = user?.pass_code || '';
 
-  const handleMediaSubmit = (e: React.FormEvent) => {
+  const handleMediaSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!mediaModalRegId || !mediaLink.trim()) return;
-
-    onSubmitMedia(mediaModalRegId, mediaLink.trim());
+    if (!mediaModalRegId || !mediaLink.trim() || uploadBusy) return;
+    setUploadBusy(true);setUploadError('');
+    const saved = await onSubmitMedia(mediaModalRegId, mediaLink.trim());
+    setUploadBusy(false);
+    if (!saved) { setUploadError('Your media link was not saved. Check the link and event deadline, then try again.'); return; }
     setUploadSuccess(true);
     setTimeout(() => {
       setMediaModalRegId(null);
@@ -165,14 +91,11 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
     }, 1200);
   };
 
-  const copyToClipboard = (text: string, type: 'pass' | 'wifi') => {
+  const copyToClipboard = (text: string, type: 'pass') => {
     navigator.clipboard.writeText(text);
     if (type === 'pass') {
       setCopiedPassId(true);
       setTimeout(() => setCopiedPassId(false), 2000);
-    } else {
-      setCopiedWifi(true);
-      setTimeout(() => setCopiedWifi(false), 2000);
     }
   };
 
@@ -182,6 +105,7 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10 space-y-6 sm:space-y-8">
+      {dataError && <p role="alert" className="p-4 rounded-xl bg-red-50 text-red-700">{dataError}</p>}
       {/* Admin Preview Mode Notice */}
       {(user?.role === 'super_admin' || user?.role === 'admin') && (
         <div className="p-3 sm:p-4 bg-purple-900/60 border border-purple-500/40 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-purple-200 shadow-lg">
@@ -230,7 +154,7 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
             <div className="flex flex-wrap items-center justify-center lg:justify-start gap-2.5 sm:gap-3 text-xs text-gray-300">
               <span className="flex items-center gap-1.5 bg-white/5 border border-white/10 px-2.5 py-1 rounded-lg">
                 <School className="w-3.5 h-3.5 text-orange-400 shrink-0" />
-                <strong className="text-white">{user?.institute_name || user?.school_name || 'DAV Public School'}</strong>
+                <strong className="text-white">{user?.institute_name || user?.school_name || ''}</strong>
               </span>
               <span className="bg-white/5 border border-white/10 px-2.5 py-1 rounded-lg text-white font-bold">
                 {user?.course_stream || '12th Science'}
@@ -248,7 +172,7 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
                 title="Click to view food voucher QR code"
               >
                 <Utensils className="w-3.5 h-3.5 text-emerald-400" />
-                <span>{user?.food_preference || 'Veg'} Lunch Token Active</span>
+                <span>{user?.food_preference || 'Veg'} · {user?.food_redeemed_at ? 'Meal collected' : 'Meal pending'}</span>
               </button>
 
               <button
@@ -279,7 +203,7 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
             <StudentQRCode
               studentId={passId}
               name={`${user?.first_name || 'Student'} ${user?.last_name || ''}`.trim()}
-              institute={user?.institute_name || user?.school_name || 'DAV Public School'}
+              institute={user?.institute_name || user?.school_name || ''}
               events={userRegistrations.map(r => r.event?.name || 'Event')}
               foodPreference={user?.food_preference || 'Veg'}
               size={90}
@@ -479,7 +403,7 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
                         {reg.score !== undefined && reg.score !== null ? (
                           <div className="bg-emerald-50 border border-emerald-200 px-3 py-1.5 rounded-xl text-right shrink-0">
                             <span className="text-[10px] text-emerald-700 font-bold uppercase block">Official Score</span>
-                            <span className="text-lg font-black text-emerald-800">{reg.score} / 100</span>
+                            <span className="text-lg font-black text-emerald-800">{reg.score} / {event?.scoring_rubric.criteria.reduce((total,criterion)=>total+criterion.max,0) ?? '—'}</span>
                           </div>
                         ) : (
                           <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-200 shrink-0">
@@ -499,7 +423,7 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
                         <div className="w-full bg-gray-200 h-1.5 rounded-full overflow-hidden">
                           <div 
                             className="bg-emerald-500 h-full rounded-full transition-all duration-500" 
-                            style={{ width: reg.score ? '100%' : '50%' }}
+                            style={{ width: reg.score != null ? '100%' : reg.room_reported_at ? '75%' : user?.checked_in_at ? '50%' : '25%' }}
                           />
                         </div>
                       </div>
@@ -535,7 +459,7 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
                               {event?.slug === 'reels' ? 'Reel Video Link' : 'Digital Poster Artwork'}
                             </strong>
                             <span className="text-[11px] text-gray-500 block truncate">
-                              {reg.media_url ? `✓ Uploaded: ${reg.media_url}` : 'Submission deadline: Nov 14, 06:00 PM'}
+                              {reg.media_url ? `✓ Uploaded: ${reg.media_url}` : event ? `Submission deadline: ${new Date(event.registration_deadline).toLocaleString('en-IN',{timeZone:'Asia/Kolkata',day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})} IST` : 'Submission deadline unavailable'}
                             </span>
                           </div>
 
@@ -674,12 +598,12 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
               <span>Campus Venue & Stage Locator</span>
             </h3>
             <p className="text-xs text-gray-500 mt-1">
-              Interactive directory of buildings, floors, stage coordinators, and reporting gates at Srusti Academy.
+              Event locations and status published by the organisers. Confirm directions at the campus helpdesk.
             </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {CAMPUS_VENUES.map((venue) => (
+            {campusVenues.map((venue) => (
               <div 
                 key={venue.id} 
                 onClick={() => setSelectedVenue(venue)}
@@ -705,7 +629,7 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
                       {venue.events[0]}
                     </div>
                     <div className="text-[11px] text-gray-500">
-                      Capacity: {venue.capacity}
+                      Registration capacity: {venue.capacity}
                     </div>
                   </div>
                 </div>
@@ -767,25 +691,8 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
                 Connect your devices to submit digital media, view live standings, and stream your reels.
               </p>
 
-              <div className="p-4 rounded-2xl bg-white/10 border border-white/15 space-y-2 text-xs">
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-400">Network (SSID):</span>
-                  <strong className="text-white font-mono text-sm">Srusti_Guest_Crossfire</strong>
-                </div>
-                <div className="flex justify-between items-center pt-2 border-t border-white/10">
-                  <span className="text-gray-400">Security Password:</span>
-                  <strong className="text-orange-400 font-mono text-sm">Srusti@Guest2026</strong>
-                </div>
-              </div>
+              <p className="text-sm text-gray-300">Ask the campus helpdesk for the current guest network and access instructions.</p>
             </div>
-
-            <button
-              onClick={() => copyToClipboard('Srusti@Guest2026', 'wifi')}
-              className="w-full py-2.5 rounded-xl bg-orange-500 hover:bg-orange-600 text-white font-black text-xs shadow transition-all flex items-center justify-center gap-1.5 cursor-pointer"
-            >
-              {copiedWifi ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-              <span>{copiedWifi ? 'Password Copied to Clipboard!' : 'Copy WiFi Password'}</span>
-            </button>
           </div>
 
           {/* Emergency & Volunteer Helpdesk */}
@@ -888,7 +795,7 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-gray-500 font-bold">Institution / School:</span>
-                  <strong className="text-navy">{user?.institute_name || user?.school_name || 'DAV Public School'}</strong>
+                  <strong className="text-navy">{user?.institute_name || user?.school_name || ''}</strong>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-gray-500 font-bold">Class & Stream:</span>
@@ -926,7 +833,7 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
                   <StudentQRCode
                     studentId={passId}
                     name={`${user?.first_name || 'Student'} ${user?.last_name || ''}`.trim()}
-                    institute={user?.institute_name || user?.school_name || 'DAV Public School'}
+                    institute={user?.institute_name || user?.school_name || ''}
                     events={userRegistrations.map(r => r.event?.name || 'Event')}
                     foodPreference={user?.food_preference || 'Veg'}
                     size={160}
@@ -980,7 +887,7 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
 
             <div>
               <span className="text-[10px] font-black uppercase tracking-wider text-emerald-700 bg-emerald-100 px-3 py-1 rounded-full border border-emerald-200">
-                Official Meal Token Active
+                {user?.food_redeemed_at ? 'Meal already collected' : 'Meal collection pending'}
               </span>
               <h3 className="text-xl font-black text-navy mt-2">
                 {user?.food_preference || 'Veg'} Buffet Lunch
@@ -1005,7 +912,7 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
                 TOKEN #{passId.slice(-4)}
               </div>
               <p className="text-[11px] text-gray-500 font-semibold">
-                Delegate: {user?.first_name} ({user?.institute_name || 'DAV Public School'})
+                Delegate: {user?.first_name} ({user?.institute_name || ''})
               </p>
             </div>
 
@@ -1031,7 +938,7 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
                   {selectedVenue.block}
                 </span>
                 <h3 className="text-xl font-black text-navy mt-1">{selectedVenue.name}</h3>
-                <p className="text-xs text-gray-500">{selectedVenue.floor} • Capacity: {selectedVenue.capacity}</p>
+                <p className="text-xs text-gray-500">{selectedVenue.floor} • Registration capacity: {selectedVenue.capacity}</p>
               </div>
               <button
                 onClick={() => setSelectedVenue(null)}
@@ -1043,18 +950,18 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
 
             <div className="p-4 bg-gray-50 rounded-2xl border border-gray-100 space-y-2 text-xs">
               <div className="flex justify-between items-center">
-                <span className="text-gray-500 font-bold">Faculty Coordinator:</span>
+                <span className="text-gray-500 font-bold">Directions:</span>
                 <strong className="text-navy">{selectedVenue.coordinator}</strong>
               </div>
-              <div className="flex justify-between items-center">
-                <span className="text-gray-500 font-bold">Direct Hotline:</span>
+              {selectedVenue.phone && <div className="flex justify-between items-center">
+                <span className="text-gray-500 font-bold">Contact:</span>
                 <a href={`tel:${selectedVenue.phone}`} className="text-orange-600 font-bold hover:underline flex items-center gap-1">
                   <Phone className="w-3.5 h-3.5" />
                   <span>{selectedVenue.phone}</span>
                 </a>
-              </div>
+              </div>}
               <div className="flex justify-between items-center">
-                <span className="text-gray-500 font-bold">Stage Readiness:</span>
+                <span className="text-gray-500 font-bold">Event status:</span>
                 <span className="font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded">
                   {selectedVenue.status}
                 </span>
@@ -1099,7 +1006,7 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
               </div>
             )}
 
-            <form onSubmit={handleMediaSubmit} className="space-y-3">
+            {uploadError && <p role="alert" className="text-sm text-red-700">{uploadError}</p>}<form onSubmit={handleMediaSubmit} className="space-y-3">
               <input
                 type="url"
                 required
@@ -1121,7 +1028,7 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
                   type="submit"
                   className="px-5 py-2 bg-orange-500 hover:bg-orange-600 text-white font-bold text-xs rounded-xl shadow transition-colors cursor-pointer"
                 >
-                  Confirm Submission
+                  {uploadBusy ? 'Saving…' : 'Confirm Submission'}
                 </button>
               </div>
             </form>

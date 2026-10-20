@@ -13,23 +13,13 @@ interface StudentQRCodeProps {
 
 export const StudentQRCode: React.FC<StudentQRCodeProps> = ({
   studentId,
-  name,
-  institute = 'SAGS Affiliated School',
-  events = [],
-  foodPreference = 'Veg',
   size = 120,
   className = ''
 }) => {
-  // Verifiable QR pass payload token
+  // A pass identifier only. Private details and permission checks stay on the server.
   const qrData = JSON.stringify({
     app: 'CROSSFIRE-2026',
     pass_id: studentId,
-    name,
-    institute,
-    events,
-    food: foodPreference,
-    auth_host: 'srusti.edu.in',
-    ts: 1763179200
   });
 
   return (

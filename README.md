@@ -1,206 +1,51 @@
-# 🔥 CROSSFIRE 2026 | State-Level Talent Hunt Platform
+# CrossFire 2026
 
-> **Official Event Platform for Srusti Academy of Graduate Studies (SAGS), Bhubaneswar**  
-> State-Level +2 Inter-College Talent Hunt — Quiz, Debate, Poster Making, Treasure Hunt, Ramp Walk, and Reels.
+Responsive event registration and college operations portal, built with React, TypeScript, Vite and Supabase. Production website: https://cross-fire-three.vercel.app/.
 
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.7.3-blue.svg)](https://www.typescriptlang.org/)
-[![React](https://img.shields.io/badge/React-18.3.1-61dafb.svg)](https://react.dev/)
-[![Vite](https://img.shields.io/badge/Vite-6.1.0-646cff.svg)](https://vitejs.dev/)
-[![Supabase](https://img.shields.io/badge/Supabase-Auth%20%26%20DB-3ecf8e.svg)](https://supabase.com/)
-[![Tailwind CSS](https://img.shields.io/badge/TailwindCSS-3.4.17-38b2ac.svg)](https://tailwindcss.com/)
-[![Build Status](https://img.shields.io/badge/Build-Passing%20(0%20errors)-success.svg)]()
+## Release status — 20 October 2026
 
----
+The reviewed operations/security/intake database updates and `provision-staff` Edge function are deployed to the confirmed CrossFire Supabase project. The updated frontend is prepared locally; publication to Vercel is pending account access. Students submit directly to a private staff-review queue without email verification or a portal account. Email OTP remains deferred. See [the release checklist](docs/SECURITY_RELEASE.md) for verified results and remaining launch requirements.
 
-## 📌 1. System Architecture & Overview
+## Workflows
 
-CROSSFIRE 2026 is an end-to-end production web application built to coordinate on-campus operations, student intake, live cryptographic QR validation, judge evaluations, dynamic computed leaderboards, VIP guest hospitality, and volunteer crew logistics.
+- Students submit contact details and competition choices without email verification. PostgreSQL saves a private pending request before returning a submission reference. Admins and super admins review it under **Registration review**. Reviewing does not create an Auth account, reserve a place or issue a pass; students cannot use a submission reference to sign in. Team formation and later account activation remain deferred in `FUTURE_CHANGES.md`.
+- All staff require Supabase Auth and authenticator verification. Database roles, active state and duty assignments govern every operation.
+- Super admins manage elevated staff access and system settings. Admins also manage volunteer/judge access, events, student desks and invited VIP/judge guests.
+- Volunteers check in participants, issue one meal, mark room attendance or assist guests within their assigned on-duty station.
+- Judges see assigned candidates, submit validated rubric scores and lock their own evaluation. Public standings include completed events only.
+- Guest arrival follows invitation → confirmation → arrival → optional meal → departure → archive. Actions persist with audit records.
 
-```mermaid
-flowchart TD
-    subgraph Client Applications
-        A[Student Digital Pass & Dashboard]
-        B[Volunteer Ground Ops & Live QR Scanner]
-        C[Judge Scoring Panel & Rubric Sliders]
-        D[Admin Command Center & VIP Console]
-        E[Live Realtime Leaderboard]
-    end
+The application has no demo route, simulated staff sessions or browser-only data fallback. Static event descriptions and assets are published content; live availability, registrations, scores and operational records come from Supabase.
 
-    subgraph State & Event Dispatcher
-        EB[Reactive Custom Event Dispatcher]
-        LS[(Client Cache & Local Fallback)]
-    end
+## Development
 
-    subgraph Supabase Cloud Backend
-        AUTH[Supabase Auth Engine]
-        RPC[SECURITY DEFINER RPCs]
-        DB[(PostgreSQL 15 Tables)]
-    end
+Use Node.js 22 or 24 and the committed npm lockfile. Copy `.env.example` to `.env` and supply this project's public Supabase anon/publishable key. Server credentials must never use a `VITE_` prefix.
 
-    A -->|SVG QR Code Generation| EB
-    A -->|Submit Registration| RPC
-    B -->|Live Camera Gate Scan| EB
-    B -->|Check-in & Lunch Token Redeem| EB
-    C -->|Rubric Scoring & Score Lock| EB
-    D -->|VIP Guest & Volunteer Crew CRUD| EB
-    D -->|Admin Broadcast & Overrides| RPC
-    EB --> LS
-    LS --> E
-    RPC --> DB
-```
-
----
-
-## 🏆 2. The 6 Official Competition Tracks
-
-The talent hunt is split into **Group A** and **Group B** (students can participate in up to **2 competitions total**):
-
-| Group | Competition Track | Format | Evaluation Rubric | Prize Pool |
-|---|---|---|---|---|
-| **A** | **Intellect Odyssey (Quiz)** | Team of 2 | Accuracy (60%), Speed (40%) | ₹13,500 |
-| **A** | **Spontaneity Arena (Debate)** | Solo | Argumentation (40%), Clarity (30%), Rebuttal (30%) | ₹13,500 |
-| **A** | **Spectrum on Canvas (Poster)** | Solo | Design (35%), Message Clarity (35%), Creativity (30%) | ₹13,500 |
-| **B** | **Hidden Horizon (Treasure Hunt)** | Team of 3 | Speed (50%), Accuracy (50%), Bonus (10%) | ₹13,500 |
-| **B** | **Glam 'n' Dazzle (Ramp Walk)** | Solo | Appearance (30%), Stage Presence (30%), Personality (40%) | ₹13,500 |
-| **B** | **Instaverse (Reels)** | Solo | Creativity (35%), Content (35%), Execution (30%) | ₹13,500 |
-
----
-
-## 🏛️ 3. Core Role Portals & Wireframes
-
-### 🎓 1. Student Portal (`/#dashboard`)
-- **Digital Admit Card & Dynamic SVG QR:** Real-time generation of student QR pass containing student ID, institute, stream, registered events, food preference, and timestamp.
-- **Lunch Voucher Modal:** Scannable meal QR code with live redemption status (`Veg` / `Non-veg`).
-- **Live Venue Guide:** Real-time room locator, reporting status, and round schedule countdowns.
-- **Media Desk:** Instant submission link for Poster and Reels tracks.
-
-### 🤝 2. Volunteer Ground Operations Hub (`/#volunteer`)
-- **Live Camera QR Scanner (`html5-qrcode`):** Instant camera-based barcode/QR scanning with camera flipping (front/back), audio confirmation feedback, and image file upload decoder.
-- **Fast +2 Verification:** Instant check-in marking and student validation on arrival.
-- **Meal Counter Desk:** 1-click Lunch Token redemption to eliminate double-claims.
-- **Venue Room Stage Coordinator:** Real-time reporting check to notify judges when candidates are in the room.
-
-### ⚖️ 3. Judge Scoring Panel (`/#judge`)
-- **Dynamic Candidate Roster:** Direct link to real registered participants across the 6 tracks with search and filter.
-- **Interactive Rubric Sliders:** Real-time weighted criteria scoring according to official track rules.
-- **Score Lock Mechanism:** Irreversible lock on submission with audit timestamp.
-- **Live Standings:** Instant preview of track rankings as scores are entered.
-
-### 🛡️ 4. Admin Command Center (`/#admin`)
-- **Executive KPI Dashboard:** Real-time metrics for total registrations, check-in rate, tokens redeemed, and track completion.
-- **VIP Guest Management Console:** Complete hospitality console for Chief Guests, Dignitaries, Judges, and Keynote Speakers (arrival status, vehicle permits, dietary preferences, assigned escorts, and 1-click CSV export).
-- **Volunteer Crew Console:** Duty station assignments (Gate, Stage, Help Desk, Refreshments), shift tracking, walkie-talkie channels, and kit distribution logger.
-- **WhatsApp Broadcast Desk:** Instant broadcast triggers for debate topics and emergency announcements.
-- **Data Export:** 1-click master CSV export for student registrations, guests, and volunteer rosters.
-
-### 📊 5. Live Public Leaderboard (`/#leaderboard`)
-- **Dynamic Real-Time Ranking:** Live computed scores from judge evaluations.
-- **College Championship Table:** Aggregated points by institution for the overall Rolling Trophy.
-- **Search & Filter:** Instant track filtering with podium badges (Gold, Silver, Bronze).
-
----
-
-## 🔐 4. Security & Database Architecture
-
-- **Supabase Backend:** PostgreSQL 15 database hosted at `https://hvduagntoflynubyaqxs.supabase.co`.
-- **Row Level Security (RLS):** Anonymous write restrictions enforced on `users`, `registrations`, `scores`, and `notifications`.
-- **SECURITY DEFINER RPCs:** All public intake and queries execute via audited stored procedures:
-  - `submit_registration_form`
-  - `register_for_event`
-  - `get_leaderboard`
-  - `admin_overview`
-  - `mark_notifications_read`
-- **Reactive Dual-Persistence:** High-frequency UI interactions use immediate reactive event dispatchers (`crossfire_registration_updated`, `crossfire_guests_updated`, `crossfire_volunteers_updated`) coupled with persistent background synchronization.
-
----
-
-## 🛠️ 5. Development & Build Setup
-
-### Prerequisites
-- Node.js `v18+` or `v20+` or `v24+`
-- npm `v9+` or `v10+`
-
-### Installation
-```bash
-# Clone repository
-git clone https://github.com/sakashdora/CrossFire.git
-cd CrossFire
-
-# Install dependencies
-npm install
-```
-
-### Environment Configuration
-Create a `.env` file in the root directory:
-```env
-VITE_SUPABASE_URL=https://hvduagntoflynubyaqxs.supabase.co
-VITE_SUPABASE_ANON_KEY=your-supabase-anon-key
-```
-
-### Running Locally
-```bash
-# Start Vite development server
-npm run dev
-
-# Run TypeScript type check
-npx tsc --noEmit
-
-# Production Build
+```powershell
+npm ci
+npm run dev -- --host 127.0.0.1 --port 3001
+npm run test:security
 npm run build
-
-# Preview Production Build
-npm run preview
+npm run security:bundle
+npm run preview -- --host 127.0.0.1 --port 4180 --strictPort
 ```
 
----
+The production preview uses the same security headers defined in `vercel.json`. Keep `VITE_EMAIL_AUTH_READY=false` for the current staff-review intake. Enabling it switches to verified-account registration; do so only after college approval, sender setup, real delivery tests and a reviewed plan for existing intake records.
 
-## 📁 6. Project Directory Structure
+## Structure
 
-```
-c:\CrossFire\
-├── dist/                          # Production build output
-├── public/                        # Static assets (images, logos, favicon)
-├── src/
-│   ├── components/                # Reusable UI components
-│   │   ├── Header.tsx             # Adaptive fluid glass navigation
-│   │   ├── Footer.tsx             # Footer with SAGS branding
-│   │   ├── StudentQRCode.tsx      # SVG QR code generator (qrcode.react)
-│   │   ├── LiveQRScanner.tsx      # Live camera QR scanner (html5-qrcode)
-│   │   ├── NotificationCenter.tsx # System announcement drawer
-│   │   └── ...
-│   ├── hooks/                     # Custom React hooks
-│   │   ├── useAdminData.ts        # Admin analytics, guest & volunteer data
-│   │   ├── useLeaderboard.ts      # Real-time computed rankings
-│   │   ├── useNotifications.ts    # Broadcast & notification dispatch
-│   │   └── ...
-│   ├── pages/                     # Main role pages & wireframes
-│   │   ├── LandingPage.tsx        # Hero, event showcase, schedule, FAQ
-│   │   ├── StudentDashboard.tsx   # Digital Admit Card & Meal QR Pass
-│   │   ├── VolunteerDashboard.tsx # Camera gate scanner & meal redemption
-│   │   ├── JudgePanel.tsx         # Live candidate roster & rubric sliders
-│   │   ├── AdminDashboard.tsx     # VIP Guest, Volunteer Crew & Analytics
-│   │   ├── LeaderboardPage.tsx    # Real-time scoreboards
-│   │   └── RegistrationPage.tsx   # Google Form intake specification
-│   ├── services/                  # Business logic & API services
-│   │   ├── studentDataService.ts  # Student data, scores, and storage sync
-│   │   ├── guestVolunteerService.ts # VIP Guest & Volunteer Crew CRUD
-│   │   └── ...
-│   ├── lib/
-│   │   └── supabaseClient.ts      # Supabase client & RPC bindings
-│   ├── types/
-│   │   └── index.ts               # Master TypeScript interfaces
-│   ├── App.tsx                    # Main app container & routing
-│   └── index.css                  # Tailwind styles & theme variables
-├── package.json                   # Project scripts & dependencies
-├── tsconfig.json                  # TypeScript configuration
-└── vite.config.ts                 # Vite build settings
-```
+| Location | Responsibility |
+| --- | --- |
+| `src/context` | Real authentication, event and own-registration state |
+| `src/operations` | Admin and volunteer workflows, typed clients, responsive screens |
+| `src/pages/JudgePanel.tsx` | Assigned judge roster and persistent scoring |
+| `src/pages/AccountSecurity.tsx` | Authenticated staff password updates |
+| `supabase/migrations` | Ordered, tested database changes |
+| `supabase/functions/provision-staff` | Server-only staff account provisioning |
+| `scripts/*.test.mjs` | Disposable SQL and Edge-handler tests |
+| `docs/OPERATIONS.md` | Wireframes, role matrix and operational pipeline |
+| `docs/SECURITY_RELEASE.md` | Deployment, recovery and verification evidence |
 
----
+Do not rerun the legacy `supabase/schema.sql` on the shared production project. It is a historical baseline for disposable local tests. The release preparer applies the reviewed migrations in order within a transaction. Obsolete credential-seeding, auto-confirm and permissive-view setup scripts were removed. Removing files does not remove credentials from Git history; any previously exposed credentials still require rotation.
 
-## 🤝 7. Organization & Contact
-
-- **Institution:** [Srusti Academy of Graduate Studies](https://srustiacademy.ac.in)
-- **Campus:** SAGS Campus, Chandaka Industrial Estate, Patia, Bhubaneswar, Odisha 751024
-- **Event Lead:** SAGS Youth & Cultural Committee
-- **Tech Lead:** Antigravity Advanced Systems Architecture Team
+Browser HTML and JavaScript remain inspectable. Security is enforced through verified identity, MFA, server-side permissions, private secrets and database policies—not by attempting to hide frontend code.

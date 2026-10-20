@@ -22,6 +22,8 @@ dist-ssr
 # Assistant & Local Workspace Artifacts
 .agents/
 artifacts/
+.vercel/
+supabase/.temp/
 
 # Logs
 npm-debug.log*

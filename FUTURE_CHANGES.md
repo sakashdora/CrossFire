@@ -1,5 +1,15 @@
 # Future changes
 
+## Student identity and portal access — deferred
+
+Updated: 20 October 2026. The user chose direct CrossFire registration submissions for staff review, without student email verification or portal access.
+
+- Current intake writes to private `crossfire_registration_requests`; receipt references identify submissions only.
+- Admins and super admins can mark requests reviewed or declined, add notes and reopen them for review. This does not create an account, confirm email ownership, reserve an event place or issue a pass.
+- Student email-code controls are hidden while `VITE_EMAIL_AUTH_READY=false`. Staff email/password and MFA remain available.
+- Before introducing student accounts or converting reviewed requests into event entries, confirm the college's approval/seat-allocation process and identity checks. Do not automatically associate a request with an account merely because an unverified email matches.
+- Email sending, verified account activation, student recovery and approval notifications require a later approved setup. No emails are sent by intake or staff review.
+
 ## Team registration — deferred pending college clarification
 
 Recorded: 8 October 2026.

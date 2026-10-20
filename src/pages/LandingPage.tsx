@@ -24,7 +24,7 @@ function ArenaPhoto({ index }: { index: number }) {
 }
 
 export function LandingPage({ onSelectEvent, setCurrentView, introActive, onReplayIntro }: LandingPageProps) {
-  const { events } = useEvents();
+  const { events, error, isLoading } = useEvents();
   const landingRef = useRef<HTMLDivElement>(null);
   const heroRef = useRef<HTMLElement>(null);
   const [effectsPaused, setEffectsPaused] = useState(false);
@@ -38,7 +38,7 @@ export function LandingPage({ onSelectEvent, setCurrentView, introActive, onRepl
   const downloadsRef = useRef<HTMLDivElement>(null);
   const downloadsButtonRef = useRef<HTMLButtonElement>(null);
   const prizePool = events.reduce((total, event) => total + event.prize_pool, 0);
-  const money = (value: number) => `₹${value.toLocaleString('en-IN')}`;
+  const money = (value: number) => events.length ? `₹${value.toLocaleString('en-IN')}` : '—';
   useEffect(() => {
     const preference = window.matchMedia('(prefers-reduced-motion: reduce)');
     const updatePreference = () => setReducedMotion(preference.matches);
@@ -102,12 +102,13 @@ export function LandingPage({ onSelectEvent, setCurrentView, introActive, onRepl
         </div>
       </div>
       <div className="cf-hero-stats" aria-label="Event highlights">
-        <div><Trophy aria-hidden="true" /><p><strong>{String(events.length).padStart(2, '0')}</strong> Arenas</p></div>
+        <div><Trophy aria-hidden="true" /><p><strong>{events.length ? String(events.length).padStart(2, '0') : '—'}</strong> Arenas</p></div>
         <div><Gift aria-hidden="true" /><p><strong>{money(prizePool)}</strong> in prizes</p></div>
         <div><Users aria-hidden="true" /><p><strong>Free</strong> entry<small>Refreshments included</small></p></div>
       </div>
     </section>
     <section className="cf-arenas" id="arenas" aria-labelledby="arenas-title">
+      {(isLoading || error) && <p role="status" className="px-5 py-4 text-sm text-slate-300">{isLoading ? 'Loading event information…' : error}</p>}
       <div className="cf-section-heading" data-reveal><div><p className="cf-kicker"><span>01</span> / The competitions</p><h2 id="arenas-title">Six arenas.<br />One <span className="cf-outline-text">spotlight.</span></h2></div><div className="cf-section-aside"><p>Find your strength.<br />Make your mark.</p><a href="/crossfire-2026-brochure.pdf" target="_blank" rel="noreferrer">Explore the rulebook <ArrowUpRight size={18} /></a></div></div>
       <div className="cf-arena-grid">{TRACKS.map((name, index) => {
         const event = events.find(item => item.name === name);
