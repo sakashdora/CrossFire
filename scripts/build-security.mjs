@@ -1,7 +1,12 @@
 // Run by Vite before bundling. Errors never include environment values.
 export function validatePublicEnvironment(env) {
   const allowed = new Set(['VITE_SUPABASE_URL', 'VITE_SUPABASE_ANON_KEY', 'VITE_EMAIL_AUTH_READY', 'VITE_APP_NAME', 'VITE_EVENT_DATE']);
-  for (const key of Object.keys(env)) if (key.startsWith('VITE_') && !allowed.has(key)) throw new Error(`Unreviewed public environment variable: ${key}. VITE_ values are sent to every browser.`);
+  for (const key of Object.keys(env)) {
+    if (!key.startsWith('VITE_')) continue;
+    if (allowed.has(key)) continue;
+    if (key.startsWith('VITE_VERCEL_') && !key.includes('SECRET') && !key.includes('TOKEN') && !key.includes('KEY')) continue;
+    throw new Error(`Unreviewed public environment variable: ${key}. VITE_ values are sent to every browser.`);
+  }
   let url;
   try { url = new URL(env.VITE_SUPABASE_URL); } catch { throw new Error('Set VITE_SUPABASE_URL before building.'); }
   if (url.origin !== 'https://foklyhoplcghivghuebp.supabase.co' || url.username || url.password) throw new Error('This release must target the reviewed CrossFire Supabase project. Review the headers and deployment configuration before changing projects.');

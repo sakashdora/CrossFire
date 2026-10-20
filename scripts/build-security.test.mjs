@@ -4,9 +4,11 @@ const token=payload=>'header.'+Buffer.from(JSON.stringify(payload)).toString('ba
 const env={VITE_SUPABASE_URL:'https://foklyhoplcghivghuebp.supabase.co',VITE_SUPABASE_ANON_KEY:token({role:'anon',ref:'foklyhoplcghivghuebp'})};
 validatePublicEnvironment(env);
 validatePublicEnvironment({...env,VITE_SUPABASE_ANON_KEY:'sb_publishable_test'});
+validatePublicEnvironment({...env,VITE_VERCEL_GIT_REPO_ID:'12345',VITE_VERCEL_ENV:'production'});
+assert.throws(()=>validatePublicEnvironment({...env,VITE_VERCEL_TOKEN:'secret'}));
 assert.throws(()=>validatePublicEnvironment({...env,VITE_SUPABASE_ANON_KEY:token({role:'service_role',ref:'foklyhoplcghivghuebp'})}));
 assert.throws(()=>validatePublicEnvironment({...env,VITE_SUPABASE_ANON_KEY:'sb_secret_do-not-bundle'}));
 assert.throws(()=>validatePublicEnvironment({...env,VITE_DATABASE_PASSWORD:'do-not-bundle'}));
 assert.throws(()=>validatePublicEnvironment({...env,VITE_SUPABASE_URL:'http://example.test'}));
 assert.throws(()=>validatePublicEnvironment({...env,VITE_EMAIL_AUTH_READY:'yes'}));
-console.log('7 build environment checks passed: public keys accepted; privileged keys, unexpected public variables, wrong projects and invalid flags rejected.');
+console.log('9 build environment checks passed: public keys accepted; privileged keys, unexpected public variables, wrong projects and invalid flags rejected.');
