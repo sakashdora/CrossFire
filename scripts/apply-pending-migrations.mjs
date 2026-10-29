@@ -4,37 +4,24 @@
  * supabase_migrations.schema_migrations so the CLI stays in sync.
  *
  * Usage:
- *   $env:DIRECT_URL="postgresql://postgres.<ref>:<password>@<host>/postgres"
  *   node scripts/apply-pending-migrations.mjs
  */
-import pg from 'pg';
+import { getClient } from './db.mjs';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-const DB_URL = process.env.DIRECT_URL;
-if (!DB_URL) {
-  console.error('ERROR: DIRECT_URL environment variable is not set.');
-  console.error('  PowerShell: $env:DIRECT_URL="postgresql://postgres.<ref>:<password>@<host>/postgres"');
-  console.error('  bash/zsh:   export DIRECT_URL="postgresql://..."');
-  process.exit(1);
-}
-
-// Migrations to apply in order - only those not yet recorded remotely.
+// Migrations to apply in order - only forward migrations not yet applied remotely.
 const PENDING = [
-  '20261019_public_event_access.sql',
-  '20261019_rpc_privileges.sql',
-  '20261020_student_invitations.sql',
-  '20261020_registration_intake.sql',
-  '20261029_live_ops_and_access.sql',
+  '20261029160000_direct_registration.sql',
 ];
 
 const MIGRATIONS_DIR = path.join(__dirname, '..', 'supabase', 'migrations');
 
 async function main() {
-  const client = new pg.Client({ connectionString: DB_URL });
+  const client = getClient();
   await client.connect();
   console.log('Connected to remote database.');
 
@@ -43,7 +30,7 @@ async function main() {
     `SELECT name FROM supabase_migrations.schema_migrations ORDER BY version`
   );
   const recordedNames = new Set(recorded.map(r => r.name));
-  console.log('Already recorded:', [...recordedNames]);
+  console.log('Already recorded in supabase_migrations:', [...recordedNames]);
 
   for (const filename of PENDING) {
     if (recordedNames.has(filename)) {

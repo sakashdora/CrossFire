@@ -59,7 +59,7 @@ export const RegistrationPage: React.FC<RegistrationPageProps> = ({
   const [emailCode, setEmailCode] = useState('');
   const [codeSentTo, setCodeSentTo] = useState('');
   const [website, setWebsite] = useState('');
-  const [submittedForReview, setSubmittedForReview] = useState(false);
+  const [registeredWithoutAccount, setRegisteredWithoutAccount] = useState(false);
   const intakeAttempt = useRef<{ id: string; payload: string } | null>(null);
 
   // Group A & Group B Selections: Choose any two from Group A & any two from Group B
@@ -169,7 +169,7 @@ export const RegistrationPage: React.FC<RegistrationPageProps> = ({
         if (intakeAttempt.current?.payload !== payload) intakeAttempt.current = { id: crypto.randomUUID(), payload };
         const reference = await submitRegistrationRequest(intakeAttempt.current.id, profile);
         setConfirmedStudentId(reference);
-        setSubmittedForReview(true);
+        setRegisteredWithoutAccount(true);
         setSubmitted(true);
         return;
       }
@@ -273,7 +273,7 @@ export const RegistrationPage: React.FC<RegistrationPageProps> = ({
       <div class="subtitle">STATE-LEVEL TALENT HUNT • OFFICIAL REGISTRATION ACKNOWLEDGEMENT SLIP</div>
     </div>
     <div class="badge-bar">
-      <div>${submittedForReview ? 'Submission reference' : 'Registration ID'}: <span class="badge-value">${escapeHtml(confirmedStudentId)}</span></div>
+      <div>${registeredWithoutAccount ? 'Registration reference' : 'Registration ID'}: <span class="badge-value">${escapeHtml(confirmedStudentId)}</span></div>
       <div>Event Date: <span class="badge-item">Nov 15, 2026</span></div>
       <div>Dietary Token: <span class="badge-item">${escapeHtml(foodPreference)}</span></div>
     </div>
@@ -289,9 +289,9 @@ export const RegistrationPage: React.FC<RegistrationPageProps> = ({
       <div><div class="field-label">Competitions</div><div class="field-value">${selectedCompetitions.map(escapeHtml).join(' &amp; ')}</div></div>
     </div>
     <div class="notice">
-      <strong>${submittedForReview ? 'Submission received — awaiting staff review' : 'Important Instructions for Registered Participants'}:</strong><br/>
-      1. ${submittedForReview ? 'Keep this reference for enquiries. This receipt is not an entry pass or a confirmed event place.' : 'Keep this official acknowledgement slip saved or printed for physical campus entry on Nov 15, 2026 at Srusti Campus, Chandrasekharpur, Bhubaneswar.'}<br/>
-      2. ${submittedForReview ? 'Your details have been submitted for college staff to review. No student portal account has been created.' : 'Use your registered email and a one-time code to sign in. Your pass ID is not a password. Portal tools open when enabled by the organisers.'}<br/>
+      <strong>${registeredWithoutAccount ? 'Registration saved' : 'Important Instructions for Registered Participants'}:</strong><br/>
+      1. ${registeredWithoutAccount ? 'Keep this registration reference for enquiries. Entry passes are issued separately.' : 'Keep this official acknowledgement slip saved or printed for physical campus entry on Nov 15, 2026 at Srusti Campus, Chandrasekharpur, Bhubaneswar.'}<br/>
+      2. ${registeredWithoutAccount ? 'Your registration details and competition choices are saved. Portal access is provided separately.' : 'Use your registered email and a one-time code to sign in. Your pass ID is not a password. Portal tools open when enabled by the organisers.'}<br/>
       3. For any queries or verification, contact Event Coordinators Mr. N.R. Swain (+91-7008671339) or Mr. A. Meher (+91-8455090984).
     </div>
     <div class="footer">
@@ -322,7 +322,7 @@ export const RegistrationPage: React.FC<RegistrationPageProps> = ({
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10 pb-28 lg:pb-16">
       
-      {!isEmailAuthReady && <p className="p-4 mb-5 rounded-xl border border-blue-200 bg-blue-50 text-sm text-navy">Submit your details below for the college team to review. Keep your submission reference for enquiries. Student portal access is not included at this stage.</p>}
+      {!isEmailAuthReady && <p className="p-4 mb-5 rounded-xl border border-blue-200 bg-blue-50 text-sm text-navy">Register below to save your details and competition choices. Keep your registration reference for enquiries. Portal access and entry passes are provided separately.</p>}
       {/* Srusti Official Branding Header */}
       <div className="bg-white rounded-3xl border border-gray-200 shadow-xl overflow-hidden mb-6 sm:mb-8">
         <div className="bg-navy p-5 sm:p-7 md:p-8 text-white relative overflow-hidden">
@@ -419,13 +419,13 @@ export const RegistrationPage: React.FC<RegistrationPageProps> = ({
             </div>
             <div className="text-center sm:text-left flex-1">
               <span className="px-3 py-1 bg-emerald-100 text-emerald-800 rounded-full font-black text-[10px] uppercase tracking-wider inline-block mb-1">
-                {submittedForReview ? 'Awaiting Staff Review' : 'Official Registration Confirmed'}
+                {registeredWithoutAccount ? 'Registration Confirmed' : 'Official Registration Confirmed'}
               </span>
               <h2 className="font-black text-xl sm:text-2xl text-navy">
-                {submittedForReview ? 'Submission received!' : 'Registration Successfully Recorded!'}
+                Registration Successfully Recorded!
               </h2>
               <p className="text-xs text-gray-600 mt-1">
-                {submittedForReview ? 'Your details are saved in CrossFire for the college team to review.' : 'Your registration has been saved in CrossFire.'}
+                Your registration has been saved in CrossFire.
               </p>
             </div>
           </div>
@@ -433,7 +433,7 @@ export const RegistrationPage: React.FC<RegistrationPageProps> = ({
           {/* Registration Dossier Summary */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 bg-white p-5 rounded-2xl border border-gray-200 shadow-sm text-xs">
             <div>
-              <span className="text-[10px] font-bold uppercase text-gray-400 block mb-0.5">{submittedForReview ? 'Submission Reference' : 'Registration Pass ID'}</span>
+              <span className="text-[10px] font-bold uppercase text-gray-400 block mb-0.5">{registeredWithoutAccount ? 'Registration Reference' : 'Registration Pass ID'}</span>
               <span className="font-black text-lg text-orange-600 font-mono break-all">{confirmedStudentId}</span>
             </div>
             <div>
@@ -452,10 +452,10 @@ export const RegistrationPage: React.FC<RegistrationPageProps> = ({
           <div className="p-4 bg-amber-50 border border-amber-200 rounded-2xl text-xs text-amber-950 space-y-2">
             <div className="flex items-center gap-2 font-black text-amber-900 text-xs uppercase tracking-wide">
               <Lock className="w-4 h-4 text-amber-700 shrink-0" />
-              <span>{submittedForReview ? 'Next steps: Keep your reference' : 'Next steps: Keep your pass ID'}</span>
+              <span>{registeredWithoutAccount ? 'Next steps: Keep your reference' : 'Next steps: Keep your pass ID'}</span>
             </div>
             <p className="text-[11px] leading-relaxed text-amber-900">
-              {submittedForReview ? 'The college team will review your details. This receipt is not an entry pass or a confirmed event place. No student portal account has been created. Contact the organisers with your reference if you need to make a correction.' : 'Your registration is saved. Sign in using a one-time code sent to your verified email. No password is needed. Passes and event tools become available when the organisers open the student portal.'}
+              {registeredWithoutAccount ? 'Your details and competition choices are saved. No staff approval is required to record your registration. Portal access and entry passes are provided separately. Contact the organisers with your reference if you need to make a correction.' : 'Your registration is saved. Sign in using a one-time code sent to your verified email. No password is needed. Passes and event tools become available when the organisers open the student portal.'}
             </p>
             <div className="flex flex-wrap gap-2 text-[11px] font-bold text-navy">
               <span className="bg-white/80 px-2.5 py-1 rounded-lg border border-amber-200">📧 {emailId}</span>
@@ -482,7 +482,7 @@ export const RegistrationPage: React.FC<RegistrationPageProps> = ({
             <button
               type="button"
               onClick={async () => {
-                if (!submittedForReview) await logout();
+                if (!registeredWithoutAccount) await logout();
                 setSubmitted(false);
                 setStudentName('');
                 setEmailId('');
@@ -491,7 +491,7 @@ export const RegistrationPage: React.FC<RegistrationPageProps> = ({
                 setSelectedCompetitions([]);
                 setInstituteName('');setCityTown('');setConsent(false);setEmailCode('');setCodeSentTo('');
                 setConfirmedStudentId('');draftEdited.current=false;hydratedUser.current=undefined;
-                setSubmittedForReview(false);setWebsite('');intakeAttempt.current=null;
+                setRegisteredWithoutAccount(false);setWebsite('');intakeAttempt.current=null;
               }}
               className="py-3.5 px-4 bg-orange-50 hover:bg-orange-100 text-orange-700 font-bold text-xs rounded-xl transition-all cursor-pointer text-center"
             >
@@ -932,7 +932,7 @@ export const RegistrationPage: React.FC<RegistrationPageProps> = ({
             ) : (
               <>
                 <Send className="w-5 h-5" />
-                <span>{!isEmailAuthReady ? 'Submit registration for review' : user?.email.toLowerCase() === emailId.trim().toLowerCase() ? 'Save CrossFire registration' : codeSentTo === emailId.trim().toLowerCase() && codeSentTo ? 'Verify email and register' : 'Verify email to register'}</span>
+                <span>{!isEmailAuthReady ? 'Register for CrossFire' : user?.email.toLowerCase() === emailId.trim().toLowerCase() ? 'Save CrossFire registration' : codeSentTo === emailId.trim().toLowerCase() && codeSentTo ? 'Verify email and register' : 'Verify email to register'}</span>
                 <ArrowRight className="w-5 h-5 ml-1" />
               </>
             )}

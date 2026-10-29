@@ -1,6 +1,6 @@
 import {readFile,writeFile,mkdir} from 'node:fs/promises';
 import {createHash} from 'node:crypto';
-const migrations=['20261019_access_containment.sql','20261016_operations.sql','20261019_production_security.sql','20261019_public_event_access.sql','20261019_rpc_privileges.sql','20261020_registration_intake.sql','20261020_student_invitations.sql','20261029_live_ops_and_access.sql'];
+const migrations=['20261019_access_containment.sql','20261016_operations.sql','20261019_production_security.sql','20261019_public_event_access.sql','20261019_rpc_privileges.sql','20261020_registration_intake.sql','20261020_student_invitations.sql','20261029_live_ops_and_access.sql','20261029160000_direct_registration.sql'];
 const onlyIndex=process.argv.indexOf('--only');
 const only=onlyIndex>=0?process.argv[onlyIndex+1]:null;
 if(onlyIndex>=0 && (!only || !migrations.includes(only))) throw new Error('Use --only with an exact reviewed migration filename.');

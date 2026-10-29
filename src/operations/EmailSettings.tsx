@@ -39,7 +39,7 @@ export function EmailSettings() {
       const { data, error: failure } = await supabase.rpc('crossfire_mail_configuration', { p_settings: settings });
       if (failure) throw failure;
       setSettings({ sender_name: data.sender_name, sender_email: data.sender_email, reply_to: data.reply_to, enabled: data.enabled });
-      setNotice('Official sender settings saved. Send student invitations individually from Registration review.');
+      setNotice('Official sender settings saved. Send student invitations individually from Student records.');
     } catch (cause) { const failure = cause as { code?: string; message?: string }; setError(failure.code === 'P0001' ? failure.message || 'Check the sender details.' : 'Settings could not be confirmed. Refresh before retrying.'); }
     finally { setBusy(false); }
   };

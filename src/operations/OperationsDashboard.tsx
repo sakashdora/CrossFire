@@ -4,20 +4,20 @@ import { QRCodeSVG } from 'qrcode.react';
 import { LiveQRScanner } from '../components/LiveQRScanner';
 import { liveOperationsClient } from './client';
 import { useOperations } from './useOperations';
-import { RegistrationReview } from './RegistrationReview';
+import { StudentRecords } from './StudentRecords';
 import { EmailSettings } from './EmailSettings';
 import { ATTENDANCE, GUEST_CATEGORIES, SHIFTS, STATIONS, canManageStaff, csvCell, dutyAllows, formatTime, guestTransitions, isManager, parsePass, validateGuest, type OperationsClient, type OpsAction, type OpsGuest, type OpsPayload, type OpsStaff, type OpsVolunteer, type StaffInput } from './model';
 import './operations.css';
 
 type Section = 'overview' | 'requests' | 'students' | 'guests' | 'crew' | 'events' | 'incidents' | 'staff' | 'announcements' | 'settings' | 'audit' | 'email';
 const sections = [
-  ['requests', 'Registration review', ClipboardList],
+  ['requests', 'Student records', ClipboardList],
   ['email', 'Email & invitations', Megaphone],
   ['overview', 'Overview', LayoutDashboard], ['students', 'Student desk', UserCheck], ['guests', 'VIP & judges', ShieldCheck], ['crew', 'Volunteer crew', Users], ['events', 'Event control', Flag], ['incidents', 'Incidents', ClipboardList], ['staff', 'Staff access', Users], ['announcements', 'Announcements', Megaphone], ['settings', 'System settings', Settings], ['audit', 'Activity log', ClipboardList],
 ] as const;
 const titles: Record<Section, [string, string]> = {
   email: ['From the college, securely.', 'Configure the official sender for student setup and recovery invitations.'],
-  requests: ['Student registration review.', 'Review submissions and record follow-up notes before confirming participation.'],
+  requests: ['All student records.', 'Saved registrations, student accounts, and complete Excel or PDF exports.'],
   overview: ['The day, at a glance.', 'One shared view of arrivals, people, and event operations.'], students: ['Every arrival counts.', 'Find a participant, verify their pass, and record the next step.'], guests: ['A considered welcome.', 'Invited VIPs and judges, from confirmation to departure.'], crew: ['People behind the day.', 'Assign a station, confirm attendance, and keep duties clear.'], events: ['Six arenas. In sync.', 'Control registration status and assign judges to each event.'], incidents: ['Keep the day moving.', 'Report a problem. Follow its progress through to resolution.'], staff: ['The right access.', 'Create staff accounts and manage their role and active status.'], announcements: ['Keep everyone informed.', 'Publish a message to the selected audience’s in-app notifications.'], settings: ['The final controls.', 'System settings are reserved for super admins.'], audit: ['A clear record.', 'The latest 100 recorded changes, with the person and time.'],
 };
 type Field = { name: string; label: string; type?: string; required?: boolean; options?: { value: string; label: string }[]; minLength?: number; maxLength?: number; hint?: string };
@@ -123,7 +123,7 @@ export function OperationsDashboard({ client = liveOperationsClient, previewCont
           <section className="ops-panel"><div className="ops-panel-head"><h2>Needs attention</h2><Badge warn>{data.incidents.filter(i => i.status === 'Open').length} open</Badge></div>{data.incidents.filter(i => i.status === 'Open').slice(0, 3).map(i => <button className="ops-attention" key={i.id} onClick={() => navigate('incidents')}><span className="ops-incident-dot" /><div><strong>{i.room}</strong><p>{i.issue}</p><small>{formatTime(i.created_at)}</small></div><ArrowUpRight size={16} /></button>)}{!data.incidents.some(i => i.status === 'Open') && <Empty>No open incidents in your view.</Empty>}<button className="ops-link" onClick={reportIncident}><Plus size={15} /> Report an incident</button></section></div>
           <section className="ops-panel"><div className="ops-panel-head"><h2>Event schedule</h2><span>All times IST</span></div><div className="ops-schedule">{data.events.map((event, i) => <div key={event.id}><span className="ops-event-number">0{i + 1}</span><div><strong>{event.name}</strong><small>{event.venue}</small></div><time>{formatTime(event.start_time)}</time><Badge good={event.status === 'in_progress'}>{event.status.split('_').join(' ')}</Badge></div>)}</div></section>
         </>}
-        {section === 'requests' && manager && <RegistrationReview />}
+        {section === 'requests' && manager && <StudentRecords />}
         {section === 'email' && manager && <EmailSettings />}
         {(section === 'students' || section === 'guests') && <form className="ops-scanbar" onSubmit={event => { event.preventDefault(); scanPass(String(new FormData(event.currentTarget).get('pass') || '')); }}><QrCode size={22} /><label><span>Pass lookup</span><input name="pass" aria-label="Pass ID" placeholder="CF26-… or CFG-…" required /></label><button type="submit" disabled={busy}>Find pass</button><button type="button" className="primary" onClick={() => setScanner(true)}><QrCode size={16} /> Scan QR</button></form>}
         {section === 'students' && <section className="ops-panel"><div className="ops-toolbar">{searchBox}<select aria-label="Student status" value={filter} onChange={e => setFilter(e.target.value)}><option value="all">All participants</option><option value="pending">Awaiting arrival</option><option value="arrived">Checked in</option><option value="meal">Awaiting meal</option></select>{manager && <button onClick={() => exportCsv('crossfire-participants.csv', [['Pass', 'Name', 'Institute', 'Check-in', 'Meal'], ...students.map(s => [s.pass_id, s.name, s.institute, s.checked_in_at, s.food_redeemed_at])])}><Download size={16} /> Export</button>}</div>
