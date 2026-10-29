@@ -36,7 +36,7 @@ npm run security:bundle
 npm run preview -- --host 127.0.0.1 --port 4180 --strictPort
 ```
 
-The production preview uses the same security headers defined in `vercel.json`. `VITE_EMAIL_AUTH_READY` is no longer read by the app; the one-time-code registration path was retired in favour of `register-student`. Deployment order and migration steps are in [the release checklist](docs/SECURITY_RELEASE.md#30-october-2026-accounts-registration-and-qr-release).
+The production preview uses the same security headers defined in `vercel.json`. `VITE_EMAIL_AUTH_READY` is no longer read by the app; the one-time-code registration path was retired in favour of `register-student`. Deployment order and migration steps are in [the release checklist](docs/SECURITY_RELEASE.md#29-october-2026-accounts-registration-and-qr-release).
 
 ## Structure
 

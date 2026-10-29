@@ -2,9 +2,13 @@
 
 Status updated on 20 October 2026; operations security migrations were applied on 19 October and the intake/invitation migrations on 20 October. This is a release checklist and verification record, not a claim of complete security certification.
 
-## 30 October 2026: accounts, registration and QR release
+## 29 October 2026: accounts, registration and QR release
 
-**Status: implemented and tested locally. Not deployed.** Nothing in this release has been applied to the Supabase project or published to Vercel.
+**Status: deployed on 29 October 2026 and live student API smoke checks passed.** GitHub `main` contains implementation commit `7154880`. The live Vercel entry assets matched the tested build byte-for-byte. Both `20261030090000` and `20261030090100` migrations are recorded in the live database; their filename dates do not indicate the deployment date.
+
+The `register-student` function is ACTIVE (version 1, public endpoint); `provision-staff` and `invite-student` are ACTIVE (version 3, JWT verification retained). All three accept preflight from the configured website. The registration setting is open. A schema/function/permissions checkpoint was saved locally before migration; it is not a full data backup.
+
+Live API verification created one temporary student, retrieved the QR receipt, retried the same request without duplication, rejected a second request for the same email, signed in with the chosen password, retrieved the student's profile/pass/event entry, and denied student access to admin operations and anonymous access to the VIP portal. The temporary account and registration were removed; audit history was retained. No emails were sent. Full browser interactions, camera scans, staff/VIP provisioning, email delivery, and closing/reopening production registration were not exercised in this deployment check; local SQL and mocked Edge tests cover those paths where available.
 
 ### What changes
 
@@ -14,7 +18,7 @@ Status updated on 20 October 2026; operations security migrations were applied o
 
 ### Deployment order
 
-Order matters: the new migration revokes the intake RPC the currently published site uses.
+Order matters when upgrading an older frontend: the new migration revokes its legacy intake RPC. The current frontend already uses `register-student`.
 
 1. Capture a backup/checkpoint of the CrossFire project (`scripts/security-checkpoint.sql`).
 2. Deploy the Edge function first:
