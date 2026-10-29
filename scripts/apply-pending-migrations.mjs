@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Applies pending migrations that db push cannot handle due to same-date-prefix collisions.
  * Migrations are applied directly via pg, then their entries are upserted into
  * supabase_migrations.schema_migrations so the CLI stays in sync.
@@ -22,7 +22,7 @@ if (!DB_URL) {
   process.exit(1);
 }
 
-// Migrations to apply in order ΓÇö only those not yet recorded remotely.
+// Migrations to apply in order - only those not yet recorded remotely.
 const PENDING = [
   '20261019_public_event_access.sql',
   '20261019_rpc_privileges.sql',
@@ -72,10 +72,10 @@ async function main() {
         [version, filename, statements]
       );
       await client.query('COMMIT');
-      console.log(`  Γ£ô Applied and recorded: ${filename}`);
+      console.log(`  OK Applied and recorded: ${filename}`);
     } catch (err) {
       await client.query('ROLLBACK');
-      console.error(`  Γ£ù FAILED: ${filename}\n  ${err.message}`);
+      console.error(`  FAILED: ${filename}\n  ${err.message}`);
       process.exit(1);
     }
   }
