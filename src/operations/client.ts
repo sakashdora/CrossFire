@@ -18,6 +18,13 @@ export const liveOperationsClient: OperationsClient = {
     if (error) throw new Error(message(error));
     if (action === 'event.status') window.dispatchEvent(new Event('crossfire_events_changed'));
   },
+  // The server validates the code, the operator's duty and the pass state.
+  async lookup(passId) {
+    const { data, error } = await supabase.rpc('crossfire_ops_lookup_pass', { p_code: passId });
+    if (error) throw new Error(message(error));
+    if (!data?.id || !data.pass_id) throw new Error('The pass lookup returned an incomplete record. Try again.');
+    return data;
+  },
   async createStaff(input) {
     const { data, error } = await supabase.functions.invoke('provision-staff', { body: input });
     if (error) {

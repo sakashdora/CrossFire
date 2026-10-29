@@ -8,14 +8,18 @@ The reviewed operations/security/intake/invitation database updates and `provisi
 
 ## Workflows
 
-- Students submit contact details and competition choices without email verification. PostgreSQL saves a private pending request before returning a submission reference. Admins and super admins review it under **Registration review**. Reviewing alone creates no account or pass. A separate approved invitation creates account/entries and sends a password-setup link once the sender is configured and the portal opens. See [Student invitations](docs/STUDENT_INVITATIONS.md). Team formation remains deferred.
-- All staff sign in with Supabase Auth email and password. Only super admins also verify an authenticator (AAL2). Database roles, active state and duty assignments govern every operation.
-- Only a super admin can permanently delete a student (`crossfire_delete_student`, confirmed by pass ID) or an unprovisioned intake request (`crossfire_delete_registration_request`). Both are audited.
-- Staff screens poll `crossfire_live_revision()` every 3 seconds and reload the operations snapshot and registration review only when data changed.
-- Super admins manage elevated staff access and system settings. Admins also manage volunteer/judge access, events, student desks and invited VIP/judge guests.
-- Volunteers check in participants, issue one meal, mark room attendance or assist guests within their assigned on-duty station.
+Roles (identical in the database `user_role` enum, SQL, Edge functions and TypeScript): `super_admin`, `admin`, `student`, `volunteer`, `vip_guest`, `judge`.
+
+- **Students** register on `#register` while the super admin keeps registration open. The `register-student` Edge function reserves the request in SQL, creates one Supabase Auth login with the student's chosen password, then commits the profile, every event entry and an unpredictable `CF26-…` QR pass in one transaction. Retrying with the same details returns the same receipt; a second registration for the same email is rejected. The success screen shows the details and QR pass (download/print). Students sign in later with email and password, including after registration closes.
+- **Closing registration** (super admin, **System settings**) blocks new accounts and new event entries in SQL, including direct API calls. Sign-in, dashboards and passes are unaffected.
+- **Staff, judge and VIP guest logins** are created only by admins (volunteer, judge, VIP guest) or super admins (also admin and super admin) through `provision-staff`. The initial password works once: the database blocks every request until the person chooses their own password. VIP guest logins are created from the guest card and see only their own invitation, guest pass and the public schedule.
+- Super admins also verify an authenticator (AAL2). Database roles, active state and duty assignments govern every operation; deactivation or a role change ends the account's refresh sessions and applies to its next request.
+- **QR scans** resolve one pass on the server (`crossfire_ops_lookup_pass`). Gate and meal volunteers receive no student roster; an on-duty event-room volunteer sees only that room's participants. Gate check-in, meal and room attendance are recorded once each in `crossfire_checkins` with the operator and time; a duplicate scan is reported as already checked in. Admins can issue a new QR pass, which revokes the old one.
+- Only a super admin can permanently delete a student (`crossfire_delete_student`, confirmed by pass ID) or an account-less intake record. Both are audited.
+- Staff screens poll `crossfire_live_revision()` every 3 seconds and reload only when data changed.
 - Judges see assigned candidates, submit validated rubric scores and lock their own evaluation. Public standings include completed events only.
 - Guest arrival follows invitation → confirmation → arrival → optional meal → departure → archive. Actions persist with audit records.
+- Password recovery for students uses the official email invitation ("Send password reset link" in **Student records**), which requires the configured sender. See [Student invitations](docs/STUDENT_INVITATIONS.md).
 
 The application has no demo route, simulated staff sessions or browser-only data fallback. Static event descriptions and assets are published content; live availability, registrations, scores and operational records come from Supabase.
 
@@ -32,7 +36,7 @@ npm run security:bundle
 npm run preview -- --host 127.0.0.1 --port 4180 --strictPort
 ```
 
-The production preview uses the same security headers defined in `vercel.json`. Keep `VITE_EMAIL_AUTH_READY=false` for the current staff-review intake. Enabling it switches to verified-account registration; do so only after college approval, sender setup, real delivery tests and a reviewed plan for existing intake records.
+The production preview uses the same security headers defined in `vercel.json`. `VITE_EMAIL_AUTH_READY` is no longer read by the app; the one-time-code registration path was retired in favour of `register-student`. Deployment order and migration steps are in [the release checklist](docs/SECURITY_RELEASE.md#30-october-2026-accounts-registration-and-qr-release).
 
 ## Structure
 
@@ -43,7 +47,10 @@ The production preview uses the same security headers defined in `vercel.json`. 
 | `src/pages/JudgePanel.tsx` | Assigned judge roster and persistent scoring |
 | `src/pages/AccountSecurity.tsx` | Authenticated staff password updates |
 | `supabase/migrations` | Ordered, tested database changes |
-| `supabase/functions/provision-staff` | Server-only staff account provisioning |
+| `supabase/functions/register-student` | Public student registration: one Auth login, profile, entries and pass |
+| `supabase/functions/provision-staff` | Server-only staff, judge and VIP guest account provisioning |
+| `src/pages/VipDashboard.tsx` | VIP guest invitation, pass and schedule |
+| `src/components/PasswordChangeRequired.tsx` | First sign-in password change for provisioned accounts |
 | `supabase/functions/invite-student` | Reviewed student accounts and official email delivery |
 | `src/pages/StudentActivation.tsx` | Private setup-link verification and student password setup |
 | `scripts/*.test.mjs` | Disposable SQL and Edge-handler tests |

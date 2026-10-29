@@ -35,21 +35,25 @@ VOLUNTEER / MOBILE
 └────────────────────────────────────┘
 ```
 
-| Capability | Super admin | Admin | Volunteer |
-|---|---|---|---|
-| Participants, registration status, exports | All | All | Assigned duty only; no exports |
-| Unverified registration request review | Yes, MFA required | Yes, MFA required | No |
-| Gate check-in | Yes | Yes | On-duty gate station |
-| Student meals | Yes | Yes | On-duty meal station |
-| Event-room attendance | All events | All events | Assigned event only |
-| Create/edit/confirm/archive VIP or judge | Yes | Yes | No |
-| Guest arrival, meal, departure | All | All | Assigned guest or unassigned guest desk queue |
-| Volunteer station, event, shift, kit, walkie | Yes | Yes | Own duty status only |
-| Create/suspend/change volunteer and judge access | Yes | Yes | No |
-| Manage admin/super-admin access | Yes, other accounts | No | No |
-| System settings | Yes | No | No |
-| Report incidents | Yes | Yes | Yes |
-| Resolve incidents / activity log / announcements | Yes | Yes | No |
+| Capability | Super admin | Admin | Volunteer | Judge | VIP guest | Student |
+|---|---|---|---|---|---|---|
+| Own profile and dashboard | Yes | Yes | Yes | Yes | Own invitation, guest pass, schedule | Own details, entries, QR pass |
+| Student records, contact details, exports | All | All | No | No | No | Own only |
+| Scan a student QR / look up a pass | Yes | Yes | On duty at gate, meal or own event room; minimal fields | No | No | No |
+| Gate check-in / meal / room attendance | Yes | Yes | Own on-duty station / assigned event | No | No | No |
+| Issue a new QR pass (revokes the old one) | Yes | Yes | No | No | No | No |
+| Create/edit/confirm/archive VIP or judge guest records | Yes | Yes | No | No | No | No |
+| Guest arrival, meal, departure | All | All | Assigned guest or unassigned guest desk queue | No | No | No |
+| Volunteer station, event, shift, kit, walkie | Yes | Yes | Own duty status only | No | No | No |
+| Create volunteer, judge and VIP guest logins; suspend them | Yes | Yes | No | No | No | No |
+| Create/manage admin and super-admin logins | Yes, other accounts | No | No | No | No | No |
+| Open/close student registration; other system settings | Yes | No | No | No | No | No |
+| Report incidents | Yes | Yes | Yes (sees own reports) | No | No | No |
+| Resolve incidents / activity log / announcements | Yes | Yes | No | No | No | No |
+| Judging | All events (oversight) | All events (oversight) | No | Assigned events only; own scores | No | No |
+| Register as a student | No | No | No | No | No | While registration is open |
+
+Assumptions (least privilege where the brief was open): admins keep the existing activity log; VIP guests are read-only (no self-confirmation); invited judges use a judge login for scoring and cannot be given a VIP login; volunteers see a student's name, institute, meal preference, pass and entries, never email or phone.
 
 ## Pipelines
 
@@ -70,7 +74,7 @@ flowchart LR
     O[Volunteer reports incident] --> P[Admin resolution]
 ```
 
-Invited or confirmed guests can decline; an admin may invite a declined guest again. Guests cannot skip confirmation or re-enter after departure. Active guest assignments must be reassigned before suspending an escort or moving their station. Room reporting affects one registration, not all of a student's events. Check-in and room arrival are idempotent; duplicate meal issuance is rejected by a row-locked transaction.
+Invited or confirmed guests can decline; an admin may invite a declined guest again. Guests cannot skip confirmation or re-enter after departure. Active guest assignments must be reassigned before suspending an escort or moving their station. Room reporting affects one registration, not all of a student's events. Gate check-in, meal and room attendance each succeed once: the student or registration row is locked, a partial unique index on `crossfire_checkins` is the backstop, and a repeat scan returns "Already checked in". Admins can undo through the legacy endpoints; the ledger keeps the undone row.
 
 ## Data and authentication
 
@@ -80,9 +84,9 @@ Invited or confirmed guests can decline; an admin may invite a declined guest ag
 - **Email & invitations** is available to admins and super admins. Configure the official sender, then separately invite reviewed students after the super admin opens the portal. Invitations create the approved account and entries, deliver a private password-setup link through the configured provider, and retain delivery status. Provider acceptance does not prove inbox delivery. The sender service is not configured yet; see [Student invitations](STUDENT_INVITATIONS.md) for setup and recovery.
 
 - Live routes: `#admin` and `#volunteer`, both rendered by `src/operations/OperationsDashboard.tsx`.
-- `crossfire_ops_snapshot()` returns the caller's permitted records. The screen refreshes after a successful write, on focus, and every 15 seconds while visible.
+- `crossfire_ops_snapshot()` returns the caller's permitted records. Gate/meal volunteers receive no student roster and use `crossfire_ops_lookup_pass(code)`, which validates the code format, the operator's duty and the pass state (unknown, replaced, suspended). The screen refreshes after a successful write, on focus, and every 15 seconds while visible.
 - `crossfire_ops_action(action, payload)` validates the active database role, duty station, assignment, and business state. RLS also restricts direct REST reads. Client role labels never authorize a write.
-- Staff sign-in uses Supabase Auth email/password plus TOTP MFA and the authoritative `users` profile. Hardcoded email privileges, local staff sessions, metadata-derived roles, and plaintext volunteer login are removed from the active path.
+- Staff sign-in uses Supabase Auth email/password (super admins add TOTP MFA) and the authoritative `users` profile. Provisioned accounts must replace their initial password: `current_user_role()` returns nothing until `crossfire_complete_password_change()` confirms Auth holds a different password hash. Only a SHA-256 digest of the initial hash is kept, and it is deleted after the change. Hardcoded email privileges, local staff sessions, metadata-derived roles, and plaintext volunteer login are removed from the active path.
 - New staff accounts are created by `provision-staff`, using a server-only service credential. The caller's JWT is verified, role checked again in SQL, and a service-written Auth app-metadata marker prevents claiming another app's users in the shared project. Creation does not send email. Passwords are never stored in volunteer rows or returned in snapshots.
 - Provisioning compensates only a newly created Auth account if profile creation definitely failed. An uncertain commit is read back before cleanup; an unverifiable commit is left for admin review.
 - Guest/crew edit forms include the last update time to reject stale edits. Staff access changes also detect stale UI edits. A transaction advisory lock coordinates guest assignments with station/access edits.

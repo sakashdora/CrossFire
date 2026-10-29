@@ -14,8 +14,11 @@ import { fileURLToPath } from 'url';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 // Migrations to apply in order - only forward migrations not yet applied remotely.
+// Each file commits separately: the VIP enum value must commit before it is used.
 const PENDING = [
   '20261029160000_direct_registration.sql',
+  '20261030090000_vip_guest_role.sql',
+  '20261030090100_accounts_registration_qr.sql',
 ];
 
 const MIGRATIONS_DIR = path.join(__dirname, '..', 'supabase', 'migrations');

@@ -49,7 +49,9 @@ Deno.serve(async (request: Request) => {
   const password = typeof input.password === 'string' ? input.password : '';
   const phone = typeof input.contact_number === 'string' ? input.contact_number.trim() : '';
   const role = String(input.role || '');
-  if (!['volunteer', 'judge', 'admin', 'super_admin'].includes(role) || (profile.role !== 'super_admin' && !['volunteer', 'judge'].includes(role))) return reply(403, { error: 'Only super admins can create admin-level accounts.' });
+  const guestId = typeof input.guest_id === 'string' ? input.guest_id : '';
+  if (!['volunteer', 'judge', 'vip_guest', 'admin', 'super_admin'].includes(role) || (profile.role !== 'super_admin' && !['volunteer', 'judge', 'vip_guest'].includes(role))) return reply(403, { error: 'Only super admins can create admin-level accounts.' });
+  if (role === 'vip_guest' && !/^[0-9a-f-]{36}$/i.test(guestId)) return reply(400, { error: 'Choose the invited guest for this VIP login.' });
   if (name.length < 2 || name.length > 100 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email.length > 254 || !/^\+?[0-9]{10,13}$/.test(phone) || password.length < 12 || password.length > 200) return reply(400, { error: 'Enter a valid name, email, 10–13 digit phone number, and password of 12–200 characters.' });
   // Check verified identity, current role, MFA and the shared rate limit before
   // creating an Auth account. The database repeats authorization at provisioning.
@@ -60,7 +62,8 @@ Deno.serve(async (request: Request) => {
   const { data: created, error: createError } = await service.auth.admin.createUser({ email, password, email_confirm: true, app_metadata: { crossfire_provisioned_by: auth.user.id }, user_metadata: { app: 'crossfire_operations', full_name: name } });
   if (createError || !created.user) return reply(409, { error: 'The account could not be created. The email may already be registered, or the password may not meet the project policy.' });
   const id = created.user.id;
-  const { error: provisionError } = await caller.rpc('crossfire_ops_provision', { p_data: { id, name, role, contact_number: phone } });
+  // The profile requires a password change at first sign-in; this password is single-use.
+  const { error: provisionError } = await caller.rpc('crossfire_ops_provision', { p_data: { id, name, role, contact_number: phone, ...(role === 'vip_guest' ? { guest_id: guestId } : {}) } });
   if (provisionError) {
     // Read back first: a transport error can occur after the transaction committed.
     const { data: persisted, error: readError } = await service.from('users').select('id,role,active').eq('id', id).maybeSingle();

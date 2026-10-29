@@ -1,32 +1,29 @@
 import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import type { UserProfile, UserRole } from '../types';
-import { supabase, isSupabaseConfigured, isEmailAuthReady } from '../lib/supabase';
+import { supabase, isSupabaseConfigured } from '../lib/supabase';
+import { PROVISIONED_ROLES } from '../lib/roles';
 
-type Result = { success: boolean; error?: string; role?: UserRole; passId?: string };
-type RegistrationInput = Omit<UserProfile, 'id' | 'role' | 'created_at'>;
+type Result = { success: boolean; error?: string; role?: UserRole };
 interface AuthContextType {
   user: UserProfile | null;
   role: UserRole;
   isLoading: boolean;
   isConfigured: boolean;
-  isStudentPortalOpen: boolean;
+  isRegistrationOpen: boolean;
   needsMfa: boolean;
+  mustChangePassword: boolean;
   refreshAuth: () => Promise<void>;
-  requestEmailCode: (email: string, createAccount?: boolean) => Promise<Result>;
-  verifyEmailCode: (email: string, code: string) => Promise<Result>;
   login: (email: string, password: string, audience?: 'staff' | 'student') => Promise<Result>;
-  signUp: (data: RegistrationInput) => Promise<Result>;
   logout: () => Promise<void>;
 }
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 const unavailable = 'The secure account service is unavailable. Please try again later.';
 const genericLoginError = 'Sign-in failed. Check your details and try again. If you have made several attempts, wait before retrying.';
-const staffRoles = ['admin', 'super_admin', 'volunteer', 'judge', 'organizer'];
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<UserProfile | null>(null);
   const [isLoading, setLoading] = useState(true);
-  const [isStudentPortalOpen, setPortalOpen] = useState(false);
+  const [isRegistrationOpen, setRegistrationOpen] = useState(false);
   const [needsMfa, setNeedsMfa] = useState(false);
   const revision = useRef(0);
 
@@ -41,7 +38,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return;
       }
       const { data, error } = await supabase.rpc('crossfire_current_profile');
-      if (error || !data?.active) throw new Error('Account access is unavailable.');
+      if (error || !data?.active) {
+        // A deactivated or removed account ends this browser session; a network error does not.
+        if (error?.code === 'P0001' || (data && !data.active)) await supabase.auth.signOut({ scope: 'local' });
+        throw new Error('Account access is unavailable.');
+      }
       const { data: assurance, error: assuranceError } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
       if (assuranceError) throw assuranceError;
       if (request === revision.current) {
@@ -67,8 +68,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const refresh = async () => {
       if (document.hidden || !alive) return;
       await loadProfile();
-      const { data, error } = await supabase.rpc('get_system_setting', { p_key: 'student_portal_open' });
-      if (alive) setPortalOpen(!error && data === true);
+      const { data, error } = await supabase.rpc('get_system_setting', { p_key: 'student_registration_open' });
+      if (alive) setRegistrationOpen(!error && data === true);
     };
     void refresh();
     const interval = window.setInterval(refresh, 30000);
@@ -76,62 +77,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return () => { alive = false; revision.current++; subscription.unsubscribe(); if (pending) clearTimeout(pending); clearInterval(interval); window.removeEventListener('focus', refresh); };
   }, [loadProfile]);
 
-  const requestEmailCode = async (email: string, createAccount = false): Promise<Result> => {
-    if (!isSupabaseConfigured) return { success: false, error: unavailable };
-    if (!isEmailAuthReady) return { success: false, error: 'Email verification is not open yet. Please use the official registration form or contact the college organisers.' };
-    const cleanEmail = email.trim().toLowerCase();
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail) || cleanEmail.length > 254) return { success: false, error: 'Enter a valid email address.' };
-    const { error } = await supabase.auth.signInWithOtp({ email: cleanEmail, options: { shouldCreateUser: createAccount, data: { app: 'crossfire' }, emailRedirectTo: window.location.origin + '/#register' } });
-    return error ? { success: false, error: 'A sign-in code could not be sent. Wait a minute and try again, or contact the organisers.' } : { success: true };
-  };
-
-  const verifyEmailCode = async (email: string, code: string): Promise<Result> => {
-    if (!isSupabaseConfigured) return { success: false, error: unavailable };
-    if (!/^\d{6,10}$/.test(code.trim())) return { success: false, error: 'Enter the code from your email.' };
-    const { error } = await supabase.auth.verifyOtp({ email: email.trim().toLowerCase(), token: code.trim(), type: 'email' });
-    if (error) return { success: false, error: 'The code is incorrect or has expired. Request a new code and try again.' };
-    const { error: profileError } = await supabase.rpc('ensure_profile');
-    if (profileError) { await supabase.auth.signOut({ scope: 'local' }); return { success: false, error: 'Your account could not be opened. Contact the organisers.' }; }
-    const { data, error: accessError } = await supabase.rpc('crossfire_current_profile');
-    if (accessError || !data?.active) return { success: false, error: 'Your account is not active. Contact the organisers.' };
-    await loadProfile();
-    return { success: true, role: data.role };
-  };
-
+  // Students sign in whether or not registration is open.
   const login = async (email: string, password: string, audience: 'staff' | 'student' = 'staff'): Promise<Result> => {
     if (!isSupabaseConfigured) return { success: false, error: unavailable };
     try {
-      if (audience === 'student') {
-        const { data: portal, error: gateError } = await supabase.rpc('get_system_setting', { p_key: 'student_portal_open' });
-        if (gateError || portal !== true) return { success: false, error: 'Student portal login is currently closed. Registration remains available.' };
-      }
       const { error } = await supabase.auth.signInWithPassword({ email: email.trim().toLowerCase(), password });
       if (error) return { success: false, error: genericLoginError };
       const { data, error: profileError } = await supabase.rpc('crossfire_current_profile');
-      if (profileError || !data?.active || (audience === 'staff' ? !staffRoles.includes(data.role) : data.role !== 'student')) {
+      if (profileError || !data?.active || (audience === 'staff' ? !PROVISIONED_ROLES.includes(data.role) : data.role !== 'student')) {
         await supabase.auth.signOut({ scope: 'local' });
-        return { success: false, error: genericLoginError };
+        return { success: false, error: profileError || !data?.active ? genericLoginError : audience === 'staff' ? 'This is a student account. Use the Student Login tab.' : 'This account is not a student account. Use the Staff, Judge & VIP tab.' };
       }
       await loadProfile();
       return { success: true, role: data.role };
     } catch { return { success: false, error: genericLoginError }; }
   };
 
-  const signUp = async (input: RegistrationInput): Promise<Result> => {
-    if (!isSupabaseConfigured) return { success: false, error: unavailable };
-    try {
-      const { data: auth, error: authError } = await supabase.auth.getUser();
-      if (authError || !auth.user?.email_confirmed_at || auth.user.email?.toLowerCase() !== input.email.trim().toLowerCase()) return { success: false, error: 'Verify this email address before submitting your registration.' };
-      const { selected_competitions, ...profile } = input;
-      const slugs = (selected_competitions || []).map(name => name.toLowerCase().replace(/[^a-z0-9]+/g, '-'));
-      const { error } = await supabase.rpc('submit_registration_form', { p_profile: profile, p_event_slugs: slugs });
-      if (error) return { success: false, error: error.message || 'Registration was not saved. Please try again.' };
-      const { data: receipt, error: receiptError } = await supabase.rpc('crossfire_registration_receipt');
-      if (receiptError || !receipt?.pass_code) return { success: false, error: 'Your submission could not be verified. Sign in and review your registration before retrying.' };
-      await loadProfile();
-      return { success: true, passId: receipt.pass_code };
-    } catch { return { success: false, error: 'Registration could not be verified. Check your connection and review your account before retrying.' }; }
-  };
   const logout = async () => {
     revision.current++;
     const { error } = await supabase.auth.signOut({ scope: 'local' });
@@ -143,7 +104,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       window.location.replace(window.location.origin + '/#landing');
     }
   };
-  return <AuthContext.Provider value={{user,role:user?.role || 'student',isLoading,isConfigured:isSupabaseConfigured,isStudentPortalOpen,needsMfa,refreshAuth:loadProfile,requestEmailCode,verifyEmailCode,login,signUp,logout}}>{children}</AuthContext.Provider>;
+  return <AuthContext.Provider value={{user,role:user?.role || 'student',isLoading,isConfigured:isSupabaseConfigured,isRegistrationOpen,needsMfa,mustChangePassword:Boolean(user?.must_change_password),refreshAuth:loadProfile,login,logout}}>{children}</AuthContext.Provider>;
 };
 export const useAuth = () => {
   const value = useContext(AuthContext);

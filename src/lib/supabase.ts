@@ -2,7 +2,6 @@ import { createClient } from '@supabase/supabase-js';
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
-export const isEmailAuthReady = import.meta.env.VITE_EMAIL_AUTH_READY === 'true';
 
 // Detect if user has provided real Supabase project credentials
 export const isSupabaseConfigured: boolean = Boolean(

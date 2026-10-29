@@ -5,11 +5,13 @@ import { Navbar } from './components/Navbar';
 import { Footer } from './components/Footer';
 import { AuthModal } from './components/AuthModal';
 import { StaffVerification } from './components/StaffVerification';
+import { PasswordChangeRequired } from './components/PasswordChangeRequired';
+import { dashboardFor, ROLE_LABELS } from './lib/roles';
 import { CinematicIntro } from './components/CinematicIntro';
 import { LandingPage } from './pages/LandingPage';
 import { EventItem } from './types';
 
-import { Home, Calendar, Trophy, User, ShieldCheck, Gavel, UserPlus, HeartHandshake, ArrowUp } from 'lucide-react';
+import { Home, Calendar, Trophy, User, ShieldCheck, Gavel, UserPlus, HeartHandshake, ArrowUp, Star } from 'lucide-react';
 
 import { ShieldAlert } from 'lucide-react';
 
@@ -22,9 +24,11 @@ const AccountSecurity = lazy(() => import('./pages/AccountSecurity').then(module
 const LeaderboardPage = lazy(() => import('./pages/LeaderboardPage').then(module => ({ default: module.LeaderboardPage })));
 const RegistrationPage = lazy(() => import('./pages/RegistrationPage').then(module => ({ default: module.RegistrationPage })));
 const StudentActivation = lazy(() => import('./pages/StudentActivation').then(module => ({ default: module.StudentActivation })));
+const VipDashboard = lazy(() => import('./pages/VipDashboard').then(module => ({ default: module.VipDashboard })));
+const VIEWS = ['landing','register','events','dashboard','judge','volunteer','admin','vip','leaderboard','account','activate'];
 
 const ProtectedRoute = ({ children, allowedRoles }: { children: React.ReactNode, allowedRoles?: string[] }) => {
-  const { user, role, isLoading, needsMfa, isStudentPortalOpen } = useAuth();
+  const { user, role, isLoading, needsMfa, mustChangePassword } = useAuth();
   
   if (isLoading) {
     return (
@@ -56,9 +60,9 @@ const ProtectedRoute = ({ children, allowedRoles }: { children: React.ReactNode,
       <div className="max-w-md mx-auto mt-20 p-8 bg-white rounded-3xl shadow-xl text-center border border-gray-100">
         <ShieldAlert className="w-16 h-16 text-red-500 mx-auto mb-4" />
         <h2 className="text-2xl font-black text-navy mb-2">Unauthorized Request</h2>
-        <p className="text-gray-600 text-sm mb-6">Your current role ({role}) does not have permission to access this area.</p>
+        <p className="text-gray-600 text-sm mb-6">Your account ({ROLE_LABELS[role]}) does not have permission to access this area.</p>
         <button 
-          onClick={() => window.location.hash = 'landing'} 
+          onClick={() => window.location.hash = dashboardFor(role)}
           className="px-6 py-2.5 bg-navy hover:bg-navy-light text-white font-bold rounded-xl transition-colors"
         >
           Return to Home
@@ -68,7 +72,7 @@ const ProtectedRoute = ({ children, allowedRoles }: { children: React.ReactNode,
   }
 
   if (needsMfa) return <StaffVerification />;
-  if (role === 'student' && !isStudentPortalOpen) return <section className="max-w-lg mx-auto my-16 bg-white p-8 rounded-2xl border text-center"><h1 className="text-2xl font-bold text-navy">Your student portal opens soon</h1><p className="text-slate-600 mt-3">Your registration remains saved. The organisers will open passes and event tools when ready.</p><button className="mt-5 text-orange-600 font-bold" onClick={()=>window.location.hash='register'}>View or update registration</button></section>;
+  if (mustChangePassword) return <PasswordChangeRequired />;
   return <>{children}</>;
 };
 
@@ -76,7 +80,7 @@ const CrossFireApp: React.FC = () => {
   const { role, user } = useAuth();
   const [currentView, setCurrentView] = useState<string>(() => {
     const hash = window.location.hash.slice(1).split('?')[0];
-    return ['landing','register','events','dashboard','judge','volunteer','admin','leaderboard','account','activate'].includes(hash) ? hash : 'landing';
+    return VIEWS.includes(hash) ? hash : 'landing';
   });
 
   useEffect(() => {
@@ -86,13 +90,18 @@ const CrossFireApp: React.FC = () => {
   useEffect(() => {
     const onHashChange = () => {
       const hash = window.location.hash.slice(1).split('?')[0];
-      setCurrentView(['landing','register','events','dashboard','judge','volunteer','admin','leaderboard','account','activate'].includes(hash) ? hash : 'landing');
+      setCurrentView(VIEWS.includes(hash) ? hash : 'landing');
     };
     window.addEventListener('hashchange', onHashChange);
     return () => window.removeEventListener('hashchange', onHashChange);
   }, []);
 
   const [authModalOpen, setAuthModalOpen] = useState(false);
+  useEffect(() => {
+    const open = () => setAuthModalOpen(true);
+    window.addEventListener('crossfire_open_login', open);
+    return () => window.removeEventListener('crossfire_open_login', open);
+  }, []);
   const [selectedLandingEvent, setSelectedLandingEvent] = useState<EventItem | null>(null);
   
   const [showBackToTop, setShowBackToTop] = useState(false);
@@ -223,7 +232,8 @@ const CrossFireApp: React.FC = () => {
         {currentView === 'leaderboard' && (
           <LeaderboardPage />
         )}
-        {currentView === 'account' && <ProtectedRoute allowedRoles={['admin','super_admin','judge','volunteer']}><AccountSecurity /></ProtectedRoute>}
+        {currentView === 'vip' && <ProtectedRoute allowedRoles={['vip_guest']}><VipDashboard /></ProtectedRoute>}
+        {currentView === 'account' && <ProtectedRoute allowedRoles={['admin','super_admin','judge','volunteer','vip_guest']}><AccountSecurity /></ProtectedRoute>}
         {currentView === 'activate' && <StudentActivation />}
         </Suspense>
       </main>
@@ -278,15 +288,10 @@ const CrossFireApp: React.FC = () => {
         <button
           onClick={() => {
             if (!user) { openAuth('login'); return; }
-            setCurrentView(
-              (role === 'admin' || role === 'super_admin') ? 'admin' : 
-              role === 'judge' ? 'judge' : 
-              role === 'volunteer' ? 'volunteer' : 
-              'dashboard'
-            );
+            setCurrentView(dashboardFor(role));
           }}
           className={`flex flex-col items-center gap-0.5 py-1 px-2 rounded-xl text-[10px] font-bold transition-colors ${
-            currentView === 'dashboard' || currentView === 'judge' || currentView === 'volunteer' || currentView === 'admin' 
+            ['dashboard','judge','volunteer','admin','vip'].includes(currentView)
               ? 'text-orange-400 bg-white/10' 
               : 'text-gray-400'
           }`}
@@ -297,16 +302,12 @@ const CrossFireApp: React.FC = () => {
             <Gavel className="w-4 h-4" />
           ) : role === 'volunteer' ? (
             <HeartHandshake className="w-4 h-4" />
+          ) : role === 'vip_guest' ? (
+            <Star className="w-4 h-4" />
           ) : (
             <User className="w-4 h-4" />
           )}
-          <span>
-            {role === 'super_admin' ? 'Super Admin' :
-             role === 'admin' ? 'Admin' : 
-             role === 'judge' ? 'Judge' : 
-             role === 'volunteer' ? 'Volunteer' : 
-             'Portal'}
-          </span>
+          <span>{user && role !== 'student' ? ROLE_LABELS[role] : 'Portal'}</span>
         </button>
       </nav>
 

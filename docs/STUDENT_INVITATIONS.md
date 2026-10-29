@@ -1,5 +1,7 @@
 # Student invitations and official college mail
 
+> **Update, 30 October 2026.** Students now create their own login when they register (`register-student`). The invitation flow below is used for (1) password reset links for students who registered with an account, and (2) creating logins for older account-less submissions. It no longer depends on the retired student-portal switch. Account-less submissions are marked *superseded* when the same email later registers with an account.
+
 The public registration form saves an unverified submission in Supabase. Both admin roles can review it. No Auth account or pass is created merely by submitting or reviewing a form.
 
 The login dialog always offers **Student Login (Email)** and **Staff & Admin**. While the student portal is closed, the student tab shows the registration notice, registration button and Google Form backup. Staff continue using email/password and authenticator verification. A submission reference or Pass ID is never a password.

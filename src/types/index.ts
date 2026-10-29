@@ -1,4 +1,5 @@
-export type UserRole = 'student' | 'judge' | 'volunteer' | 'organizer' | 'admin' | 'super_admin';
+// Matches the database user_role enum exactly.
+export type UserRole = 'super_admin' | 'admin' | 'student' | 'volunteer' | 'vip_guest' | 'judge';
 export type SchoolBoard = 'CBSE' | 'ICSE' | 'CHSE';
 export type CourseStream = '12th Science' | '12th Commerce' | '12th Arts';
 export type FoodPreference = 'Veg' | 'Non-veg';
@@ -29,7 +30,9 @@ export interface UserProfile {
   selected_competitions?: string[];
   created_at?: string;
   active?: boolean;
-  pass_code?: string;
+  pass_code?: string | null;
+  student_id?: string | null;
+  must_change_password?: boolean;
   checked_in_at?: string | null;
   food_redeemed_at?: string | null;
 }

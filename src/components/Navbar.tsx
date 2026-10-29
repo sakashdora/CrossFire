@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { dashboardFor, ROLE_LABELS } from '../lib/roles';
 import { 
   Trophy, 
   Calendar, 
@@ -311,7 +312,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                           <button
                             onClick={() => {
                               setUserDropdownOpen(false);
-                              setCurrentView((role === 'admin' || role === 'super_admin') ? 'admin' : role === 'judge' ? 'judge' : role === 'volunteer' ? 'volunteer' : 'dashboard');
+                              setCurrentView(dashboardFor(role));
                             }}
                             className="w-full text-left px-5 py-2.5 text-sm font-bold text-gray-700 hover:bg-orange-50 hover:text-orange-600 flex items-center gap-3 transition-colors"
                           >
@@ -421,7 +422,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                         </div>
                         <div>
                           <p className="text-white text-xs font-bold">{user.first_name} {user.last_name}</p>
-                          <p className="text-[10px] text-gray-400 uppercase tracking-wider">{role}</p>
+                          <p className="text-[10px] text-gray-400 uppercase tracking-wider">{ROLE_LABELS[role]}</p>
                         </div>
                       </div>
                       <button

@@ -1,9 +1,10 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { CourseStream, FoodPreference, EventItem, SchoolBoard } from '../types';
 import { escapeHtml } from '../lib/security';
-import { isEmailAuthReady } from '../lib/supabase';
-import { submitRegistrationRequest } from '../lib/registrationRequests';
+import { registerStudent, RegistrationError, type RegistrationReceipt } from '../lib/registrationRequests';
+import { dashboardFor } from '../lib/roles';
+import { StudentQRCode } from '../components/StudentQRCode';
 
 
 import { 
@@ -40,49 +41,36 @@ export const RegistrationPage: React.FC<RegistrationPageProps> = ({
   onSuccess,
   setCurrentView,
 }) => {
-  const { user, signUp, requestEmailCode, verifyEmailCode, logout } = useAuth();
+  const { user, login, logout, isRegistrationOpen, isLoading: authLoading } = useAuth();
   const { events, error: eventsError, isLoading: eventsLoading } = useEvents();
 
-  // Form Fields from Google Form - Start empty for new visitors
-  const isExistingStudent = Boolean(user && user.role === 'student' && user.email);
-  const [studentName, setStudentName] = useState(isExistingStudent && user ? `${user.first_name} ${user.last_name || ''}`.trim() : '');
-  const [contactNo, setContactNo] = useState(isExistingStudent && user ? (user.contact_number || user.mobile_number || '') : '');
-  const [emailId, setEmailId] = useState(isExistingStudent && user ? user.email : '');
-  const [whatsappNo, setWhatsappNo] = useState(isExistingStudent && user ? (user.whatsapp_number || user.mobile_number || '') : '');
+  // Form fields from the official Google Form. They start empty for new visitors.
+  const [studentName, setStudentName] = useState('');
+  const [contactNo, setContactNo] = useState('');
+  const [emailId, setEmailId] = useState('');
+  const [whatsappNo, setWhatsappNo] = useState('');
   const [sameAsContact, setSameAsContact] = useState(true);
-  const [instituteName, setInstituteName] = useState(isExistingStudent && user ? (user.institute_name || user.school_name || '') : '');
-  const [cityTown, setCityTown] = useState(isExistingStudent && user ? (user.city_town || '') : '');
-  const [courseStream, setCourseStream] = useState<CourseStream>(isExistingStudent && user ? user.course_stream : '12th Science');
-  const [board, setBoard] = useState<SchoolBoard>(isExistingStudent && user ? (user.board || 'CBSE') : 'CBSE');
-  const [foodPreference, setFoodPreference] = useState<FoodPreference>(isExistingStudent && user ? user.food_preference : 'Veg');
+  const [instituteName, setInstituteName] = useState('');
+  const [cityTown, setCityTown] = useState('');
+  const [courseStream, setCourseStream] = useState<CourseStream>('12th Science');
+  const [board, setBoard] = useState<SchoolBoard>('CBSE');
+  const [foodPreference, setFoodPreference] = useState<FoodPreference>('Veg');
   const [consent, setConsent] = useState(false);
-  const [emailCode, setEmailCode] = useState('');
-  const [codeSentTo, setCodeSentTo] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [website, setWebsite] = useState('');
-  const [registeredWithoutAccount, setRegisteredWithoutAccount] = useState(false);
+  // One request ID per set of details: resubmitting after a lost response
+  // returns the saved account instead of creating a second one.
   const intakeAttempt = useRef<{ id: string; payload: string } | null>(null);
 
   // Group A & Group B Selections: Choose any two from Group A & any two from Group B
-  const [selectedCompetitions, setSelectedCompetitions] = useState<string[]>(
-    isExistingStudent && user ? (user.selected_competitions || []) : []
-  );
+  const [selectedCompetitions, setSelectedCompetitions] = useState<string[]>([]);
 
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [errorField, setErrorField] = useState<string | undefined>();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submitted, setSubmitted] = useState(false);
-  const [confirmedStudentId, setConfirmedStudentId] = useState<string>('');
-  const draftEdited = useRef(false);
-  const hydratedUser = useRef(user?.id);
-  useEffect(()=>{
-    if (!user || user.role !== 'student' || hydratedUser.current === user.id) return;
-    hydratedUser.current = user.id;
-    if(draftEdited.current) return;
-    setStudentName(`${user.first_name} ${user.last_name || ''}`.trim());
-    setContactNo(user.contact_number || '');setEmailId(user.email);setWhatsappNo(user.whatsapp_number || '');
-    setInstituteName(user.institute_name || '');setCityTown(user.city_town || '');
-    setCourseStream(user.course_stream || '12th Science');setBoard(user.board || 'CBSE');setFoodPreference(user.food_preference || 'Veg');
-    setSelectedCompetitions(user.selected_competitions || []);
-  },[user]);
+  const [receipt, setReceipt] = useState<RegistrationReceipt | null>(null);
+  const [signedIn, setSignedIn] = useState(false);
 
   const groupAEvents = events.filter(e => e.group === 'Group A');
   const groupBEvents = events.filter(e => e.group === 'Group B');
@@ -115,118 +103,66 @@ export const RegistrationPage: React.FC<RegistrationPageProps> = ({
     }
   };
 
+  const fail = (message: string, field?: string) => { setErrorMessage(message); setErrorField(field); };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setErrorMessage(null);
+    setErrorMessage(null); setErrorField(undefined);
     if (isSubmitting) return;
-    if (!consent) { setErrorMessage('Please confirm the participation terms and parent/guardian consent.'); return; }
-    if (user && user.role !== 'student') { setErrorMessage('Sign out of your staff account before registering a student.'); return; }
+    if (user) return fail(user.role === 'student' ? 'You are already registered and signed in.' : 'Sign out of your staff account before registering a student.');
+    if (!isRegistrationOpen) return fail('Student registration is closed. Registered students can still sign in.');
+    if (!consent) return fail('Please confirm the participation terms and parent/guardian consent.', 'consent');
 
-    // Validation
-    if (!studentName.trim()) {
-      setErrorMessage('Please enter the Name of the Student.');
-      return;
-    }
-    if (!emailId.trim() || !emailId.includes('@')) {
-      setErrorMessage('Please enter a valid Email Id.');
-      return;
-    }
-    if (!contactNo.trim()) {
-      setErrorMessage('Please enter your Contact Number.');
-      return;
-    }
-    if (!instituteName.trim()) {
-      setErrorMessage('Please provide the Name of the Institute.');
-      return;
-    }
-    if (!cityTown.trim()) {
-      setErrorMessage('Please enter your City / Town.');
-      return;
-    }
-    if (selectedCompetitions.length === 0) {
-      setErrorMessage('Please select at least 1 competition to participate.');
-      return;
-    }
-    if (groupASelectedCount > 2) {
-      setErrorMessage('You can select a maximum of 2 competitions from Group A.');
-      return;
-    }
-    if (groupBSelectedCount > 2) {
-      setErrorMessage('You can select a maximum of 2 competitions from Group B.');
-      return;
-    }
+    // The server validates everything again; these checks give faster feedback.
+    if (studentName.trim().length < 2) return fail('Please enter the Name of the Student.', 'student_name');
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailId.trim())) return fail('Please enter a valid Email Id.', 'email');
+    if (contactNo.replace(/[^0-9]/g, '').length < 10 || contactNo.replace(/[^0-9]/g, '').length > 13) return fail('Enter a contact number with 10 to 13 digits.', 'contact_number');
+    if (instituteName.trim().length < 2) return fail('Please provide the Name of the Institute.', 'institute_name');
+    if (cityTown.trim().length < 2) return fail('Please enter your City / Town.', 'city_town');
+    if (selectedCompetitions.length === 0) return fail('Please select at least 1 competition to participate.');
+    if (groupASelectedCount > 2) return fail('You can select a maximum of 2 competitions from Group A.');
+    if (groupBSelectedCount > 2) return fail('You can select a maximum of 2 competitions from Group B.');
+    if (password.length < 8 || password.length > 72) return fail('Choose a password of 8 to 72 characters.', 'password');
+    if (password !== confirmPassword) return fail('The two passwords do not match.', 'password');
+    if (password.trim().toLowerCase() === emailId.trim().toLowerCase()) return fail('Do not use your email address as your password.', 'password');
 
     setIsSubmitting(true);
     try {
-      if (!isEmailAuthReady) {
-        const profile = {
-          student_name: studentName.trim(), email: emailId.trim(), contact_number: contactNo.trim(),
-          whatsapp_number: whatsappNo.trim() || contactNo.trim(), institute_name: instituteName.trim(),
-          city_town: cityTown.trim(), course_stream: courseStream, board, food_preference: foodPreference,
-          selected_competitions: [...selectedCompetitions].sort(), parent_consent: consent, terms_accepted: consent, website,
-        };
-        const payload = JSON.stringify(profile);
-        if (intakeAttempt.current?.payload !== payload) intakeAttempt.current = { id: crypto.randomUUID(), payload };
-        const reference = await submitRegistrationRequest(intakeAttempt.current.id, profile);
-        setConfirmedStudentId(reference);
-        setRegisteredWithoutAccount(true);
-        setSubmitted(true);
-        return;
-      }
-      if (user?.email.toLowerCase() !== emailId.trim().toLowerCase()) {
-        if (codeSentTo !== emailId.trim().toLowerCase()) {
-          const sent = await requestEmailCode(emailId, true);
-          if (!sent.success) setErrorMessage(sent.error || 'Unable to send verification code.');
-          else setCodeSentTo(emailId.trim().toLowerCase());
-          return;
-        }
-        const verified = await verifyEmailCode(emailId, emailCode);
-        if (!verified.success) { setErrorMessage(verified.error || 'Email verification failed.'); return; }
-      }
-      const parts = studentName.trim().split(' ');
-      const firstName = parts[0] || 'Student';
-      const lastName = parts.slice(1).join(' ') || '';
-
-      const res = await signUp({
-        email: emailId.trim(),
-        first_name: firstName,
-        last_name: lastName,
-        contact_number: contactNo.trim(),
-        whatsapp_number: whatsappNo.trim() || contactNo.trim(),
-        institute_name: instituteName.trim(),
-        city_town: cityTown.trim(),
-        course_stream: courseStream,
-        board: board,
-        food_preference: foodPreference,
-        selected_competitions: selectedCompetitions,
-        parent_consent: consent,
-        terms_accepted: consent,
-      });
-
-      if (res.success) {
-        if (!res.passId) { setErrorMessage('Your registration receipt could not be verified. Please review your account.'); return; }
-        setConfirmedStudentId(res.passId);
-        setEmailCode('');
-        setSubmitted(true);
-        confetti({
-          particleCount: 150,
-          spread: 90,
-          origin: { y: 0.6 }
-        });
-
-        const selectedEventObjects = events.filter(e => selectedCompetitions.includes(e.name));
-        onSuccess(selectedEventObjects);
-      } else {
-        setErrorMessage(res.error || 'Failed to submit registration. Please check your details.');
-      }
-    } catch (err: any) {
-      setErrorMessage(err.message || 'An error occurred during submission.');
+      const profile = {
+        student_name: studentName.trim(), email: emailId.trim(), contact_number: contactNo.trim(),
+        whatsapp_number: whatsappNo.trim() || contactNo.trim(), institute_name: instituteName.trim(),
+        city_town: cityTown.trim(), course_stream: courseStream, board, food_preference: foodPreference,
+        selected_competitions: [...selectedCompetitions].sort(), parent_consent: consent, terms_accepted: consent, website,
+      };
+      const payload = JSON.stringify(profile);
+      if (intakeAttempt.current?.payload !== payload) intakeAttempt.current = { id: crypto.randomUUID(), payload };
+      const saved = await registerStudent(intakeAttempt.current.id, profile, password);
+      setReceipt(saved);
+      confetti({ particleCount: 150, spread: 90, origin: { y: 0.6 } });
+      // Sign in with the new account so the student can open their own dashboard.
+      const session = await login(saved.email, password, 'student');
+      setSignedIn(session.success);
+      setPassword(''); setConfirmPassword('');
+      onSuccess(events.filter(event => saved.competitions.includes(event.name)));
+    } catch (err) {
+      if (err instanceof RegistrationError) fail(err.message, err.field);
+      else fail('Your registration could not be confirmed. Check your connection and submit again with the same details.');
     } finally {
       setIsSubmitting(false);
     }
   };
 
+  const resetForm = async () => {
+    if (signedIn) await logout();
+    setReceipt(null); setSignedIn(false);
+    setStudentName(''); setEmailId(''); setContactNo(''); setWhatsappNo('');
+    setSelectedCompetitions([]); setInstituteName(''); setCityTown(''); setConsent(false);
+    setPassword(''); setConfirmPassword(''); setWebsite(''); intakeAttempt.current = null;
+  };
+
   const handlePrintSlip = () => {
+    if (!receipt) return;
+    const qr = document.querySelector('#registration-qr svg')?.outerHTML || '';
     const slipWindow = window.open('', '_blank', 'width=850,height=900');
     if (!slipWindow) {
       alert('Pop-up was blocked. Please enable pop-ups to view/print the acknowledgement slip.');
@@ -273,25 +209,26 @@ export const RegistrationPage: React.FC<RegistrationPageProps> = ({
       <div class="subtitle">STATE-LEVEL TALENT HUNT • OFFICIAL REGISTRATION ACKNOWLEDGEMENT SLIP</div>
     </div>
     <div class="badge-bar">
-      <div>${registeredWithoutAccount ? 'Registration reference' : 'Registration ID'}: <span class="badge-value">${escapeHtml(confirmedStudentId)}</span></div>
+      <div>Student ID: <span class="badge-value">${escapeHtml(receipt.student_id)}</span></div>
       <div>Event Date: <span class="badge-item">Nov 15, 2026</span></div>
-      <div>Dietary Token: <span class="badge-item">${escapeHtml(foodPreference)}</span></div>
+      <div>Dietary Token: <span class="badge-item">${escapeHtml(receipt.food_preference)}</span></div>
     </div>
+    <div style="display:flex;gap:16px;align-items:center;margin-bottom:12px"><div style="width:150px;height:150px">${qr}</div><div><div class="field-label">Entry pass ID</div><div class="field-value" style="font-family:monospace;word-break:break-all">${escapeHtml(receipt.pass_id)}</div><div class="field-label" style="margin-top:8px">Registration reference</div><div class="field-value">${escapeHtml(receipt.reference_code)}</div></div></div>
     <div class="section-title">Registered Candidate Dossier</div>
     <div class="grid">
-      <div><div class="field-label">Student Name</div><div class="field-value">${escapeHtml(studentName)}</div></div>
-      <div><div class="field-label">Email Address</div><div class="field-value">${escapeHtml(emailId)}</div></div>
-      <div><div class="field-label">Contact Number</div><div class="field-value">${escapeHtml(contactNo)}</div></div>
-      <div><div class="field-label">WhatsApp Number</div><div class="field-value">${escapeHtml(whatsappNo || contactNo)}</div></div>
-      <div><div class="field-label">Institute / School</div><div class="field-value">${escapeHtml(instituteName)}</div></div>
-      <div><div class="field-label">City / Town</div><div class="field-value">${escapeHtml(cityTown)}</div></div>
-      <div><div class="field-label">Stream &amp; Board</div><div class="field-value">${escapeHtml(courseStream)} (${escapeHtml(board)})</div></div>
-      <div><div class="field-label">Competitions</div><div class="field-value">${selectedCompetitions.map(escapeHtml).join(' &amp; ')}</div></div>
+      <div><div class="field-label">Student Name</div><div class="field-value">${escapeHtml(receipt.name)}</div></div>
+      <div><div class="field-label">Email Address</div><div class="field-value">${escapeHtml(receipt.email)}</div></div>
+      <div><div class="field-label">Contact Number</div><div class="field-value">${escapeHtml(receipt.contact_number)}</div></div>
+      <div><div class="field-label">WhatsApp Number</div><div class="field-value">${escapeHtml(receipt.whatsapp_number)}</div></div>
+      <div><div class="field-label">Institute / School</div><div class="field-value">${escapeHtml(receipt.institute_name)}</div></div>
+      <div><div class="field-label">City / Town</div><div class="field-value">${escapeHtml(receipt.city_town)}</div></div>
+      <div><div class="field-label">Stream &amp; Board</div><div class="field-value">${escapeHtml(receipt.course_stream)} (${escapeHtml(receipt.board)})</div></div>
+      <div><div class="field-label">Competitions</div><div class="field-value">${receipt.competitions.map(escapeHtml).join(' &amp; ')}</div></div>
     </div>
     <div class="notice">
-      <strong>${registeredWithoutAccount ? 'Registration saved' : 'Important Instructions for Registered Participants'}:</strong><br/>
-      1. ${registeredWithoutAccount ? 'Keep this registration reference for enquiries. Entry passes are issued separately.' : 'Keep this official acknowledgement slip saved or printed for physical campus entry on Nov 15, 2026 at Srusti Campus, Chandrasekharpur, Bhubaneswar.'}<br/>
-      2. ${registeredWithoutAccount ? 'Your registration details and competition choices are saved. Portal access is provided separately.' : 'Use your registered email and a one-time code to sign in. Your pass ID is not a password. Portal tools open when enabled by the organisers.'}<br/>
+      <strong>Important Instructions for Registered Participants:</strong><br/>
+      1. Show this QR pass at the campus gate on Nov 15, 2026 at Srusti Campus, Chandrasekharpur, Bhubaneswar. Staff verify it against the live registration record.<br/>
+      2. Sign in with your registered email and the password you chose to view your pass and details. The pass ID is not a password; never share your password.<br/>
       3. For any queries or verification, contact Event Coordinators Mr. N.R. Swain (+91-7008671339) or Mr. A. Meher (+91-8455090984).
     </div>
     <div class="footer">
@@ -322,7 +259,7 @@ export const RegistrationPage: React.FC<RegistrationPageProps> = ({
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10 pb-28 lg:pb-16">
       
-      {!isEmailAuthReady && <p className="p-4 mb-5 rounded-xl border border-blue-200 bg-blue-50 text-sm text-navy">Register below to save your details and competition choices. Keep your registration reference for enquiries. Portal access and entry passes are provided separately.</p>}
+      {!receipt && isRegistrationOpen && !user && <p className="p-4 mb-5 rounded-xl border border-blue-200 bg-blue-50 text-sm text-navy">Register below to create your CrossFire student account. You will receive your entry QR pass immediately and can sign in later with your email and password.</p>}
       {/* Srusti Official Branding Header */}
       <div className="bg-white rounded-3xl border border-gray-200 shadow-xl overflow-hidden mb-6 sm:mb-8">
         <div className="bg-navy p-5 sm:p-7 md:p-8 text-white relative overflow-hidden">
@@ -410,7 +347,7 @@ export const RegistrationPage: React.FC<RegistrationPageProps> = ({
         </div>
       </div>
 
-      {submitted ? (
+      {receipt ? (
         /* CONFIRMATION SCREEN */
         <div className="p-6 sm:p-8 bg-gradient-to-br from-emerald-50 via-white to-orange-50 border-2 border-emerald-400 rounded-3xl text-sm shadow-xl animate-fadeIn space-y-6">
           <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4">
@@ -419,50 +356,40 @@ export const RegistrationPage: React.FC<RegistrationPageProps> = ({
             </div>
             <div className="text-center sm:text-left flex-1">
               <span className="px-3 py-1 bg-emerald-100 text-emerald-800 rounded-full font-black text-[10px] uppercase tracking-wider inline-block mb-1">
-                {registeredWithoutAccount ? 'Registration Confirmed' : 'Official Registration Confirmed'}
+                Registration Confirmed
               </span>
               <h2 className="font-black text-xl sm:text-2xl text-navy">
-                Registration Successfully Recorded!
+                Welcome to CrossFire 2026, {receipt.name.split(' ')[0]}!
               </h2>
               <p className="text-xs text-gray-600 mt-1">
-                Your registration has been saved in CrossFire.
+                Your student account, competition entries and entry pass are saved.
               </p>
             </div>
           </div>
 
-          {/* Registration Dossier Summary */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 bg-white p-5 rounded-2xl border border-gray-200 shadow-sm text-xs">
-            <div>
-              <span className="text-[10px] font-bold uppercase text-gray-400 block mb-0.5">{registeredWithoutAccount ? 'Registration Reference' : 'Registration Pass ID'}</span>
-              <span className="font-black text-lg text-orange-600 font-mono break-all">{confirmedStudentId}</span>
+          <div className="grid grid-cols-1 md:grid-cols-[auto_1fr] gap-5 bg-white p-5 rounded-2xl border border-gray-200 shadow-sm text-xs">
+            <div id="registration-qr" className="flex flex-col items-center gap-1">
+              <StudentQRCode studentId={receipt.pass_id} name={receipt.name} size={170} downloadable />
+              <span className="text-[10px] font-black uppercase text-navy/70 tracking-widest">Entry QR pass</span>
             </div>
-            <div>
-              <span className="text-[10px] font-bold uppercase text-gray-400 block mb-0.5">Candidate Name</span>
-              <span className="font-bold text-navy text-sm block truncate">{studentName}</span>
-              <span className="text-[11px] text-gray-500">{emailId}</span>
-            </div>
-            <div>
-              <span className="text-[10px] font-bold uppercase text-gray-400 block mb-0.5">Selected Competitions</span>
-              <span className="font-bold text-emerald-700 text-xs block">{selectedCompetitions.join(' & ')}</span>
-              <span className="text-[10px] text-gray-500 font-semibold mt-0.5 inline-block">Diet: {foodPreference}</span>
-            </div>
+            <dl className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {([['Student ID', receipt.student_id], ['Pass ID', receipt.pass_id], ['Name', receipt.name], ['Email (login)', receipt.email], ['Contact / WhatsApp', `${receipt.contact_number} / ${receipt.whatsapp_number}`], ['Institute', `${receipt.institute_name} · ${receipt.city_town}`], ['Course & board', `${receipt.course_stream} · ${receipt.board}`], ['Meal preference', receipt.food_preference], ['Competitions', receipt.competitions.join(' & ')], ['Reference', receipt.reference_code]] as const).map(([label, value]) => <div key={label} className="min-w-0">
+                <dt className="text-[10px] font-bold uppercase text-gray-400">{label}</dt>
+                <dd className={`font-bold text-navy break-words ${label === 'Pass ID' || label === 'Student ID' ? 'font-mono text-orange-600' : ''}`}>{value}</dd>
+              </div>)}
+            </dl>
           </div>
 
-          {/* Locked Portal Notice & Admin Distribution Explanation */}
           <div className="p-4 bg-amber-50 border border-amber-200 rounded-2xl text-xs text-amber-950 space-y-2">
             <div className="flex items-center gap-2 font-black text-amber-900 text-xs uppercase tracking-wide">
               <Lock className="w-4 h-4 text-amber-700 shrink-0" />
-              <span>{registeredWithoutAccount ? 'Next steps: Keep your reference' : 'Next steps: Keep your pass ID'}</span>
+              <span>Next steps</span>
             </div>
             <p className="text-[11px] leading-relaxed text-amber-900">
-              {registeredWithoutAccount ? 'Your details and competition choices are saved. No staff approval is required to record your registration. Portal access and entry passes are provided separately. Contact the organisers with your reference if you need to make a correction.' : 'Your registration is saved. Sign in using a one-time code sent to your verified email. No password is needed. Passes and event tools become available when the organisers open the student portal.'}
+              Save or print your QR pass and show it at the gate. You can sign in at any time with <strong>{receipt.email}</strong> and the password you chose to see this pass and your details again{signedIn ? ' — you are signed in now.' : '.'} The pass ID identifies your registration; it is not a password.
             </p>
-            <div className="flex flex-wrap gap-2 text-[11px] font-bold text-navy">
-              <span className="bg-white/80 px-2.5 py-1 rounded-lg border border-amber-200">📧 {emailId}</span>
-            </div>
           </div>
 
-          {/* Actions: Download Slip, Return Home, Register Another */}
           <div className="flex flex-col sm:flex-row gap-3 pt-2">
             <button
               type="button"
@@ -470,38 +397,43 @@ export const RegistrationPage: React.FC<RegistrationPageProps> = ({
               className="flex-1 py-3.5 px-4 bg-navy hover:bg-navy-dark text-white font-black text-xs rounded-xl shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer hover:scale-[1.01]"
             >
               <Printer className="w-4 h-4 text-orange-400" />
-              <span>Download / Print Acknowledgement Slip</span>
+              <span>Print Pass &amp; Acknowledgement Slip</span>
             </button>
-            <button
+            {signedIn && <button
               type="button"
-              onClick={() => setCurrentView('landing')}
-              className="py-3.5 px-5 bg-gray-100 hover:bg-gray-200 text-gray-800 font-bold text-xs rounded-xl transition-all cursor-pointer text-center"
+              onClick={() => setCurrentView('dashboard')}
+              className="py-3.5 px-5 bg-orange-500 hover:bg-orange-600 text-white font-bold text-xs rounded-xl transition-all cursor-pointer text-center"
             >
-              Return to Home
-            </button>
+              Open My Dashboard
+            </button>}
             <button
               type="button"
-              onClick={async () => {
-                if (!registeredWithoutAccount) await logout();
-                setSubmitted(false);
-                setStudentName('');
-                setEmailId('');
-                setContactNo('');
-                setWhatsappNo('');
-                setSelectedCompetitions([]);
-                setInstituteName('');setCityTown('');setConsent(false);setEmailCode('');setCodeSentTo('');
-                setConfirmedStudentId('');draftEdited.current=false;hydratedUser.current=undefined;
-                setRegisteredWithoutAccount(false);setWebsite('');intakeAttempt.current=null;
-              }}
+              onClick={() => void resetForm()}
               className="py-3.5 px-4 bg-orange-50 hover:bg-orange-100 text-orange-700 font-bold text-xs rounded-xl transition-all cursor-pointer text-center"
             >
-              Register Another Student
+              {signedIn ? 'Sign Out & Register Another' : 'Register Another Student'}
             </button>
           </div>
         </div>
+      ) : user ? (
+        <section className="p-6 sm:p-8 bg-white border border-gray-200 rounded-3xl text-center space-y-4">
+          <h2 className="font-black text-xl text-navy">{user.role === 'student' ? 'You are already registered' : 'You are signed in with a staff account'}</h2>
+          <p className="text-sm text-gray-600">{user.role === 'student' ? 'Your details, competitions and QR pass are in your dashboard.' : 'Sign out before registering a student. Staff, judge and VIP accounts are created by the organisers.'}</p>
+          <div className="flex flex-col sm:flex-row gap-3 justify-center">
+            <button type="button" onClick={() => setCurrentView(dashboardFor(user.role))} className="py-3 px-5 bg-orange-500 text-white font-bold text-sm rounded-xl">Open my dashboard</button>
+            <button type="button" onClick={() => void logout()} className="py-3 px-5 bg-gray-100 text-gray-800 font-bold text-sm rounded-xl">Sign out</button>
+          </div>
+        </section>
+      ) : !authLoading && !isRegistrationOpen ? (
+        <section className="p-6 sm:p-8 bg-white border border-amber-200 rounded-3xl text-center space-y-4">
+          <Lock className="w-8 h-8 text-orange-600 mx-auto" />
+          <h2 className="font-black text-xl text-navy">Student registration is closed</h2>
+          <p className="text-sm text-gray-600">New registrations are no longer accepted. Registered students can still sign in to view their details and QR pass.</p>
+          <button type="button" onClick={() => window.dispatchEvent(new Event('crossfire_open_login'))} className="py-3 px-5 bg-orange-500 text-white font-bold text-sm rounded-xl">Student sign in</button>
+        </section>
       ) : (
         /* Main Registration Form */
-        <form onSubmit={handleSubmit} onChange={()=>{draftEdited.current=true;}} className="space-y-6">
+        <form onSubmit={handleSubmit} noValidate className="space-y-6">
           <div className="absolute -left-[10000px]" aria-hidden="true"><label>Website<input type="text" name="website" value={website} onChange={e=>setWebsite(e.target.value)} tabIndex={-1} autoComplete="off" /></label></div>
           
           {/* Error Alerts with Google Form Emergency Link */}
@@ -575,7 +507,7 @@ export const RegistrationPage: React.FC<RegistrationPageProps> = ({
                   />
                 </div>
                 <span className="text-[10px] text-gray-400 mt-1 block">
-                  {isEmailAuthReady ? 'Use your own email address. We will verify it with a one-time code before saving your registration.' : 'Enter an email address the college team can use to contact you.'}
+                  Use your own email. It becomes your login and the college uses it for updates and password resets.
                 </span>
               </div>
 
@@ -921,10 +853,16 @@ export const RegistrationPage: React.FC<RegistrationPageProps> = ({
         {/* SUBMIT BUTTON */}
         <div className="pt-2">
           {(eventsError || eventsLoading) && <p role="status" className="p-3 mb-3 text-sm text-slate-600">{eventsError || 'Loading available competitions…'}</p>}
-          {codeSentTo === emailId.trim().toLowerCase() && codeSentTo && user?.email.toLowerCase() !== codeSentTo && <div className="p-5 mb-4 bg-blue-50 border border-blue-200 rounded-xl"><label className="block text-sm font-bold text-navy">Email verification code<input required inputMode="numeric" autoComplete="one-time-code" pattern="[0-9]{6,10}" maxLength={10} value={emailCode} onChange={e=>setEmailCode(e.target.value)} className="w-full mt-2 p-3 border rounded-xl bg-white" /></label><p className="text-xs text-slate-600 mt-2">Check the inbox for {codeSentTo}. Your details are saved only after verification.</p><button type="button" className="text-xs underline mt-3" onClick={()=>{setCodeSentTo('');setEmailCode('');}}>Request a new code</button></div>}
+          <fieldset className="p-5 mb-4 bg-white border border-gray-200 rounded-2xl grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <legend className="px-1 text-sm font-black text-navy">Create your login password *</legend>
+            <label className="block text-xs font-bold text-gray-700">Password<input type="password" autoComplete="new-password" minLength={8} maxLength={72} required value={password} onChange={e => setPassword(e.target.value)} aria-invalid={errorField === 'password'} className={`w-full mt-1.5 p-3 border rounded-xl bg-white text-sm ${errorField === 'password' ? 'border-red-400' : 'border-gray-300'}`} /></label>
+            <label className="block text-xs font-bold text-gray-700">Confirm password<input type="password" autoComplete="new-password" minLength={8} maxLength={72} required value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} aria-invalid={errorField === 'password'} className={`w-full mt-1.5 p-3 border rounded-xl bg-white text-sm ${errorField === 'password' ? 'border-red-400' : 'border-gray-300'}`} /></label>
+            <p className="sm:col-span-2 text-[11px] text-gray-500">8 to 72 characters. You will sign in with your email and this password. The organisers never see it.</p>
+          </fieldset>
+          {errorMessage && <p role="alert" className="p-3 mb-3 rounded-xl bg-red-50 border border-red-200 text-sm font-bold text-red-800">{errorMessage}</p>}
           <button
             type="submit"
-            disabled={isSubmitting || submitted || eventsLoading || Boolean(eventsError)}
+            disabled={isSubmitting || eventsLoading || Boolean(eventsError) || !isRegistrationOpen}
             className="w-full py-4 px-6 bg-orange-500 hover:bg-orange-600 text-white font-black text-base rounded-2xl shadow-xl shadow-orange-500/25 hover:shadow-orange-500/40 hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2.5 disabled:opacity-50"
           >
             {isSubmitting ? (
@@ -932,7 +870,7 @@ export const RegistrationPage: React.FC<RegistrationPageProps> = ({
             ) : (
               <>
                 <Send className="w-5 h-5" />
-                <span>{!isEmailAuthReady ? 'Register for CrossFire' : user?.email.toLowerCase() === emailId.trim().toLowerCase() ? 'Save CrossFire registration' : codeSentTo === emailId.trim().toLowerCase() && codeSentTo ? 'Verify email and register' : 'Verify email to register'}</span>
+                <span>Register &amp; Get My QR Pass</span>
                 <ArrowRight className="w-5 h-5 ml-1" />
               </>
             )}

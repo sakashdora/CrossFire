@@ -50,6 +50,6 @@ export function useOperations(client: OperationsClient) {
   };
   return { data, error, notice, loading, busy, refresh,
     act: (action: OpsAction, payload: OpsPayload, success = 'Changes saved.') => run(() => client.act(action, payload), success),
-    createStaff: (input: StaffInput) => run(() => client.createStaff(input), 'Staff account created. Share the initial password securely with the staff member.'),
+    createStaff: (input: StaffInput) => run(() => client.createStaff(input), 'Account created. Share the initial password privately; it works once and must be changed at first sign-in.'),
   };
 }

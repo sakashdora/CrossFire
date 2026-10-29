@@ -92,7 +92,7 @@ Deno.serve(async (request: Request) => {
       return reply(503, { error: 'The secure setup link could not be generated. Review the invitation status before retrying.' });
     }
     const activation = `${site}/#activate?token_hash=${encodeURIComponent(link.properties.hashed_token)}`;
-    const text = `Hello ${prepared.profile.student_name},\n\nYour CrossFire 2026 registration has been approved.\nStudent ID: ${student.student_id}\nPass ID: ${student.pass_id}\nLogin email: ${email}\n\nSet or recover your password securely:\n${activation}\n\nThis link is private and expires. If it expires, ask the college for a new setup link. Your Pass ID identifies your event pass; it is not a password. Never share this setup link.\n\nSrusti Academy of Graduate Studies\nCrossFire Administration`;
+    const text = `Hello ${prepared.profile.student_name},\n\nThis is your CrossFire 2026 student account.\nStudent ID: ${student.student_id}\nPass ID: ${student.pass_id}\nLogin email: ${email}\n\nSet or recover your password securely:\n${activation}\n\nThis link is private and expires. If you did not ask for it, ignore it: your current password keeps working unless the link is used. If it expires, ask the college for a new link. Your Pass ID identifies your event pass; it is not a password. Never share this setup link.\n\nSrusti Academy of Graduate Studies\nCrossFire Administration`;
     const { error: guardError } = await caller.rpc('crossfire_invitation_send_guard', { p_job_id: jobId });
     if (guardError) {
       await finish('failed', 'access_changed');

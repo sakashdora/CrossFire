@@ -51,5 +51,7 @@ await test('foreign browser origin is denied without provider calls',async()=>{c
 await test('MFA and rate-limit guards run before creating Auth users',async()=>{assert.equal((await run({guardError:'Insufficient permissions'})).status,403);assert.equal(calls.created.length,0);assert.equal((await run({guardError:'Staff provisioning limit reached.'})).status,429);assert.equal(calls.created.length,0);});
 await test('oversized JSON is rejected even without Content-Length',async()=>{assert.equal((await run({}, {...valid,name:'x'.repeat(9000)})).status,413);assert.equal(calls.created.length,0);});
 await test('responses cannot be cached and reflect only an allowed origin',async()=>{const r=await run();assert.equal(r.headers.get('Cache-Control'),'no-store');assert.equal(r.headers.get('Access-Control-Allow-Origin'),'https://crossfire.example.test');assert.equal(calls.guards,1);});
+await test('admin provisions a VIP guest login linked to its invitation',async()=>{const guest='10000000-0000-4000-8000-000000000001';assert.equal((await run({}, {...valid,role:'vip_guest',guest_id:guest})).status,200);assert.equal(calls.provisions[0].p_data.guest_id,guest);});
+await test('a VIP guest login requires an invitation before Auth creation',async()=>{assert.equal((await run({}, {...valid,role:'vip_guest'})).status,400);assert.equal(calls.created.length,0);});
 delete globalThis.__opsEdgeTest;
 console.log(`\n${passed} Edge handler checks passed. Supabase hosting itself was not exercised.`);

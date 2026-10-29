@@ -143,10 +143,10 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
               </div>
               <div>
                 <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black text-white tracking-tight">
-                  {user?.first_name} {user?.last_name || 'Competitor'}
+                  {user?.first_name} {user?.last_name}
                 </h1>
                 <p className="text-xs text-orange-300 font-semibold mt-0.5">
-                  Verified Candidate • Roll Pass #{passId}
+                  Registered participant • {user?.student_id || 'Student ID pending'}
                 </p>
               </div>
             </div>
@@ -157,12 +157,18 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
                 <strong className="text-white">{user?.institute_name || user?.school_name || ''}</strong>
               </span>
               <span className="bg-white/5 border border-white/10 px-2.5 py-1 rounded-lg text-white font-bold">
-                {user?.course_stream || '12th Science'}
+                {user?.course_stream || '—'}{user?.board ? ` · ${user.board}` : ''}
               </span>
               <span className="bg-white/5 border border-white/10 px-2.5 py-1 rounded-lg text-gray-300">
-                City: <strong className="text-white">{user?.city_town || 'Bhubaneswar'}</strong>
+                City: <strong className="text-white">{user?.city_town || '—'}</strong>
               </span>
             </div>
+            <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1 text-[11px] text-gray-300 text-left max-w-xl mx-auto lg:mx-0">
+              <div className="flex gap-1.5 min-w-0"><dt className="text-gray-400">Email</dt><dd className="text-white font-semibold truncate">{user?.email}</dd></div>
+              <div className="flex gap-1.5"><dt className="text-gray-400">Phone</dt><dd className="text-white font-semibold">{user?.contact_number || '—'}</dd></div>
+              <div className="flex gap-1.5"><dt className="text-gray-400">WhatsApp</dt><dd className="text-white font-semibold">{user?.whatsapp_number || '—'}</dd></div>
+              <div className="flex gap-1.5"><dt className="text-gray-400">Gate check-in</dt><dd className="text-white font-semibold">{user?.checked_in_at ? new Date(user.checked_in_at).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' }) : 'Not yet'}</dd></div>
+            </dl>
 
             {/* Badges & Action Buttons */}
             <div className="pt-2 flex flex-wrap items-center justify-center lg:justify-start gap-2 sm:gap-3">
@@ -787,7 +793,7 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
               <div className="p-4 rounded-2xl bg-gray-50 border border-gray-200 space-y-2.5 text-xs">
                 <div className="flex justify-between items-center">
                   <span className="text-gray-500 font-bold">Candidate Name:</span>
-                  <strong className="text-navy font-black text-sm">{user?.first_name} {user?.last_name || 'Competitor'}</strong>
+                  <strong className="text-navy font-black text-sm">{user?.first_name} {user?.last_name}</strong>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-gray-500 font-bold">Official Pass ID:</span>
@@ -799,7 +805,7 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-gray-500 font-bold">Class & Stream:</span>
-                  <strong className="text-navy">{user?.course_stream || '+2 2nd Year Science'}</strong>
+                  <strong className="text-navy">{user?.course_stream || '—'}</strong>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-gray-500 font-bold">Meal Voucher:</span>
@@ -837,6 +843,7 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
                     events={userRegistrations.map(r => r.event?.name || 'Event')}
                     foodPreference={user?.food_preference || 'Veg'}
                     size={160}
+                    downloadable
                   />
                   <span className="text-[10px] font-black uppercase text-navy/70 tracking-widest mt-1 block">
                     SCANNABLE GATE PASS • {passId}
@@ -901,7 +908,7 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
               <StudentQRCode
                 studentId={passId}
                 name={`${user?.first_name || 'Student'} ${user?.last_name || ''}`.trim()}
-                institute={user?.institute_name || 'SAGS'}
+                institute={user?.institute_name || ''}
                 foodPreference={user?.food_preference || 'Veg'}
                 size={130}
               />

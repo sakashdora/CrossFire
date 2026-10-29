@@ -1,14 +1,14 @@
 import { strToU8, zipSync } from 'fflate';
 
 export interface StudentRecord {
-  id: string; request_id: string | null; reference: string; pass_code: string | null;
+  id: string; request_id: string | null; reference: string; pass_code: string | null; student_id: string | null; has_login: boolean;
   name: string; email: string; contact_number: string; whatsapp_number: string;
   institute_name: string; city_town: string; course_stream: string; board: string;
   food_preference: string; competitions: string; status: string; created_at: string;
   checked_in_at: string | null; food_redeemed_at: string | null; parent_consent: boolean; terms_accepted: boolean;
 }
 export const studentColumns: [string, keyof StudentRecord][] = [
-  ['Reference','reference'],['Pass ID','pass_code'],['Name','name'],['Email','email'],['Phone','contact_number'],
+  ['Reference','reference'],['Student ID','student_id'],['Pass ID','pass_code'],['Login account','has_login'],['Name','name'],['Email','email'],['Phone','contact_number'],
   ['WhatsApp','whatsapp_number'],['Institute','institute_name'],['City','city_town'],['Course','course_stream'],
   ['Board','board'],['Meal','food_preference'],['Competitions','competitions'],['Status','status'],
   ['Registered (UTC)','created_at'],['Checked in (UTC)','checked_in_at'],['Meal issued (UTC)','food_redeemed_at'],

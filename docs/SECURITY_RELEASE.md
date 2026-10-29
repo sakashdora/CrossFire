@@ -2,6 +2,36 @@
 
 Status updated on 20 October 2026; operations security migrations were applied on 19 October and the intake/invitation migrations on 20 October. This is a release checklist and verification record, not a claim of complete security certification.
 
+## 30 October 2026: accounts, registration and QR release
+
+**Status: implemented and tested locally. Not deployed.** Nothing in this release has been applied to the Supabase project or published to Vercel.
+
+### What changes
+
+- New role `vip_guest` (`20261030090000_vip_guest_role.sql`, must commit on its own).
+- `20261030090100_accounts_registration_qr.sql`: `student_registration_open` setting (seeded `true`, preserving current behaviour); student sign-in no longer depends on `student_portal_open`; `users.must_change_password` plus `crossfire_temporary_passwords` (digest only); `guests.user_id`; `crossfire_checkins` ledger (backfilled from existing timestamps, operator unknown for old rows) and `crossfire_revoked_passes`; unique `lower(email)` on profiles (skipped with a warning if duplicates exist); legacy plaintext `volunteers.password` values set to NULL; volunteers lose REST read access to student profiles and entries; the anonymous intake RPC, `ensure_profile` and `submit_registration_form` are revoked from browsers.
+- New Edge function `register-student`; `provision-staff` accepts `vip_guest`; `invite-student` wording now also serves as a password reset.
+
+### Deployment order
+
+Order matters: the new migration revokes the intake RPC the currently published site uses.
+
+1. Capture a backup/checkpoint of the CrossFire project (`scripts/security-checkpoint.sql`).
+2. Deploy the Edge function first:
+   `supabase functions deploy register-student --project-ref foklyhoplcghivghuebp --no-verify-jwt`
+   It is a public endpoint and does its own validation; `--no-verify-jwt` is needed because anonymous callers may present a publishable key rather than a JWT. Then redeploy `provision-staff` and `invite-student`.
+3. Edge secrets (names only): `SUPABASE_URL`, `SUPABASE_ANON_KEY` and `SUPABASE_SERVICE_ROLE_KEY` are provided by the platform; set `CROSSFIRE_ALLOWED_ORIGINS` (already set), `CROSSFIRE_SITE_URL`, `CROSSFIRE_RESEND_API_KEY` (for reset links).
+4. Apply the migrations, each in its own transaction: `node scripts/apply-pending-migrations.mjs` (reads `DIRECT_URL` from the local, git-ignored `.env`). Check the output for the duplicate-email warning.
+5. Publish the frontend (Vercel). Public variables: `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY` only. Until the migration is applied, the new site shows registration as closed (fail-safe).
+6. Supabase Auth settings: confirm sign-in rate limits, a minimum password length of 8 or more, and session lifetime. Keep email confirmations on; `register-student` confirms the address itself because no student email is sent at registration.
+7. Acceptance on the live project with disposable accounts: register a test student, sign in again, close and reopen registration, provision a volunteer, judge and VIP guest (password change at first sign-in), scan the test pass at an on-duty gate, report an incident, deactivate and reactivate, then delete the test records with `crossfire_delete_student`.
+
+### Known limits
+
+- Student email ownership is not verified (no email is sent at registration), so someone could register with another person's address. The owner can recover through a reset link once the sender is configured.
+- Simultaneous scans are serialised by a row lock and a unique index; this was verified at the constraint level in PGlite, not with parallel Postgres connections.
+- Access JWTs stay valid until they expire (Supabase default 1 hour), but every data path re-checks role and active state in SQL, so a suspended or re-roled account loses access on its next request.
+
 ## Targets and deployed work
 
 - Website: `https://cross-fire-three.vercel.app`.

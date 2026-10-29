@@ -32,7 +32,7 @@ export function StudentRecords() {
     const fresh=await refresh();if(!fresh)throw new Error('Export stopped because current records could not be loaded.');
     await downloadStudents(fresh,format);setNotice(`Exported all ${fresh.length} records.`);
   });
-  const filtered=records.filter(row=>[row.name,row.email,row.reference,row.pass_code,row.contact_number,row.institute_name].some(value=>value?.toLowerCase().includes(search.trim().toLowerCase())));
+  const filtered=records.filter(row=>[row.name,row.email,row.reference,row.student_id,row.pass_code,row.contact_number,row.institute_name].some(value=>value?.toLowerCase().includes(search.trim().toLowerCase())));
   const lastPage=Math.max(0,Math.ceil(filtered.length/25)-1);const currentPage=Math.min(page,lastPage);
   const visible=filtered.slice(currentPage*25,currentPage*25+25);
   const requestIds=visible.map(row=>row.request_id).filter((id):id is string=>Boolean(id)).join(',');
@@ -47,7 +47,7 @@ export function StudentRecords() {
     return()=>{active=false;};
   },[requestIds,records]);
   return <section className="ops-panel">
-    <p className="ops-panel-note">All saved student registrations and portal accounts. Registration is recorded immediately; portal invitations and entry passes are managed separately. Exports include every record, regardless of search or page.</p>
+    <p className="ops-panel-note">Every student registration. New registrations create a login account and QR pass immediately; older submissions without a login are marked. Use “Send password reset link” for account recovery once the official sender is configured. Exports include every record, regardless of search or page.</p>
     <div className="ops-toolbar"><input aria-label="Search student records" placeholder="Name, email, phone, reference or institute" value={search} onChange={event=>{setSearch(event.target.value);setPage(0);}}/>
       <button disabled={busy} onClick={()=>void refresh()}>Refresh</button>
       <button disabled={busy||loading} onClick={()=>void exportAll('xlsx')}>Export Excel</button><button disabled={busy||loading} onClick={()=>void exportAll('pdf')}>Export PDF</button>
@@ -55,17 +55,17 @@ export function StudentRecords() {
     {error&&<p role="alert" className="ops-message error">{error}</p>}{notice&&<p role="status" className="ops-message success">{notice}</p>}
     {loading?<p role="status">Loading students…</p>:<p>{records.length} total records · {filtered.length} match</p>}
     <div className="ops-intake-list">{visible.map(row=><article className="ops-intake-card" key={row.id}>
-      <header><div><code>{row.reference}</code><h2>{row.name}</h2></div><span className="ops-badge">{row.status}</span></header>
+      <header><div><code>{row.student_id || row.reference}</code><h2>{row.name}</h2></div><span className="ops-badge">{row.status}</span>{row.has_login ? <span className="ops-badge good">Login active</span> : <span className="ops-badge warn">No login</span>}</header>
       <dl><div><dt>Email</dt><dd>{row.email}</dd></div><div><dt>Phone / WhatsApp</dt><dd>{row.contact_number} / {row.whatsapp_number}</dd></div>
         <div><dt>Institute / city</dt><dd>{row.institute_name} · {row.city_town}</dd></div><div><dt>Course / board / meal</dt><dd>{row.course_stream} · {row.board} · {row.food_preference}</dd></div>
-        <div><dt>Competitions</dt><dd>{row.competitions}</dd></div><div><dt>Pass</dt><dd>{row.pass_code||'Not issued'}</dd></div></dl>
+        <div><dt>Competitions</dt><dd>{row.competitions}</dd></div><div><dt>Pass</dt><dd>{row.pass_code||'Not issued'}</dd></div><div><dt>Gate check-in</dt><dd>{row.checked_in_at?new Date(row.checked_in_at).toLocaleString('en-IN',{timeZone:'Asia/Kolkata'}):'Not yet'}</dd></div></dl>
       {row.request_id&&invitations[row.request_id]&&<p>Portal invitation: {invitations[row.request_id].status}{invitations[row.request_id].failure_code&&` · ${invitations[row.request_id].failure_code}`}</p>}
       {row.request_id&&row.status==='registered'&&<button disabled={busy||!invitations[row.request_id]||['preparing','ready','sending','uncertain'].includes(invitations[row.request_id].status)} onClick={()=>void run(async()=>{
         const result=await invitationRequest({request_id:row.request_id,resend:invitations[row.request_id!]?.status==='accepted'});
         await refresh();
         if(!result?.success||result.status!=='accepted')throw new Error('Invitation outcome could not be confirmed. Check delivery status before retrying.');
         setNotice('Portal invitation accepted by the email provider.');
-      })}>{invitations[row.request_id]?.status==='accepted'?'Send new setup link':'Send portal invitation'}</button>}
+      })}>{row.has_login||invitations[row.request_id]?.status==='accepted'?'Send password reset link':'Send portal invitation'}</button>}
     </article>)}</div>
     {!loading&&!filtered.length&&<p>No student records match this view.</p>}
     <div className="ops-toolbar"><span>Page {currentPage+1} of {lastPage+1}</span><button disabled={currentPage===0} onClick={()=>setPage(currentPage-1)}>Previous</button><button disabled={currentPage===lastPage} onClick={()=>setPage(currentPage+1)}>Next</button></div>
