@@ -30,9 +30,9 @@ Deno.serve(async (request: Request) => {
     const caller = createClient(url, anon, { global: { headers: { Authorization: authorization } }, auth: { persistSession: false, autoRefreshToken: false } });
     const { data: auth, error: authError } = await caller.auth.getUser();
     if (authError || !auth.user) return reply(401, { error: 'Sign in again.' });
-    // This RPC requires an active, verified admin or super admin at AAL2.
+    // This RPC requires an active admin, or a super admin at AAL2.
     const { error: accessError } = await caller.rpc('crossfire_mail_configuration');
-    if (accessError) return reply(403, { error: 'An active admin account and authenticator verification are required.' });
+    if (accessError) return reply(403, { error: 'An active admin account is required. Super admins must also verify their authenticator.' });
     const reader = request.body?.getReader();
     if (!reader) return reply(400, { error: 'Invalid request.' });
     const chunks: Uint8Array[] = []; let length = 0;

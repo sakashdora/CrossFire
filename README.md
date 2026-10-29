@@ -9,7 +9,9 @@ The reviewed operations/security/intake/invitation database updates and `provisi
 ## Workflows
 
 - Students submit contact details and competition choices without email verification. PostgreSQL saves a private pending request before returning a submission reference. Admins and super admins review it under **Registration review**. Reviewing alone creates no account or pass. A separate approved invitation creates account/entries and sends a password-setup link once the sender is configured and the portal opens. See [Student invitations](docs/STUDENT_INVITATIONS.md). Team formation remains deferred.
-- All staff require Supabase Auth and authenticator verification. Database roles, active state and duty assignments govern every operation.
+- All staff sign in with Supabase Auth email and password. Only super admins also verify an authenticator (AAL2). Database roles, active state and duty assignments govern every operation.
+- Only a super admin can permanently delete a student (`crossfire_delete_student`, confirmed by pass ID) or an unprovisioned intake request (`crossfire_delete_registration_request`). Both are audited.
+- Staff screens poll `crossfire_live_revision()` every 3 seconds and reload the operations snapshot and registration review only when data changed.
 - Super admins manage elevated staff access and system settings. Admins also manage volunteer/judge access, events, student desks and invited VIP/judge guests.
 - Volunteers check in participants, issue one meal, mark room attendance or assist guests within their assigned on-duty station.
 - Judges see assigned candidates, submit validated rubric scores and lock their own evaluation. Public standings include completed events only.

@@ -30,3 +30,18 @@ export const liveOperationsClient: OperationsClient = {
     if (!data?.success) throw new Error(data?.error || 'The staff account was not created.');
   },
 };
+
+// Super admin only (enforced by the database). Permanently deletes the student,
+// their event entries, scores, intake request and login. The pass ID confirms the target.
+export async function deleteStudent(studentId: string, passId: string): Promise<{ login_removed: boolean }> {
+  const { data, error } = await supabase.rpc('crossfire_delete_student', { p_user_id: studentId, p_confirm_pass: passId });
+  if (error) throw new Error(message(error));
+  window.dispatchEvent(new Event('crossfire_events_changed'));
+  return { login_removed: Boolean(data?.login_removed) };
+}
+
+// Super admin only. Deletes an intake submission that has no student account yet.
+export async function deleteRegistrationRequest(requestId: string): Promise<void> {
+  const { error } = await supabase.rpc('crossfire_delete_registration_request', { p_id: requestId });
+  if (error) throw new Error(message(error));
+}

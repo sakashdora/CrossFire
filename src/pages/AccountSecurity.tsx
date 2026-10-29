@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import { supabase } from '../lib/supabase';
+import { useAuth } from '../context/AuthContext';
 
 export function AccountSecurity() {
+  const { role } = useAuth();
   const [password,setPassword]=useState('');
   const [confirm,setConfirm]=useState('');
   const [busy,setBusy]=useState(false);
@@ -13,7 +15,8 @@ export function AccountSecurity() {
     setBusy(true);
     try{
       const {data,error}=await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
-      if(error||data?.currentLevel!=='aal2')throw new Error('Verify your authenticator before changing your password.');
+      // Only super admins use an authenticator; other staff change passwords with their signed-in session.
+      if(error||(role==='super_admin'&&data?.currentLevel!=='aal2'))throw new Error('Verify your authenticator before changing your password.');
       const {error:saveError}=await supabase.auth.updateUser({password});
       if(saveError)throw new Error('Your password was not changed. Sign in again and retry with a new password of at least 12 characters.');
       setPassword('');setConfirm('');

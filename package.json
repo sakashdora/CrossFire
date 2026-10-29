@@ -11,7 +11,8 @@
     "build": "tsc && vite build",
     "preview": "vite preview",
     "test:operations": "node scripts/operations.test.mjs && node scripts/operations-edge.test.mjs",
-    "test:security": "node scripts/containment.test.mjs && node scripts/production-security.test.mjs && node scripts/operations.test.mjs && node scripts/operations-edge.test.mjs && node scripts/build-security.test.mjs && node scripts/registration-intake.test.mjs && node scripts/student-invitations.test.mjs && node scripts/student-invitations-edge.test.mjs",
+    "test:security": "node scripts/containment.test.mjs && node scripts/production-security.test.mjs && node scripts/operations.test.mjs && node scripts/operations-edge.test.mjs && node scripts/build-security.test.mjs && node scripts/registration-intake.test.mjs && node scripts/student-invitations.test.mjs && node scripts/student-invitations-edge.test.mjs && node scripts/live-ops-access.test.mjs",
+    "test:live": "node scripts/live-ops-access.test.mjs",
     "test:invitations": "node scripts/student-invitations.test.mjs && node scripts/student-invitations-edge.test.mjs",
     "test:intake": "node scripts/registration-intake.test.mjs",
     "security:bundle": "node scripts/check-production-bundle.mjs"

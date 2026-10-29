@@ -93,12 +93,15 @@ export function OperationsDashboard({ client = liveOperationsClient, previewCont
   ], submit: values => ops.createStaff(values as unknown as StaffInput), label: 'Create account' });
   const editAccess = (person: OpsStaff) => setEditor({ title: 'Manage staff access', description: `Changes apply to ${person.name}. Suspended accounts cannot use operational actions.`, values: { id: person.id, role: person.role, active: person.active, expected_updated_at: person.updated_at }, fields: [select('role', 'Role', data.actor.role === 'super_admin' ? ['volunteer', 'judge', 'admin', 'super_admin'] : ['volunteer', 'judge']), input('active', 'Account active', false, 'checkbox')], submit: values => action('staff.access', values, 'Staff access updated.') });
   const reportIncident = () => setEditor({ title: 'Report an incident', values: { priority: 'Normal', room: ownDuty ? STATIONS[ownDuty.station] : '' }, fields: [input('room', 'Location / room', true), select('priority', 'Priority', ['Normal', 'High']), { ...input('issue', 'What happened?', true), type: 'textarea', minLength: 3 }], label: 'Submit report', submit: values => action('incident.report', values, 'Incident reported. An admin can now review it.') });
-  const scanPass = (raw: string) => {
+  const scanPass = async (raw: string) => {
     setScanner(false); setScanError('');
     try {
-      const code = parsePass(raw);
-      const guest = data.guests.find(g => g.pass_code.toUpperCase() === code.toUpperCase());
-      const student = data.students.find(s => s.pass_id.toUpperCase() === code.toUpperCase());
+      const code = parsePass(raw).toUpperCase();
+      const find = (snapshot: typeof data) => ({ guest: snapshot.guests.find(g => g.pass_code.toUpperCase() === code), student: snapshot.students.find(s => s.pass_id.toUpperCase() === code) });
+      let found = find(data);
+      // A pass issued after the last load: fetch the latest snapshot once before failing.
+      if (!found.guest && !found.student) { const fresh = await ops.refresh(); if (fresh) found = find(fresh); }
+      const { guest, student } = found;
       if (!guest && !student) throw new Error('No matching pass is available for your current duty. Refresh or contact an admin.');
       setSection(guest ? 'guests' : 'students'); setFilter('all'); setSearch(guest?.pass_code || student!.pass_id);
     } catch (error) { setScanError(error instanceof Error ? error.message : 'Unable to read this pass.'); }

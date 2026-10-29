@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react';
+import { useLiveRevision } from './live';
 import { ClipboardList, RefreshCw, Search } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import type { RegistrationRequestInput } from '../lib/registrationRequests';
@@ -40,9 +41,10 @@ export function RegistrationReview() {
   const saving = useRef(false);
   const revision = useRef(0);
 
-  const refresh = useCallback(async () => {
+  // Quiet refreshes come from live updates: keep the current page visible while loading.
+  const refresh = useCallback(async (quiet = false) => {
     const version = ++revision.current;
-    setLoading(true); setError('');
+    if (!quiet) { setLoading(true); setError(''); }
     try {
       const result = await supabase.rpc('crossfire_list_registration_requests', { p_status: status, p_search: query, p_page: page });
       if (result.error) throw result.error;
@@ -52,10 +54,11 @@ export function RegistrationReview() {
       if (version === revision.current) { setData(result.data as ReviewPage); setInvitations(delivery.data); }
       return true;
     } catch {
-      if (version === revision.current) { setData(null); setError('Unable to load registration requests. Check your connection, staff access and authenticator session, then retry.'); }
+      if (version === revision.current && !quiet) { setData(null); setError('Unable to load registration requests. Check your connection, staff access and authenticator session, then retry.'); }
       return false;
     } finally { if (version === revision.current) setLoading(false); }
   }, [status, query, page]);
+  useLiveRevision(() => { if (!saving.current) void refresh(true); });
 
   useEffect(() => {
     setData(null); setEditing(null); void refresh();

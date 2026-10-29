@@ -46,7 +46,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (assuranceError) throw assuranceError;
       if (request === revision.current) {
         setUser(data as UserProfile);
-        setNeedsMfa(staffRoles.includes(data.role) && assurance?.currentLevel !== 'aal2');
+        // Only super admins use an authenticator; the database enforces the same rule.
+        setNeedsMfa(data.role === 'super_admin' && assurance?.currentLevel !== 'aal2');
       }
     } catch {
       if (request === revision.current) { setUser(null); setNeedsMfa(false); }

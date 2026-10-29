@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { OperationsClient, OpsAction, OpsPayload, OpsSnapshot, StaffInput } from './model';
+import { useLiveRevision } from './live';
 
 export function useOperations(client: OperationsClient) {
   const [data, setData] = useState<OpsSnapshot | null>(null);
@@ -10,15 +11,16 @@ export function useOperations(client: OperationsClient) {
   const sequence = useRef(0);
   const pending = useRef(false);
   const mounted = useRef(true);
-  const refresh = useCallback(async () => {
+  // Resolves to the fresh snapshot, or null when it could not be loaded.
+  const refresh = useCallback(async (): Promise<OpsSnapshot | null> => {
     const id = ++sequence.current;
     try {
       const snapshot = await client.load();
       if (mounted.current && id === sequence.current) { setData(snapshot); setError(''); }
-      return true;
+      return snapshot;
     } catch (cause) {
       if (mounted.current && id === sequence.current) setError(cause instanceof Error ? cause.message : 'Unable to load operations.');
-      return false;
+      return null;
     } finally { if (mounted.current && id === sequence.current) setLoading(false); }
   }, [client]);
   useEffect(() => {
@@ -26,11 +28,13 @@ export function useOperations(client: OperationsClient) {
     setData(null); setLoading(true); setNotice('');
     void refresh();
     const update = () => { if (!document.hidden && !pending.current) void refresh(); };
-    const interval = window.setInterval(update, 15000);
+    // Live revision changes trigger reloads; this slower timer is the fallback.
+    const interval = window.setInterval(update, 60000);
     window.addEventListener('focus', update);
     document.addEventListener('visibilitychange', update);
     return () => { mounted.current = false; sequence.current++; clearInterval(interval); window.removeEventListener('focus', update); document.removeEventListener('visibilitychange', update); };
   }, [refresh]);
+  useLiveRevision(() => { if (!pending.current) void refresh(); });
   const run = async (task: () => Promise<void>, success: string) => {
     if (pending.current) return false;
     pending.current = true; setBusy(true); setNotice(''); setError('');
