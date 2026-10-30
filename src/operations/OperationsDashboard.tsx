@@ -64,6 +64,16 @@ export function OperationsDashboard({ client = liveOperationsClient, previewCont
   useEffect(() => {
     if (ops.data?.actor) setSection(isManager(ops.data.actor.role) ? 'requests' : 'overview');
   }, [ops.data?.actor.id, ops.data?.actor.role]);
+  useEffect(() => {
+    // The shared header can return to records without remounting the admin route.
+    const openRecords = () => {
+      if (ops.data?.actor && isManager(ops.data.actor.role)) {
+        setSection('requests'); setSearch(''); setFilter('all'); setScanError('');
+      }
+    };
+    window.addEventListener('crossfire:open-student-records', openRecords);
+    return () => window.removeEventListener('crossfire:open-student-records', openRecords);
+  }, [ops.data?.actor.role]);
   // Re-read the scanned pass after each change so its status never goes stale.
   const scannedPass = scanned?.pass_id;
   useEffect(() => {
@@ -126,12 +136,12 @@ export function OperationsDashboard({ client = liveOperationsClient, previewCont
   };
   const searchBox = <label className="ops-search"><Search size={17} /><input aria-label="Search this list" placeholder="Search name, pass, or details…" value={search} onChange={e => setSearch(e.target.value)} /><span>{section === 'guests' ? guests.length : section === 'students' ? students.length : ''}</span></label>;
   const guestLabels: Record<string, string> = { Confirmed: 'Confirm invitation', Arrived: 'Mark arrived', Departed: 'Mark departed', Declined: 'Decline invitation', Invited: 'Invite again' };
-  return <div className="ops-root">
+  return <div className={`ops-root ${manager ? 'ops-manager' : ''}`}>
     {previewControls}
     <div className="ops-shell">
       <aside className="ops-sidebar"><a className="ops-brand" href="#landing"><span>CF<span> / </span>26</span><small>OPERATIONS DESK</small></a><div className="ops-sidebar-label">WORKSPACE</div><nav aria-label="Operations navigation">{nav.map(([key, label, Icon]) => <button key={key} aria-current={section === key ? 'page' : undefined} onClick={() => navigate(key)}><Icon size={18} /><span>{!manager && key === 'crew' ? 'My duty' : label}</span>{key === 'incidents' && data.incidents.some(i => i.status === 'Open') && <b>{data.incidents.filter(i => i.status === 'Open').length}</b>}</button>)}</nav><div className="ops-sidebar-bottom"><div className="ops-avatar">{data.actor.name.slice(0, 1)}</div><div><strong>{data.actor.name}</strong><small>{data.actor.role.split('_').join(' ')}</small></div></div></aside>
-      <div className="ops-workspace"><header className="ops-topbar"><div><span className="ops-dot" /> CROSS<span className="ops-orange">FIRE</span> <span className="ops-divider">/</span> <span>{manager ? 'Event operations' : 'Volunteer desk'}</span></div><div><span className="ops-updated">Updated {formatTime(data.fetched_at)}</span><button className="ops-icon" onClick={() => void ops.refresh()} disabled={busy} aria-label="Refresh operations"><RefreshCw size={18} /></button></div></header>
-      <div className="ops-content"><div className="ops-heading"><div><p className="ops-eyebrow">15 NOVEMBER 2026 <span>·</span> SRUSTI CAMPUS</p><h1>{titles[section][0]}</h1><p>{titles[section][1]}</p></div><Badge good>{data.actor.role.split('_').join(' ')}</Badge></div>
+      <div className="ops-workspace"><header className="ops-topbar"><div><span className="ops-dot" /> CROSS<span className="ops-orange">FIRE</span> <span className="ops-divider">/</span> <span>{manager ? sections.find(item => item[0] === section)?.[1] : 'Volunteer desk'}</span></div>{section !== 'requests' && <div><span className="ops-updated">Updated {formatTime(data.fetched_at)}</span><button className="ops-icon" onClick={() => void ops.refresh()} disabled={busy} aria-label="Refresh operations"><RefreshCw size={18} /></button></div>}</header>
+      <div className="ops-content">{section !== 'requests' && <div className="ops-heading"><div><p className="ops-eyebrow">15 NOVEMBER 2026 <span>·</span> SRUSTI CAMPUS</p><h1>{titles[section][0]}</h1><p>{titles[section][1]}</p></div><Badge good>{data.actor.role.split('_').join(' ')}</Badge></div>}
         {ops.error && <div role="alert" className="ops-message error">{ops.error}<button onClick={() => void ops.refresh()}>Refresh</button></div>}{ops.notice && <div role="status" className="ops-message success"><Check size={18} />{ops.notice}</div>}{scanError && <div role="alert" className="ops-message error">{scanError}</div>}
         {section === 'overview' && <>
           {manager && <section className="ops-panel ops-duty"><div><h2>Student records</h2><p>Each registration creates a student login and QR pass immediately. Registration is {data.settings.student_registration_open ? 'open' : 'closed'}. Contact details are self-reported and not verified.</p></div><button className="primary" onClick={()=>navigate('requests')}>Open student records</button></section>}

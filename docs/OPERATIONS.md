@@ -115,3 +115,11 @@ See [SECURITY_RELEASE.md](SECURITY_RELEASE.md) for deployment status, release co
 Staff password updates are available under **Account security** after authenticator verification. The creation password is not claimed to expire automatically. Lost authenticators require administrator identity verification and recovery through Supabase; the application cannot bypass MFA.
 
 An invited judge's hospitality record and scoring login are separate records. Create the staff account and assign events when a guest also needs scoring access. Guest archive preserves history; a restore interface, shift-time enforcement and integrations for messages remain future work. Team-name/member fields are still deferred under `FUTURE_CHANGES.md`.
+
+## Registration dashboard (reference design)
+
+Admin and super admin Student records use the navy navigation and blue registration workspace. The five cards show all submissions, active student accounts, submissions without a login, QR passes created (including suspended accounts), and submissions today in Asia/Kolkata. Suspended passes are labelled in the table and rejected by the scanner.
+
+Search combines with registration status, pass issuance, competition and course/board filters. The table supports 10/25/50 rows per page, stable sorting, and selection across pages and filters. Export Excel/PDF exports every matching row, not only the visible page. Bulk actions export selected IDs from a fresh authorized server response; an unavailable selected record or a failed refresh stops the export. Clear selection removes selections on every page. Full details include consent, dates, meal status and the downloadable QR pass. Older submissions remain clearly labelled without login and use the existing explicit invitation flow.
+
+Verification for this redesign: `npm run test:student-records` covers combined filters, account status, IST midnight boundaries, and spreadsheet/PDF contents. Browser QA uses local fixtures outside the production build to exercise desktop/mobile layouts, selection across pages, filtered exports, details/QR and interrupted refreshes. Production permissions and registration/QR state transitions are covered separately by `npm run test:accounts`.

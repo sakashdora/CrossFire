@@ -185,3 +185,12 @@
     margin-top: 6px;
   }
 }
+/* Keep account and notification actions connected in the operations header. */
+.cf-management-header{background:#0e1827!important;border-bottom:1px solid #1d2b40!important;box-shadow:none!important}
+.cf-management-header>div{max-width:none;padding-left:30px;padding-right:30px}
+.cf-management-header .cf-navbar-register,.cf-management-header .cf-navbar-brand .animate-pulse{display:none}
+.cf-management-header .cf-desktop-nav>div{border:0;background:transparent;backdrop-filter:none}
+.cf-management-header .cf-navbar-brand .rounded-xl{border-radius:50%;width:46px;height:46px}
+@media(max-width:600px){.cf-management-header>div{padding-left:14px;padding-right:14px}}
+.cf-management-header .cf-navbar-brand{font-family:Inter,Arial,sans-serif}.cf-management-header .cf-navbar-brand .text-xl{font-size:20px;letter-spacing:0;font-weight:750}.cf-management-header .cf-navbar-brand .rounded-full:not(.w-8){background:#1675f6;border-color:#1675f6;color:#071a32;box-shadow:none;font-size:14px;line-height:1;padding:3px 6px}
+.cf-management-header .cf-desktop-nav button[aria-current=page]>div{background:#1c2c43;border-color:transparent;box-shadow:none}.cf-management-header .cf-desktop-nav button[aria-current=page]>span,.cf-management-header .cf-desktop-nav button[aria-current=page] svg{color:white}

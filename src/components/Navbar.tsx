@@ -91,17 +91,19 @@ export const Navbar: React.FC<NavbarProps> = ({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  const management = currentView === 'admin' && (role === 'admin' || role === 'super_admin');
   const navItems = [
     { id: 'landing', label: 'Overview', icon: null },
     { id: 'events', label: 'Events', icon: Calendar },
-    { id: 'leaderboard', label: 'Leaderboard', icon: Trophy }
+    { id: 'leaderboard', label: 'Leaderboard', icon: Trophy },
+    ...(management ? [{ id: 'admin', label: 'Registrations', icon: LayoutDashboard }] : [])
   ];
 
   return (
     <>
       {/* Fixed Full-Width Modern Glass Navbar (Zero layout shifting, zero jitter) */}
       <header 
-        className={`fixed top-0 left-0 right-0 z-50 w-full transition-all duration-300 ${
+        className={`${management ? 'cf-management-header' : ''} fixed top-0 left-0 right-0 z-50 w-full transition-all duration-300 ${
           scrolled || currentView !== 'landing'
             ? 'bg-[#000d1a]/90 backdrop-blur-xl border-b border-cyan-500/20 shadow-[0_4px_30px_rgba(0,0,0,0.6)]' 
             : 'bg-[#000d1a]/40 backdrop-blur-md border-b border-white/10'
@@ -156,7 +158,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                     <button
                       key={item.id}
                       aria-current={isActive ? 'page' : undefined}
-                      onClick={() => setCurrentView(item.id)}
+                      onClick={() => { setCurrentView(item.id); if (item.id === 'admin') window.dispatchEvent(new Event('crossfire:open-student-records')); }}
                       className="relative px-5 py-2 text-sm font-semibold rounded-full group outline-none transition-colors"
                     >
                       {isActive && (
@@ -289,7 +291,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                     <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-orange-500 to-amber-400 flex items-center justify-center text-white font-black shadow-inner">
                       {user.first_name?.[0] || 'U'}
                     </div>
-                    <span className="hidden sm:block tracking-wide">{user.first_name}</span>
+                    <span className="hidden sm:block tracking-wide text-left">{user.first_name}{management && <small className="block text-xs font-normal text-slate-300">{ROLE_LABELS[role]}</small>}</span>
                     <ChevronDown className="w-4 h-4 text-gray-400" />
                   </button>
 
@@ -384,6 +386,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                       key={item.id}
                       onClick={() => {
                         setCurrentView(item.id);
+                        if (item.id === 'admin') window.dispatchEvent(new Event('crossfire:open-student-records'));
                         setMobileMenuOpen(false);
                       }}
                       className={`flex items-center gap-3 px-4 py-3 rounded-xl font-bold text-sm transition-all text-left ${

@@ -9,7 +9,7 @@ for(const name of ['studentRecordsModel','studentExports']) {
   const code=ts.transpileModule(source,{compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.ESNext}}).outputText.replaceAll("'./studentRecordsModel'","'./studentRecordsModel.mjs'");
   await writeFile(new URL(name+'.mjs',output),code);
 }
-const {selectStudents,accountLabel,formatStudentDate}=await import(new URL('studentRecordsModel.mjs',output));
+const {selectStudents,accountLabel,formatStudentDate,registrationLabel,studentDay}=await import(new URL('studentRecordsModel.mjs',output));
 const {studentColumns,studentWorkbook,studentPdf}=await import(new URL('studentExports.mjs',output));
 const base={id:'account:1',request_id:null,reference:'CFREQ-1234',student_id:'CFS-101',pass_code:'CF26-'+'A'.repeat(32),has_login:true,name:'Aarav Shah',email:'aarav@example.test',contact_number:'0987654321',whatsapp_number:'0987654321',institute_name:'Srusti Higher Secondary School',city_town:'Bhubaneswar',course_stream:'12th Science',board:'CBSE',food_preference:'Veg',competitions:'Quiz, Debate',status:'registered',created_at:'2026-10-29T17:00:00Z',checked_in_at:null,food_redeemed_at:null,parent_consent:true,terms_accepted:true};
 const records=Array.from({length:28},(_,index)=>({...base,id:`account:${index+1}`,student_id:`CFS-${101+index}`,name:index===0?base.name:`Student ${String(index+1).padStart(2,'0')}`,email:`student${index+1}@example.test`,created_at:new Date(Date.parse(base.created_at)+index*60000).toISOString(),status:index===2?'inactive':index===3?'declined':'registered',has_login:index!==3,checked_in_at:index===1?base.created_at:null,pass_code:index===3?null:base.pass_code}));
@@ -24,6 +24,19 @@ assert.equal(accountLabel(records[2]),'Login suspended');
 assert.equal(accountLabel(records[3]),'No login yet');
 assert.match(formatStudentDate(base.created_at),/22:30/);
 assert.equal(formatStudentDate('bad date'),'—');
+assert.equal(selectStudents(records,'','all','newest',{pass:'not_issued'}).length,1);
+assert.equal(selectStudents(records,'','registered','newest',{competition:'Quiz',course:'CBSE',pass:'issued'}).length,26);
+assert.equal(selectStudents(records,'','all','newest',{competition:'Qui'}).length,0,'Competition must match exactly');
+assert.equal(selectStudents(records,'','all','newest',{course:'Unknown'}).length,0);
+const legacy={...base,has_login:false,pass_code:null};
+assert.equal(selectStudents([legacy],'','registered','newest').length,0,'Complete accounts exclude legacy submissions');
+assert.equal(registrationLabel(legacy),'No login');
+assert.equal(registrationLabel(records[2]),'Suspended');
+assert.equal(registrationLabel(records[3]),'Declined');
+assert.equal(studentDay('2026-10-29T18:29:59Z'),'2026-10-29');
+assert.equal(studentDay('2026-10-29T18:30:00Z'),'2026-10-30');
+assert.equal(studentDay('invalid'),'');
+console.log('PASS combined directory filters, account labels and IST midnight boundary');
 console.log('PASS search, filters, stable ordering, account states and IST dates');
 const hostile={...base,name:'=HYPERLINK("bad") & <student>',email:'"quoted"@example.test'};
 const bytes=studentWorkbook([...records,hostile]);
