@@ -6,6 +6,16 @@ Implemented for super admins, admins, and volunteers. Guest records are restrict
 
 Desktop uses a persistent operations sidebar and a workspace. Mobile uses a horizontal section navigator, stacked guest/duty cards, and stacked participant records. Public landing, event criteria, and student registration screens remain separate.
 
+### Registered student directory
+
+Admins and super admins open on **Student records**. This directory includes both student accounts and older submissions that do not yet have a login; the **Student desk** remains the operational check-in view for accounts with passes. Suspended accounts are labelled separately from available logins.
+
+Search by name, student ID, reference, contact, institute, city or competition. Filter by registration/account/check-in state, sort by name or registration time, and open **View details** for all submitted fields, consent, attendance timestamps and the downloadable QR pass. Times are displayed in IST. The directory refreshes on live revisions, window focus and a 60-second fallback without clearing filters or the current page.
+
+Excel and PDF exports can include **all records** or **matching records**, across every page. Export first reloads the data and stops if that read fails. Excel includes all 20 fields, styled headers, frozen headings, full-width filters and text-safe phone numbers. PDF uses a readable A4 registration sheet per student. Export modules load only when needed. Older submissions need a portal invitation before they have a login/pass; sending it remains an explicit admin action and requires the configured sender.
+
+Verification: `npm run test:student-records`, `npm run test:accounts`, `npm run build`, and `npm run security:bundle`. Local browser checks cover search, pagination, detail dialogs, suspended-account filters, a 390px mobile layout, and failure-safe export. Test fixtures and rendered PDF previews stay in ignored `artifacts/` and are never included in the production build.
+
 ```text
 SUPER ADMIN / ADMIN
 ┌──────────────────┬──────────────────────────────────────────────────┐

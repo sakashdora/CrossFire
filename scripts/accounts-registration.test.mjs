@@ -164,6 +164,13 @@ await test('new students appear for admins and super admins, with their pass',as
     const record = (await one(actor,'select crossfire_student_records()')).find(r=>r.email==='student1@example.test');
     assert.equal(record.pass_code,first.receipt.pass_id);
     assert.equal(record.competitions,'Event 1, Event 4');
+    const submitted = profile(1);
+    for (const field of ['email','contact_number','whatsapp_number','institute_name','city_town','course_stream','board','food_preference','parent_consent','terms_accepted']) assert.equal(record[field], submitted[field], `${actor} directory must preserve ${field}`);
+    assert.equal(record.name, submitted.student_name);
+    assert.equal(record.has_login, true);
+    assert.equal(record.status, 'registered');
+    assert.ok(record.created_at);
+    assert.match(record.student_id, /^CFS-\d+$/);
     assert.ok((await snapshot(actor)).students.some(s=>s.pass_id===first.receipt.pass_id));
   }
 });

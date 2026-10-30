@@ -17,7 +17,7 @@ const sections = [
 ] as const;
 const titles: Record<Section, [string, string]> = {
   email: ['From the college, securely.', 'Configure the official sender for student setup and recovery invitations.'],
-  requests: ['All student records.', 'Saved registrations, student accounts, and complete Excel or PDF exports.'],
+  requests: ['Registered students', 'Search registrations, view complete student details and QR passes, or export your records.'],
   overview: ['The day, at a glance.', 'One shared view of arrivals, people, and event operations.'], students: ['Every arrival counts.', 'Find a participant, verify their pass, and record the next step.'], guests: ['A considered welcome.', 'Invited VIPs and judges, from confirmation to departure.'], crew: ['People behind the day.', 'Assign a station, confirm attendance, and keep duties clear.'], events: ['Six arenas. In sync.', 'Control registration status and assign judges to each event.'], incidents: ['Keep the day moving.', 'Report a problem. Follow its progress through to resolution.'], staff: ['The right access.', 'Create staff and judge accounts and manage their role and active status. VIP guest logins are created from the guest card.'], announcements: ['Keep everyone informed.', 'Publish a message to the selected audience’s in-app notifications.'], settings: ['The final controls.', 'Student registration and other system settings are reserved for super admins.'], audit: ['A clear record.', 'The latest 100 recorded changes, with the person and time.'],
 };
 type Field = { name: string; label: string; type?: string; required?: boolean; options?: { value: string; label: string }[]; minLength?: number; maxLength?: number; hint?: string };
@@ -61,6 +61,9 @@ export function OperationsDashboard({ client = liveOperationsClient, previewCont
   const [scanError, setScanError] = useState('');
   const [scanned, setScanned] = useState<OpsStudent | null>(null);
   useEffect(() => { setSection('overview'); setEditor(null); setSearch(''); setFilter('all'); setScanned(null); }, [client]);
+  useEffect(() => {
+    if (ops.data?.actor) setSection(isManager(ops.data.actor.role) ? 'requests' : 'overview');
+  }, [ops.data?.actor.id, ops.data?.actor.role]);
   // Re-read the scanned pass after each change so its status never goes stale.
   const scannedPass = scanned?.pass_id;
   useEffect(() => {
@@ -77,7 +80,7 @@ export function OperationsDashboard({ client = liveOperationsClient, previewCont
   const guestDesk = !manager && ownDuty?.station === 'guest';
   const metrics: [number, string, Section][] = guestDesk ? [
     [data.guests.length, 'Guests assigned', 'guests'], [data.guests.filter(g => g.status === 'Confirmed').length, 'Expected arrivals', 'guests'], [data.guests.filter(g => g.status === 'Arrived').length, 'Guests on campus', 'guests'], [data.incidents.filter(i => i.status === 'Open').length, 'Open incidents', 'incidents'],
-  ] : [[data.students.length, 'Participants visible', 'students'], [data.students.filter(s => s.checked_in_at).length, 'Students checked in', 'students'], [data.guests.filter(g => g.status === 'Arrived').length, 'Guests on campus', 'guests'], [data.incidents.filter(i => i.status === 'Open').length, 'Open incidents', 'incidents']];
+  ] : [[data.students.length, manager ? 'Student accounts' : 'Participants visible', manager ? 'requests' : 'students'], [data.students.filter(s => s.checked_in_at).length, 'Students checked in', 'students'], [data.guests.filter(g => g.status === 'Arrived').length, 'Guests on campus', 'guests'], [data.incidents.filter(i => i.status === 'Open').length, 'Open incidents', 'incidents']];
   const pipeline: [string, number, string][] = guestDesk ? [
     ['Invited', data.guests.filter(g => g.status === 'Invited').length, 'Awaiting confirmation'], ['Confirmed', data.guests.filter(g => g.status === 'Confirmed').length, 'Expected at the VIP desk'], ['Arrived', data.guests.filter(g => g.status === 'Arrived').length, 'Currently on campus'], ['Departed', data.guests.filter(g => g.status === 'Departed').length, 'Visit completed'],
   ] : [['Registered', data.students.length, 'Ready for the event'], ['Checked in', data.students.filter(s => s.checked_in_at).length, 'Verified at the gate'], ['In event rooms', data.students.filter(s => s.registrations.some(r => r.room_reported_at)).length, 'Attendance recorded'], ['Meals issued', data.students.filter(s => s.food_redeemed_at).length, 'One meal per participant']];
