@@ -34,9 +34,9 @@ for (const [key,station,event] of [['gate','gate',null],['food','food',null],['r
 const legacyRequest = randomUUID();
 await db.query(`insert into crossfire_registration_requests(id,profile,events,status) values($1,$2,'[]','registered')`,[legacyRequest,JSON.stringify({student_name:'Legacy Student',email:'legacy@example.test',contact_number:'9111111111'})]);
 
-for (const name of ['20261030090000_vip_guest_role.sql','20261030090100_accounts_registration_qr.sql','20261030120000_least_privilege_review.sql']) await db.exec(await migration(name));
+for (const name of ['20261030090000_vip_guest_role.sql','20261030090100_accounts_registration_qr.sql','20261030120000_least_privilege_review.sql','20261101090000_student_phone_length.sql']) await db.exec(await migration(name));
 // Forward migrations must be safe to apply twice.
-for (const name of ['20261030090000_vip_guest_role.sql','20261030090100_accounts_registration_qr.sql','20261030120000_least_privilege_review.sql']) await db.exec(await migration(name));
+for (const name of ['20261030090000_vip_guest_role.sql','20261030090100_accounts_registration_qr.sql','20261030120000_least_privilege_review.sql','20261101090000_student_phone_length.sql']) await db.exec(await migration(name));
 
 async function as(actor, sql, args=[], aal) {
   await db.exec('reset role');
@@ -118,11 +118,26 @@ await test('back-to-back submissions for one email reserve once; the second is r
 await test('server validation returns useful messages',async()=>{
   const reject = (extra, pattern) => assert.rejects(one('service','select crossfire_begin_student_registration($1,$2::jsonb)',[randomUUID(),JSON.stringify(profile(3,extra))]),pattern);
   await reject({email:'not-an-email'},/valid email/);
-  await reject({contact_number:'123'},/10–13 digits/);
+  await reject({contact_number:'123'},/exactly 10 digits/);
   await reject({selected_competitions:['Event 1','Event 2','Event 3']},/no more than 2/);
   await reject({selected_competitions:[]},/between 1 and 4/);
   await reject({website:'spam'},/Unable to accept/);
   await reject({role:'admin'},/Unexpected registration fields/);
+});
+await test('student contact and WhatsApp require exactly 10 digits before reservation',async()=>{
+  for (const field of ['contact_number','whatsapp_number']) {
+    for (const invalid of ['', '987654321', '98765432101', '919876543210', '1234567890123', '+919876543210', '98765 43210', '98765-43210', '987654321a']) {
+      const id=randomUUID();
+      await assert.rejects(one('service','select crossfire_begin_student_registration($1,$2::jsonb)',[id,JSON.stringify(profile(3,{[field]:invalid}))]),/exactly 10 digits/);
+      assert.equal((await db.query('select count(*)::int n from crossfire_registration_requests where id=$1',[id])).rows[0].n,0,'Invalid phones must not reserve a registration');
+    }
+  }
+  const id=randomUUID();
+  await one('service','select crossfire_begin_student_registration($1,$2::jsonb)',[id,JSON.stringify(profile(3,{contact_number:'0987654321',whatsapp_number:'9876543210'}))]);
+  const saved=(await db.query('select profile from crossfire_registration_requests where id=$1',[id])).rows[0].profile;
+  assert.equal(saved.contact_number,'0987654321','Preserve leading zeroes');
+  assert.equal(saved.whatsapp_number,'9876543210','Preserve a separate WhatsApp number');
+  await one('service','select crossfire_abandon_student_registration($1)',[id]);
 });
 await test('a failed completion leaves no partial profile, entries or reservation',async()=>{
   const id = randomUUID();

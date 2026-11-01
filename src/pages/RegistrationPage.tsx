@@ -97,6 +97,7 @@ export const RegistrationPage: React.FC<RegistrationPageProps> = ({
   };
 
   const handleContactChange = (val: string) => {
+    if (!/^[0-9]{0,10}$/.test(val)) return;
     setContactNo(val);
     if (sameAsContact) {
       setWhatsappNo(val);
@@ -116,7 +117,8 @@ export const RegistrationPage: React.FC<RegistrationPageProps> = ({
     // The server validates everything again; these checks give faster feedback.
     if (studentName.trim().length < 2) return fail('Please enter the Name of the Student.', 'student_name');
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailId.trim())) return fail('Please enter a valid Email Id.', 'email');
-    if (contactNo.replace(/[^0-9]/g, '').length < 10 || contactNo.replace(/[^0-9]/g, '').length > 13) return fail('Enter a contact number with 10 to 13 digits.', 'contact_number');
+    if (!/^[0-9]{10}$/.test(contactNo)) return fail('Enter a contact number with exactly 10 digits, without the country code.', 'contact_number');
+    if (!sameAsContact && !/^[0-9]{10}$/.test(whatsappNo)) return fail('Enter a WhatsApp number with exactly 10 digits, without the country code.', 'whatsapp_number');
     if (instituteName.trim().length < 2) return fail('Please provide the Name of the Institute.', 'institute_name');
     if (cityTown.trim().length < 2) return fail('Please enter your City / Town.', 'city_town');
     if (selectedCompetitions.length === 0) return fail('Please select at least 1 competition to participate.');
@@ -130,7 +132,7 @@ export const RegistrationPage: React.FC<RegistrationPageProps> = ({
     try {
       const profile = {
         student_name: studentName.trim(), email: emailId.trim(), contact_number: contactNo.trim(),
-        whatsapp_number: whatsappNo.trim() || contactNo.trim(), institute_name: instituteName.trim(),
+        whatsapp_number: sameAsContact ? contactNo : whatsappNo, institute_name: instituteName.trim(),
         city_town: cityTown.trim(), course_stream: courseStream, board, food_preference: foodPreference,
         selected_competitions: [...selectedCompetitions].sort(), parent_consent: consent, terms_accepted: consent, website,
       };
@@ -513,27 +515,38 @@ export const RegistrationPage: React.FC<RegistrationPageProps> = ({
 
               {/* 2. Contact No. */}
               <div>
-                <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
+                <label htmlFor="contact_number" className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
                   2. Contact No. *
                 </label>
                 <div className="relative">
                   <Phone className="w-4 h-4 text-gray-400 absolute left-3.5 top-3.5" />
                   <input
+                    id="contact_number"
+                    name="contact_number"
                     type="tel"
+                    inputMode="numeric"
+                    autoComplete="tel-national"
+                    minLength={10}
+                    maxLength={10}
+                    pattern="[0-9]{10}"
+                    title="Enter exactly 10 digits without the country code."
+                    aria-describedby="contact-number-hint"
+                    aria-invalid={errorField === 'contact_number' || undefined}
                     required
                     value={contactNo}
                     onChange={(e) => handleContactChange(e.target.value)}
-                    placeholder="+91 9876543210"
+                    placeholder="9876543210"
                     className="w-full pl-10 pr-4 py-3 text-sm border border-gray-300 rounded-xl focus:ring-2 focus:ring-navy focus:border-navy transition-all"
                   />
                 </div>
+                <span id="contact-number-hint" className="text-[10px] text-gray-500 mt-1 block">Exactly 10 digits. Do not include +91 or a country code.</span>
               </div>
             </div>
 
             {/* 9. WhatsApp Number */}
             <div>
               <div className="flex items-center justify-between mb-1.5">
-                <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider">
+                <label htmlFor="whatsapp_number" className="block text-xs font-bold text-gray-700 uppercase tracking-wider">
                   9. WhatsApp Number *
                 </label>
                 <label className="flex items-center gap-1.5 text-xs text-orange-600 font-semibold cursor-pointer">
@@ -553,17 +566,26 @@ export const RegistrationPage: React.FC<RegistrationPageProps> = ({
               <div className="relative">
                 <Phone className="w-4 h-4 text-gray-400 absolute left-3.5 top-3.5" />
                 <input
+                  id="whatsapp_number"
+                  name="whatsapp_number"
                   type="tel"
+                  inputMode="numeric"
+                  minLength={10}
+                  maxLength={10}
+                  pattern="[0-9]{10}"
+                  title="Enter exactly 10 digits without the country code."
+                  aria-describedby="whatsapp-number-hint"
+                  aria-invalid={errorField === 'whatsapp_number' || undefined}
                   required
                   disabled={sameAsContact}
                   value={whatsappNo}
-                  onChange={(e) => setWhatsappNo(e.target.value)}
-                  placeholder="+91 9876543210"
+                  onChange={(e) => { if (/^[0-9]{0,10}$/.test(e.target.value)) setWhatsappNo(e.target.value); }}
+                  placeholder="9876543210"
                   className="w-full pl-10 pr-4 py-3 text-sm border border-gray-300 rounded-xl focus:ring-2 focus:ring-navy focus:border-navy disabled:bg-gray-50 transition-all"
                 />
               </div>
-              <span className="text-[10px] text-gray-400 mt-1 block">
-                Keep this number accurate so the college team can contact you about the event.
+              <span id="whatsapp-number-hint" className="text-[10px] text-gray-500 mt-1 block">
+                Exactly 10 digits without the country code. The college team uses this number for event updates.
               </span>
             </div>
           </div>

@@ -85,6 +85,16 @@ await test('a retry after completion returns the same receipt without touching A
   const r = await run({ begin: reserved({ status: 'registered' }), users: { [userId]: marked() } });
   assert.equal(r.status, 200); assert.equal(calls.created.length, 0); assert.equal(calls.deleted.length, 0);
 });
+await test('phone validation errors return 400 without creating a login', async () => {
+  for (const field of ['contact', 'WhatsApp']) {
+    const message = `Enter a ${field} number with exactly 10 digits, without the country code.`;
+    const result = await run({ begin: { data: null, error: { code: 'P0001', message } } });
+    assert.equal(result.status, 400);
+    assert.equal(result.body.error, message);
+    assert.deepEqual(rpcNames(), ['crossfire_begin_student_registration']);
+    assert.equal(calls.created.length + calls.deleted.length, 0);
+  }
+});
 await test('a retry after an ambiguous create resumes with the existing marked login', async () => {
   const r = await run({ users: { [userId]: marked() } });
   assert.equal(r.status, 200); assert.equal(calls.created.length, 0);
