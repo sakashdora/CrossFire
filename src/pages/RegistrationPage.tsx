@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { CourseStream, FoodPreference, EventItem, SchoolBoard } from '../types';
 import { escapeHtml } from '../lib/security';
@@ -35,13 +35,27 @@ import { useEvents } from '../context/EventsContext';
 interface RegistrationPageProps {
   onSuccess: (selectedEvents: EventItem[]) => void;
   setCurrentView: (view: string) => void;
+  /** Move focus to the page heading once mounted, e.g. after the registration announcement. */
+  focusHeadingOnMount?: boolean;
 }
 
 export const RegistrationPage: React.FC<RegistrationPageProps> = ({
   onSuccess,
   setCurrentView,
+  focusHeadingOnMount = false,
 }) => {
-  const { user, login, logout, isRegistrationOpen, isLoading: authLoading } = useAuth();
+  const { user, login, logout, isRegistrationOpen, registrationStatus, refreshRegistrationStatus } = useAuth();
+  const heading = useRef<HTMLHeadingElement>(null);
+  const [checkingStatus, setCheckingStatus] = useState(false);
+  useEffect(() => {
+    if (focusHeadingOnMount) heading.current?.focus({ preventScroll: true });
+  }, [focusHeadingOnMount]);
+  const retryStatus = async () => {
+    if (checkingStatus) return;
+    setCheckingStatus(true);
+    try { await refreshRegistrationStatus(); } finally { setCheckingStatus(false); }
+  };
+  const openStudentLogin = () => window.dispatchEvent(new Event('crossfire_open_login'));
   const { events, error: eventsError, isLoading: eventsLoading } = useEvents();
 
   // Form fields from the official Google Form. They start empty for new visitors.
@@ -111,6 +125,7 @@ export const RegistrationPage: React.FC<RegistrationPageProps> = ({
     setErrorMessage(null); setErrorField(undefined);
     if (isSubmitting) return;
     if (user) return fail(user.role === 'student' ? 'You are already registered and signed in.' : 'Sign out of your staff account before registering a student.');
+    if (registrationStatus === 'error') return fail('Registration status could not be checked. Please try again.');
     if (!isRegistrationOpen) return fail('Student registration is closed. Registered students can still sign in.');
     if (!consent) return fail('Please confirm the participation terms and parent/guardian consent.', 'consent');
 
@@ -297,7 +312,7 @@ export const RegistrationPage: React.FC<RegistrationPageProps> = ({
               <span className="px-3 py-1 rounded-full bg-white/10 text-orange-400 text-[10px] font-black uppercase tracking-widest border border-white/10 inline-block">
                 Official Student Registration Form
               </span>
-              <h1 className="text-lg sm:text-2xl md:text-3xl font-black text-white tracking-tight leading-tight">
+              <h1 ref={heading} tabIndex={-1} className="text-lg sm:text-2xl md:text-3xl font-black text-white tracking-tight leading-tight focus:outline-none">
                 SRUSTI ACADEMY OF GRADUATE STUDIES
               </h1>
               <p className="text-xs sm:text-sm text-gray-300 font-medium">
@@ -426,16 +441,27 @@ export const RegistrationPage: React.FC<RegistrationPageProps> = ({
             <button type="button" onClick={() => void logout()} className="py-3 px-5 bg-gray-100 text-gray-800 font-bold text-sm rounded-xl">Sign out</button>
           </div>
         </section>
-      ) : !authLoading && !isRegistrationOpen ? (
+      ) : registrationStatus === 'loading' ? (
+        <p role="status" className="p-6 sm:p-8 bg-white border border-gray-200 rounded-3xl text-center text-sm font-semibold text-gray-600">Checking registration status…</p>
+      ) : registrationStatus === 'closed' ? (
         <section className="p-6 sm:p-8 bg-white border border-amber-200 rounded-3xl text-center space-y-4">
           <Lock className="w-8 h-8 text-orange-600 mx-auto" />
           <h2 className="font-black text-xl text-navy">Student registration is closed</h2>
           <p className="text-sm text-gray-600">New registrations are no longer accepted. Registered students can still sign in to view their details and QR pass.</p>
-          <button type="button" onClick={() => window.dispatchEvent(new Event('crossfire_open_login'))} className="py-3 px-5 bg-orange-500 text-white font-bold text-sm rounded-xl">Student sign in</button>
+          <button type="button" onClick={openStudentLogin} className="py-3 px-5 bg-orange-500 text-white font-bold text-sm rounded-xl">Student sign in</button>
         </section>
       ) : (
         /* Main Registration Form */
         <form onSubmit={handleSubmit} noValidate className="space-y-6">
+          {registrationStatus === 'error' && (
+            <div role="status" className="p-4 sm:p-5 bg-white border border-amber-200 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <p className="text-sm font-bold text-navy">Registration status could not be checked. Please try again.</p>
+              <div className="flex flex-wrap gap-2 shrink-0">
+                <button type="button" onClick={() => void retryStatus()} disabled={checkingStatus} className="min-h-[44px] py-2.5 px-4 bg-navy text-white font-bold text-sm rounded-xl disabled:opacity-60">{checkingStatus ? 'Checking…' : 'Try again'}</button>
+                <button type="button" onClick={openStudentLogin} className="min-h-[44px] py-2.5 px-4 bg-gray-100 text-gray-800 font-bold text-sm rounded-xl">Student sign in</button>
+              </div>
+            </div>
+          )}
           <div className="absolute -left-[10000px]" aria-hidden="true"><label>Website<input type="text" name="website" value={website} onChange={e=>setWebsite(e.target.value)} tabIndex={-1} autoComplete="off" /></label></div>
           
           {/* Error Alerts with Google Form Emergency Link */}

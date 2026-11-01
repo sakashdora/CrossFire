@@ -8,6 +8,8 @@ import { StaffVerification } from './components/StaffVerification';
 import { PasswordChangeRequired } from './components/PasswordChangeRequired';
 import { dashboardFor, ROLE_LABELS } from './lib/roles';
 import { CinematicIntro } from './components/CinematicIntro';
+import { RegistrationLiveNotice } from './components/RegistrationLiveNotice';
+import { useRegistrationNotice } from './hooks/useRegistrationNotice';
 import { LandingPage } from './pages/LandingPage';
 import { EventItem } from './types';
 
@@ -122,11 +124,16 @@ const CrossFireApp: React.FC = () => {
     setShowIntro(true);
   }, []);
 
+  const registrationNotice = useRegistrationNotice({ view: currentView, introActive: showIntro, authModalOpen });
+  // Set when the announcement sends a visitor to the form, so the page heading takes focus.
+  const [focusRegistrationHeading, setFocusRegistrationHeading] = useState(false);
+
   // Auto scroll to top on any page view transition
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'instant' });
     if (currentView !== 'events') setSelectedLandingEvent(null);
     if (currentView !== 'landing') setShowIntro(false);
+    if (currentView !== 'register') setFocusRegistrationHeading(false);
   }, [currentView]);
 
   const { userRegistrations, handleWithdrawEvent, handleSubmitMedia, refreshRegistrations } = useEvents();
@@ -160,6 +167,25 @@ const CrossFireApp: React.FC = () => {
     <div className={`min-h-screen flex flex-col text-gray-900 ${currentView === 'events' ? 'cf-events-view' : currentView === 'landing' ? 'cf-landing-view' : ''} ${currentView === 'landing' || currentView === 'events' ? 'bg-[#080e10]' : 'bg-[#F8FAFC]'} pb-[calc(64px+env(safe-area-inset-bottom))] lg:pb-0`}>
       <a href="#main-content" className="skip-to-content" onClick={event => { event.preventDefault(); document.getElementById('main-content')?.focus(); }}>Skip to content</a>
       
+      {/* Rendered before the intro so its scroll lock is released before the intro takes one. */}
+      <RegistrationLiveNotice
+        open={registrationNotice.show}
+        onOpened={registrationNotice.onOpened}
+        onOpenFailed={registrationNotice.onOpenFailed}
+        onDismiss={registrationNotice.dismiss}
+        onRegister={() => {
+          const current = registrationNotice.isCurrent();
+          registrationNotice.dismiss();
+          if (!current) return;
+          setFocusRegistrationHeading(true);
+          setCurrentView('register');
+        }}
+        onSignIn={() => {
+          registrationNotice.dismiss();
+          openAuth('login');
+        }}
+      />
+
       {/* Cinematic Opening Screen: SAGS x CROSSFIRE */}
       {showIntro && (
         <CinematicIntro onComplete={handleIntroComplete} />
@@ -189,6 +215,7 @@ const CrossFireApp: React.FC = () => {
           <RegistrationPage
             onSuccess={handleGoogleFormRegistrationSuccess}
             setCurrentView={setCurrentView}
+            focusHeadingOnMount={focusRegistrationHeading}
           />
         )}
 
