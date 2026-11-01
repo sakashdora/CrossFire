@@ -153,7 +153,7 @@
   z-index: -1;
   inset: 0;
   border-radius: 12px 0 12px 0;
-  background: linear-gradient(135deg, #ff8b2b, #f25b09 65%, #ff8c32);
+  background: linear-gradient(135deg, #f26b10, #e34c08 65%, #ee640f);
   box-shadow: 0 8px 18px -5px #ff781b80;
   transform: skewX(-14deg);
 }
