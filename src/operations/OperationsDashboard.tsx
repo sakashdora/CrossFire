@@ -1,13 +1,15 @@
-import { useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react';
+import { lazy, Suspense, useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react';
 import { ArrowUpRight, Check, ChevronRight, ClipboardList, Download, Flag, LayoutDashboard, Megaphone, Plus, QrCode, RefreshCw, Search, Settings, ShieldCheck, Users, UserCheck, X } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
-import { LiveQRScanner } from '../components/LiveQRScanner';
 import { liveOperationsClient } from './client';
 import { useOperations } from './useOperations';
 import { StudentRecords } from './StudentRecords';
 import { EmailSettings } from './EmailSettings';
 import { ATTENDANCE, GUEST_CATEGORIES, SHIFTS, STATIONS, canManageStaff, csvCell, dutyAllows, formatTime, guestTransitions, isManager, parsePass, validateGuest, type OperationsClient, type OpsAction, type OpsGuest, type OpsPayload, type OpsStaff, type OpsStudent, type OpsVolunteer, type StaffInput } from './model';
 import './operations.css';
+
+// The camera scanner library is large; load it only when a desk opens the scanner.
+const LiveQRScanner = lazy(() => import('../components/LiveQRScanner').then(module => ({ default: module.LiveQRScanner })));
 
 type Section = 'overview' | 'requests' | 'students' | 'guests' | 'crew' | 'events' | 'incidents' | 'staff' | 'announcements' | 'settings' | 'audit' | 'email';
 const sections = [
@@ -33,17 +35,18 @@ function Modal({ title, children, close }: { title: string; children: ReactNode;
   return <dialog ref={ref} className="ops-modal" aria-label={title} onCancel={event => { event.preventDefault(); close(); }}><header><h2>{title}</h2><button className="ops-icon" onClick={close} aria-label="Close dialog"><X size={20} /></button></header>{children}</dialog>;
 }
 function EditForm({ editor, close, busy, serverError }: { editor: Editor; close: () => void; busy: boolean; serverError: string }) {
-  const [error, setError] = useState('');
+  // A rejected request shows the server's message; a form problem shows its own, never a stale server error.
+  const [error, setError] = useState<{ text: string; server: boolean } | null>(null);
   const submit = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault(); setError('');
+    event.preventDefault(); setError(null);
     const form = new FormData(event.currentTarget);
     const values: OpsPayload = { ...editor.values };
     for (const field of editor.fields) values[field.name] = field.type === 'checkbox' ? form.has(field.name) : String(form.get(field.name) ?? '').trim();
     // Passwords may contain intentional spaces.
     if (form.has('password')) values.password = String(form.get('password'));
-    try { if (await editor.submit(values)) close(); else setError('The request was not saved. See the message above, correct the form, or refresh and try again.'); } catch (cause) { setError(cause instanceof Error ? cause.message : 'Please check the form.'); }
+    try { if (await editor.submit(values)) close(); else setError({ text: 'The request was not saved. Correct the form, or refresh and try again.', server: true }); } catch (cause) { setError({ text: cause instanceof Error ? cause.message : 'Please check the form.', server: false }); }
   };
-  return <Modal title={editor.title} close={() => { if (!busy) close(); }}><form onSubmit={submit} className="ops-form">{editor.description && <p>{editor.description}</p>}<div className="ops-fields">{editor.fields.map(field => <label key={field.name} className={field.type === 'textarea' ? 'wide' : ''}><span>{field.label}{field.required && ' *'}</span>{field.options ? <select name={field.name} defaultValue={String(editor.values[field.name] ?? '')} required={field.required}>{field.options.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}</select> : field.type === 'textarea' ? <textarea name={field.name} defaultValue={String(editor.values[field.name] ?? '')} required={field.required} minLength={field.minLength} maxLength={field.maxLength || 1000} rows={3} /> : field.type === 'checkbox' ? <input type="checkbox" name={field.name} defaultChecked={Boolean(editor.values[field.name])} /> : <input type={field.type || 'text'} name={field.name} defaultValue={String(editor.values[field.name] ?? '')} required={field.required} minLength={field.minLength} maxLength={field.maxLength || 200} autoComplete={field.type === 'password' ? 'new-password' : 'off'} />}{field.hint && <small>{field.hint}</small>}</label>)}</div>{error && <p role="alert" className="ops-inline-error">{serverError || error}</p>}<footer><button type="button" onClick={close} disabled={busy}>Cancel</button><button className="primary" disabled={busy}>{busy ? 'Saving…' : editor.label || 'Save changes'}</button></footer></form></Modal>;
+  return <Modal title={editor.title} close={() => { if (!busy) close(); }}><form onSubmit={submit} className="ops-form">{editor.description && <p>{editor.description}</p>}<div className="ops-fields">{editor.fields.map(field => <label key={field.name} className={field.type === 'textarea' ? 'wide' : ''}><span>{field.label}{field.required && ' *'}</span>{field.options ? <select name={field.name} defaultValue={String(editor.values[field.name] ?? '')} required={field.required}>{field.options.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}</select> : field.type === 'textarea' ? <textarea name={field.name} defaultValue={String(editor.values[field.name] ?? '')} required={field.required} minLength={field.minLength} maxLength={field.maxLength || 1000} rows={3} /> : field.type === 'checkbox' ? <input type="checkbox" name={field.name} defaultChecked={Boolean(editor.values[field.name])} /> : <input type={field.type || 'text'} name={field.name} defaultValue={String(editor.values[field.name] ?? '')} required={field.required} minLength={field.minLength} maxLength={field.maxLength || 200} autoComplete={field.type === 'password' ? 'new-password' : 'off'} />}{field.hint && <small>{field.hint}</small>}</label>)}</div>{error && <p role="alert" className="ops-inline-error">{(error.server && serverError) || error.text}</p>}<footer><button type="button" onClick={close} disabled={busy}>Cancel</button><button className="primary" disabled={busy}>{busy ? 'Saving…' : editor.label || 'Save changes'}</button></footer></form></Modal>;
 }
 function exportCsv(name: string, rows: unknown[][]) {
   const url = URL.createObjectURL(new Blob(['\uFEFF' + rows.map(row => row.map(csvCell).join(',')).join('\r\n')], { type: 'text/csv;charset=utf-8' }));
@@ -111,10 +114,10 @@ export function OperationsDashboard({ client = liveOperationsClient, previewCont
     { name: 'station', label: 'Duty station', options: Object.entries(STATIONS).map(([value, label]) => ({ value, label })), required: true }, { name: 'event_id', label: 'Event (required for event room)', options: [{ value: '', label: 'No event' }, ...data.events.map(e => ({ value: e.id, label: e.name }))] }, select('shift', 'Shift', SHIFTS), select('attendance_status', 'Attendance', ATTENDANCE), input('kit_issued', 'Kit issued', false, 'checkbox'), input('walkie_channel', 'Walkie channel'), { ...input('notes', 'Duty instructions'), type: 'textarea', maxLength: 2000 },
   ], submit: values => action('volunteer.save', values, 'Volunteer assignment saved.') });
   const createVipLogin = (guest: OpsGuest) => setEditor({ title: 'Create VIP guest login', description: `${guest.name} signs in to see their own invitation, pass and the schedule. Share the initial password privately; it must be changed at first sign-in.`, values: { role: 'vip_guest', guest_id: guest.id, name: guest.name, email: guest.email, contact_number: guest.contact_number }, fields: [
-    { ...input('name', 'Full name', true), minLength: 2, maxLength: 100 }, input('email', 'Email', true, 'email'), input('contact_number', 'Phone', true, 'tel'), { ...input('password', 'Initial password', true, 'password'), minLength: 12, hint: 'At least 12 characters. Works once; never stored in the dashboard.' },
+    { ...input('name', 'Full name', true), minLength: 2, maxLength: 100 }, input('email', 'Email', true, 'email'), input('contact_number', 'Phone', true, 'tel'), { ...input('password', 'Initial password', true, 'password'), minLength: 12, maxLength: 72, hint: '12 to 72 characters. Works once; never stored in the dashboard.' },
   ], submit: values => ops.createStaff(values as unknown as StaffInput), label: 'Create login' });
   const createStaff = () => setEditor({ title: 'Create staff account', description: 'The person signs in with their email and an initial password that works once: they must choose their own password at first sign-in. Share it privately. No invitation message is sent.', values: { role: 'volunteer' }, fields: [
-    { ...input('name', 'Full name', true), minLength: 2, maxLength: 100 }, input('email', 'Email', true, 'email'), input('contact_number', 'Phone', true, 'tel'), select('role', 'Role', data.actor.role === 'super_admin' ? ['volunteer', 'judge', 'admin', 'super_admin'] : ['volunteer', 'judge']), { ...input('password', 'Initial password', true, 'password'), minLength: 12, hint: 'At least 12 characters. Works once; never stored in the dashboard.' },
+    { ...input('name', 'Full name', true), minLength: 2, maxLength: 100 }, input('email', 'Email', true, 'email'), input('contact_number', 'Phone', true, 'tel'), select('role', 'Role', data.actor.role === 'super_admin' ? ['volunteer', 'judge', 'admin', 'super_admin'] : ['volunteer', 'judge']), { ...input('password', 'Initial password', true, 'password'), minLength: 12, maxLength: 72, hint: '12 to 72 characters. Works once; never stored in the dashboard.' },
   ], submit: values => ops.createStaff(values as unknown as StaffInput), label: 'Create account' });
   const editAccess = (person: OpsStaff) => setEditor({ title: 'Manage staff access', description: `Changes apply to ${person.name}. Suspended accounts cannot use operational actions.`, values: { id: person.id, role: person.role, active: person.active, expected_updated_at: person.updated_at }, fields: [select('role', 'Role', person.role === 'vip_guest' ? ['vip_guest'] : data.actor.role === 'super_admin' ? ['volunteer', 'judge', 'admin', 'super_admin'] : ['volunteer', 'judge']), input('active', 'Account active', false, 'checkbox')], submit: values => action('staff.access', values, 'Staff access updated.') });
   const reportIncident = () => setEditor({ title: 'Report an incident', values: { priority: 'Normal', room: ownDuty ? STATIONS[ownDuty.station] : '' }, fields: [input('room', 'Location / room', true), select('priority', 'Priority', ['Normal', 'High']), { ...input('issue', 'What happened?', true), type: 'textarea', minLength: 3 }], label: 'Submit report', submit: values => action('incident.report', values, 'Incident reported. An admin can now review it.') });
@@ -170,6 +173,6 @@ export function OperationsDashboard({ client = liveOperationsClient, previewCont
     </div>
     {editor && <EditForm key={editor.title + String(editor.values.id || '')} editor={editor} close={() => setEditor(null)} busy={busy} serverError={ops.error} />}
     {pass && <Modal title="Invited guest pass" close={() => setPass(null)}><div className="ops-pass"><p className="ops-eyebrow">CROSSFIRE 2026 · INVITED GUEST</p><h2>{pass.name}</h2><p>{pass.category} · {pass.organization}</p><QRCodeSVG value={JSON.stringify({ guest_pass: pass.pass_code })} size={190} marginSize={3} /><code>{pass.pass_code}</code><p>15 November 2026 · Srusti campus, Bhubaneswar</p><small>Show this pass at the VIP desk. The desk verifies your invitation status.</small></div></Modal>}
-    {scanner && <LiveQRScanner onScanSuccess={scanPass} onClose={() => setScanner(false)} />}
+    {scanner && <Suspense fallback={<div className="ops-message" role="status">Opening the scanner…</div>}><LiveQRScanner onScanSuccess={scanPass} onClose={() => setScanner(false)} /></Suspense>}
   </div>;
 }

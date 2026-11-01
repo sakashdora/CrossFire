@@ -34,9 +34,9 @@ for (const [key,station,event] of [['gate','gate',null],['food','food',null],['r
 const legacyRequest = randomUUID();
 await db.query(`insert into crossfire_registration_requests(id,profile,events,status) values($1,$2,'[]','registered')`,[legacyRequest,JSON.stringify({student_name:'Legacy Student',email:'legacy@example.test',contact_number:'9111111111'})]);
 
-for (const name of ['20261030090000_vip_guest_role.sql','20261030090100_accounts_registration_qr.sql']) await db.exec(await migration(name));
+for (const name of ['20261030090000_vip_guest_role.sql','20261030090100_accounts_registration_qr.sql','20261030120000_least_privilege_review.sql']) await db.exec(await migration(name));
 // Forward migrations must be safe to apply twice.
-for (const name of ['20261030090000_vip_guest_role.sql','20261030090100_accounts_registration_qr.sql']) await db.exec(await migration(name));
+for (const name of ['20261030090000_vip_guest_role.sql','20261030090100_accounts_registration_qr.sql','20261030120000_least_privilege_review.sql']) await db.exec(await migration(name));
 
 async function as(actor, sql, args=[], aal) {
   await db.exec('reset role');
@@ -210,6 +210,16 @@ await test('students cannot read another student or any staff dashboard',async()
   for (const sql of ['select crossfire_ops_snapshot()','select crossfire_judge_snapshot()','select crossfire_vip_snapshot()',`select crossfire_ops_lookup_pass('${first.receipt.pass_id}')`]) await denied(as('student1',sql));
   await denied(action('student1','student.checkin',{id:actors.student9}));
 });
+await test('a registered student adds and withdraws competitions within the group limit',async()=>{
+  await register(40);
+  const added = await one('student40','select register_for_event($1)',[await eventId('Event 2')]);
+  await assert.rejects(as('student40','select register_for_event($1)',[await eventId('Event 3')]),/maximum of 2 events in Group A/);
+  await assert.rejects(as('student40','select register_for_event($1)',[await eventId('Event 2')]),/already registered/);
+  await as('student40','select withdraw_registration($1)',[added]);
+  await assert.rejects(as('student40','select withdraw_registration($1)',[added]),/not found/);
+  await one('student40','select register_for_event($1)',[await eventId('Event 3')]);
+  assert.equal((await one('student40','select crossfire_my_registrations()')).length,3);
+});
 
 // ---------------------------------------------------------------------------
 // Provisioned accounts and forced password change
@@ -268,7 +278,8 @@ await test('each role reaches only its own dashboard data',async()=>{
   assert.match(vip.invitation.pass_code,/^CFG-/);
   assert.ok(vip.events.length>0);
   for (const sql of ['select crossfire_ops_snapshot()','select crossfire_judge_snapshot()','select crossfire_student_records()',`select crossfire_ops_lookup_pass('${first.receipt.pass_id}')`]) await denied(as('vip',sql));
-  assert.equal((await as('vip','select id from guests')).rows.length,0);
+  // Guests are readable only through role-scoped snapshots.
+  for (const actor of ['vip','gate','admin']) await assert.rejects(as(actor,'select id from guests'),/permission denied/);
   assert.equal((await as('vip',"select id from users where id<>auth.uid()")).rows.length,0);
   for (const actor of ['admin','gate','judge','student1']) await denied(as(actor,'select crossfire_vip_snapshot()'));
 });
@@ -408,6 +419,18 @@ await test('judges see only their assigned event candidates and no contact detai
   assert.ok(s.candidates.length>=1 && s.candidates.every(c=>c.event_id===s.events[0].id));
   assert.equal(s.events.length,1);
   assert.ok(!JSON.stringify(s).match(/@example\.test|9000000/));
+  // A pass code lets its holder check the student in; judges get the student number instead.
+  assert.ok(!JSON.stringify(s).match(/CF26-/));
+  assert.ok(s.candidates.every(c=>/^CFS-\d+$/.test(c.studentId)));
+});
+await test('direct assignment rejects a suspended judge and public settings hide who changed them',async()=>{
+  await action('super','staff.access',{id:actors.judge,role:'judge',active:false});
+  await assert.rejects(as('admin','select admin_assign_judge($1,$2)',[await eventId('Event 2'),actors.judge]),/active judge/);
+  await action('super','staff.access',{id:actors.judge,role:'judge',active:true});
+  for (const actor of [null,'student1']) {
+    await assert.rejects(as(actor,'select updated_by from system_settings'),/permission denied/);
+    assert.equal(typeof await one(actor,"select get_system_setting('student_registration_open')"),'boolean');
+  }
 });
 await test('volunteers cannot perform admin or super-admin actions',async()=>{
   for (const [name,payload] of [['staff.access',{id:actors.newvol,role:'judge'}],['event.status',{id:await eventId('Event 1'),status:'open'}],['settings.registration',{open:false}],['announcement.send',{target:'volunteers',title:'x',message:'y'}]])

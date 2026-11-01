@@ -196,7 +196,8 @@ const CrossFireApp: React.FC = () => {
           <EventsDiscoveryPage
             initialEvent={selectedLandingEvent}
             userRegistrations={userRegistrations}
-            onRegister={() => setCurrentView('register')}
+            // Registered students add competitions from their dashboard.
+            onRegister={() => setCurrentView(user?.role === 'student' ? 'dashboard' : 'register')}
           />
         )}
 

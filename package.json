@@ -15,6 +15,7 @@
     "test:direct": "node scripts/direct-registration.test.mjs",
     "test:accounts": "node scripts/accounts-registration.test.mjs && node scripts/register-student-edge.test.mjs",
     "test:student-records": "node scripts/student-records.test.mjs",
+    "test:student-dashboard": "node scripts/student-dashboard.test.mjs",
     "test:live": "node scripts/live-ops-access.test.mjs",
     "test:invitations": "node scripts/student-invitations.test.mjs && node scripts/student-invitations-edge.test.mjs",
     "test:intake": "node scripts/registration-intake.test.mjs",

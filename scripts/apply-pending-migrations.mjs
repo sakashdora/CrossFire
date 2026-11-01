@@ -19,6 +19,7 @@ const PENDING = [
   '20261029160000_direct_registration.sql',
   '20261030090000_vip_guest_role.sql',
   '20261030090100_accounts_registration_qr.sql',
+  '20261030120000_least_privilege_review.sql',
 ];
 
 const MIGRATIONS_DIR = path.join(__dirname, '..', 'supabase', 'migrations');

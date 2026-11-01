@@ -181,8 +181,9 @@ export const Navbar: React.FC<NavbarProps> = ({
             {/* Right Action Bar */}
             <div className="cf-navbar-actions flex items-center gap-2 sm:gap-3">
               
-              {/* Dynamic Register CTA (Desktop) */}
-              <button
+              {/* Dynamic Register CTA (Desktop). Signed-in accounts cannot register a new
+                  student, and the account chip needs this space beside the centred links. */}
+              {!user && <button
                 onClick={() => setCurrentView('register')}
                 className="cf-navbar-register hidden lg:flex relative overflow-hidden items-center gap-2 px-5 py-2 rounded-full font-bold group border border-cyan-400/40 shadow-[0_0_20px_rgba(0,136,255,0.3)]"
               >
@@ -195,7 +196,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                   <UserPlus className="w-4 h-4" />
                   Register Now
                 </span>
-              </button>
+              </button>}
 
 
 
@@ -291,7 +292,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                     <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-orange-500 to-amber-400 flex items-center justify-center text-white font-black shadow-inner">
                       {user.first_name?.[0] || 'U'}
                     </div>
-                    <span className="hidden sm:block tracking-wide text-left">{user.first_name}{management && <small className="block text-xs font-normal text-slate-300">{ROLE_LABELS[role]}</small>}</span>
+                    <span className="hidden sm:block tracking-wide text-left max-w-[9rem] truncate">{user.first_name}{management && <small className="block text-xs font-normal text-slate-300">{ROLE_LABELS[role]}</small>}</span>
                     <ChevronDown className="w-4 h-4 text-gray-400" />
                   </button>
 

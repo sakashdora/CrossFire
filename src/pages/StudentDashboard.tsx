@@ -1,9 +1,11 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { Registration } from '../types';
 import { useNotifications } from '../hooks/useNotifications';
 import { StudentQRCode } from '../components/StudentQRCode';
 import { useEvents } from '../context/EventsContext';
+import { AddCompetitionDialog } from '../components/AddCompetitionDialog';
+import { competitionChoices, MAX_COMPETITIONS } from '../lib/competitionChoices';
 import { 
   Trophy, 
   Upload, 
@@ -55,8 +57,14 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
   onSubmitMedia,
   setCurrentView,
 }) => {
-  const { user } = useAuth();
-  const { events, error: dataError } = useEvents();
+  const { user, isRegistrationOpen } = useAuth();
+  const { events, error: dataError, handleRegisterEvent } = useEvents();
+  const choices = competitionChoices(events, userRegistrations, isRegistrationOpen);
+  const canAddCompetition = choices.some(choice => !choice.reason);
+  const [showAddCompetition, setShowAddCompetition] = useState(false);
+  const [withdrawing, setWithdrawing] = useState<string | null>(null);
+  const [trackNotice, setTrackNotice] = useState('');
+  const [copyError, setCopyError] = useState('');
   const campusVenues: CampusVenue[] = events.map(event => ({id:event.id,name:event.venue_location || 'Venue to be confirmed',block:'Confirm directions at the campus helpdesk',floor:'Campus venue',events:[event.name],coordinator:'Campus helpdesk',phone:'',status:({open:'Registration open',closed:'Registration closed',in_progress:'In progress',completed:'Completed',upcoming:'Upcoming'} as Record<string,string>)[event.status] || event.status,capacity:String(event.max_participants)}));
   const [activeTab, setActiveTab] = useState<'tracks' | 'schedule' | 'venues' | 'alerts' | 'essentials'>('tracks');
   
@@ -91,12 +99,35 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
     }, 1200);
   };
 
-  const copyToClipboard = (text: string, type: 'pass') => {
-    navigator.clipboard.writeText(text);
-    if (type === 'pass') {
+  // Confirms the copy only after the browser accepted it.
+  const copyToClipboard = async (text: string) => {
+    setCopyError('');
+    try {
+      if (!text) throw new Error('No pass ID');
+      await navigator.clipboard.writeText(text);
       setCopiedPassId(true);
       setTimeout(() => setCopiedPassId(false), 2000);
+    } catch {
+      setCopyError('Copy failed. Select the pass ID and copy it manually.');
     }
+  };
+
+  // The ref blocks repeat clicks before the disabled state renders.
+  const withdrawPending = useRef(false);
+  const withdraw = async (registrationId: string, eventName: string) => {
+    if (withdrawPending.current || !confirm(`Withdraw from ${eventName}? Your slot will be released.`)) return;
+    withdrawPending.current = true;
+    setWithdrawing(registrationId); setTrackNotice('');
+    try {
+      if (await onWithdrawEvent(registrationId)) setTrackNotice(`You have withdrawn from ${eventName}.`);
+    } finally { withdrawPending.current = false; setWithdrawing(null); }
+  };
+
+  const addCompetition = async (event: { id: string; name: string }, teamName: string, members: { name: string }[]) => {
+    setTrackNotice('');
+    const failure = await handleRegisterEvent(event.id, teamName, members);
+    if (!failure) setTrackNotice(`${event.name} was added to your registration.`);
+    return failure;
   };
 
   const handlePrint = () => {
@@ -182,7 +213,7 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
               </button>
 
               <button
-                onClick={() => copyToClipboard(passId, 'pass')}
+                onClick={() => void copyToClipboard(passId)}
                 className="px-3.5 py-1.5 rounded-xl text-xs font-bold bg-white/10 hover:bg-white/20 text-gray-200 border border-white/15 flex items-center gap-1.5 transition-all cursor-pointer active:scale-95"
                 title="Copy Official Pass ID"
               >
@@ -198,6 +229,7 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
                 <span>Official Admit Pass</span>
               </button>
             </div>
+            {copyError && <p role="alert" className="text-xs text-red-200">{copyError}</p>}
           </div>
 
           {/* Dynamic Scannable QR Code Pass Box (Touch to enlarge) */}
@@ -230,10 +262,10 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
           </div>
           <div className="min-w-0">
             <span className="text-lg sm:text-xl font-black text-navy block leading-none">
-              {userRegistrations.length} / 2 Tracks
+              {userRegistrations.length} / {MAX_COMPETITIONS} Events
             </span>
             <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mt-1 block truncate">
-              {userRegistrations.length >= 2 ? 'Slots Full' : `${2 - userRegistrations.length} Slot${2 - userRegistrations.length !== 1 ? 's' : ''} Left`}
+              {userRegistrations.length >= MAX_COMPETITIONS ? 'All slots used' : 'Max 2 per group'}
             </span>
           </div>
         </div>
@@ -329,7 +361,7 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
         >
           <Bell className="w-4 h-4 text-orange-500" />
           <span>Alerts</span>
-          <span className="w-2 h-2 rounded-full bg-orange-500"></span>
+          {notifications.some(item => !item.read_at) && <span className="w-2 h-2 rounded-full bg-orange-500" aria-label="Unread alerts"></span>}
         </button>
 
         <button
@@ -359,30 +391,31 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
               </p>
             </div>
 
-            {userRegistrations.length < 2 && (
+            {canAddCompetition && (
               <button
-                onClick={() => setCurrentView('events')}
+                onClick={() => setShowAddCompetition(true)}
                 className="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white font-bold text-xs rounded-xl shadow-md transition-all flex items-center gap-1.5 self-start sm:self-auto cursor-pointer hover:scale-105 active:scale-95"
               >
                 <PlusCircle className="w-4 h-4" />
-                <span>Add 2nd Track ({userRegistrations.length}/2)</span>
+                <span>Add competition ({userRegistrations.length}/{MAX_COMPETITIONS})</span>
               </button>
             )}
           </div>
+          {trackNotice && <p role="status" className="p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-sm font-semibold text-emerald-800">{trackNotice}</p>}
 
           {userRegistrations.length === 0 ? (
             <div className="bg-white border-2 border-dashed border-gray-300 rounded-3xl p-8 sm:p-12 text-center space-y-4">
               <Trophy className="w-12 h-12 text-orange-400 mx-auto" />
               <h3 className="text-lg font-bold text-navy">No Events Registered Yet</h3>
               <p className="text-xs text-gray-500 max-w-md mx-auto">
-                You can choose up to 2 competitions across Group A and Group B. Complete your registration to lock your slots!
+                You can choose up to 2 competitions from Group A and up to 2 from Group B.
               </p>
-              <button
-                onClick={() => setCurrentView('register')}
+              {canAddCompetition ? <button
+                onClick={() => setShowAddCompetition(true)}
                 className="px-6 py-2.5 bg-orange-500 hover:bg-orange-600 text-white font-bold text-xs rounded-xl shadow cursor-pointer"
               >
-                Open Registration Form
-              </button>
+                Add a competition
+              </button> : <p className="text-xs font-semibold text-gray-600">{isRegistrationOpen ? 'No competition is open for registration right now.' : 'Student registration is closed.'}</p>}
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -487,15 +520,12 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
                       </span>
 
                       <button
-                        onClick={() => {
-                          if (confirm('Withdraw from this event? Your slot will be released.')) {
-                            onWithdrawEvent(reg.id);
-                          }
-                        }}
-                        className="text-red-500 hover:text-red-700 font-bold text-xs flex items-center gap-1 hover:underline cursor-pointer"
+                        onClick={() => void withdraw(reg.id, event?.name || 'this event')}
+                        disabled={withdrawing !== null}
+                        className="text-red-500 hover:text-red-700 font-bold text-xs flex items-center gap-1 hover:underline cursor-pointer disabled:opacity-50 disabled:cursor-wait"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
-                        <span>Withdraw</span>
+                        <span>{withdrawing === reg.id ? 'Withdrawing…' : 'Withdraw'}</span>
                       </button>
                     </div>
                   </div>
@@ -1043,6 +1073,7 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
         </div>
       )}
 
+      {showAddCompetition && <AddCompetitionDialog choices={choices} onAdd={addCompetition} onClose={() => setShowAddCompetition(false)} />}
     </div>
   );
 };
