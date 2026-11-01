@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, type PointerEvent } from 'react';
-import { ArrowRight, Megaphone, X } from 'lucide-react';
+import { ArrowRight, GraduationCap, Megaphone, X } from 'lucide-react';
 import './registration-live-notice.css';
 
 interface RegistrationLiveNoticeProps {
@@ -22,6 +22,7 @@ const focusIfConnected = (target: Element | null) => {
 /** Announcement that student registration is open. Visibility is decided by useRegistrationNotice. */
 export function RegistrationLiveNotice({ open, onOpened, onOpenFailed, onDismiss, onRegister, onSignIn }: RegistrationLiveNoticeProps) {
   const dialogRef = useRef<HTMLDialogElement>(null);
+  const titleRef = useRef<HTMLHeadingElement>(null);
   const primaryRef = useRef<HTMLButtonElement>(null);
   const returnFocus = useRef<Element | null>(null);
   const savedScroll = useRef<{ overflow: string; paddingRight: string } | null>(null);
@@ -71,7 +72,10 @@ export function RegistrationLiveNotice({ open, onOpened, onOpenFailed, onDismiss
       savedScroll.current = { overflow: style.overflow, paddingRight: style.paddingRight };
       style.overflow = 'hidden';
       if (scrollbar > 0) style.paddingRight = `${scrollbar}px`;
-      primaryRef.current?.focus();
+      // Keep the message visible on short screens instead of jumping down to the CTA.
+      dialog.scrollTop = 0;
+      const initialFocus = dialog.scrollHeight > dialog.clientHeight ? titleRef.current : primaryRef.current;
+      initialFocus?.focus({ preventScroll: true });
       onOpened();
     } else if (!open && dialog.open) {
       close('previous');
@@ -127,14 +131,15 @@ export function RegistrationLiveNotice({ open, onOpened, onOpenFailed, onDismiss
       }}
     >
       <div className="cf-reg-notice__card">
+        <div className="cf-reg-notice__accent" aria-hidden="true" />
         <button type="button" className="cf-reg-notice__close" aria-label="Close registration announcement" onClick={dismiss}>
           <X size={20} aria-hidden="true" />
         </button>
-        <div className="cf-reg-notice__icon" aria-hidden="true"><Megaphone size={28} strokeWidth={2} /></div>
+        <div className="cf-reg-notice__icon" aria-hidden="true"><Megaphone size={42} strokeWidth={1.8} /></div>
         <p className="cf-reg-notice__status"><span className="cf-reg-notice__dot" aria-hidden="true" />Registration open</p>
         <p className="cf-reg-notice__eyebrow">CrossFire 2026</p>
-        <h2 id="cf-reg-notice-title" className="cf-reg-notice__title">Registration is now <span>LIVE</span></h2>
-        <p id="cf-reg-notice-subtitle" className="cf-reg-notice__subtitle">For +2 final-year students</p>
+        <h2 ref={titleRef} tabIndex={-1} id="cf-reg-notice-title" className="cf-reg-notice__title">Registration is now <span>LIVE</span></h2>
+        <p id="cf-reg-notice-subtitle" className="cf-reg-notice__subtitle"><GraduationCap size={28} aria-hidden="true" /><span>For +2 final-year students</span></p>
         <p id="cf-reg-notice-body" className="cf-reg-notice__body">
           Create your student account, choose your competitions, and get your QR entry pass after successful registration.
         </p>
