@@ -9,7 +9,7 @@ export const isSupabaseConfigured: boolean = Boolean(
   supabaseAnonKey &&
   !supabaseUrl.includes('mock-crossfire') &&
   !supabaseUrl.includes('your-project') &&
-  supabaseUrl.startsWith('https://')
+  (supabaseUrl.startsWith('https://') || (import.meta.env.DEV && /^http:\/\/(?:127\.0\.0\.1|localhost):\d+$/.test(supabaseUrl)))
 );
 
 // Initialized Supabase client for main app session

@@ -21,12 +21,6 @@ Deno.serve(async (request: Request) => {
   if (!url || !secret) return reply(503, { error: 'Registration is temporarily unavailable. Please try again later.' });
   const service = createClient(url, secret, { auth: { persistSession: false, autoRefreshToken: false } });
   let requestId = '';
-  let owned = false;
-  // After a definite SQL failure no profile exists; remove only the identity marked for this request.
-  const compensate = async (userId: string) => {
-    if (owned) await service.auth.admin.deleteUser(userId);
-    await service.rpc('crossfire_abandon_student_registration', { p_request_id: requestId });
-  };
   try {
     let input: Record<string, unknown>;
     try {
@@ -45,12 +39,8 @@ Deno.serve(async (request: Request) => {
       for (const chunk of chunks) { body.set(chunk, offset); offset += chunk.byteLength; }
       input = JSON.parse(new TextDecoder().decode(body));
     } catch { return reply(400, { error: 'Invalid request.' }); }
-    if (!input || typeof input !== 'object' || Array.isArray(input) || Object.keys(input).some(key => !['request_id', 'profile', 'password'].includes(key))) return reply(400, { error: 'Invalid request.' });
-    const password = typeof input.password === 'string' ? input.password : '';
+    if (!input || typeof input !== 'object' || Array.isArray(input) || Object.keys(input).some(key => !['request_id', 'profile'].includes(key))) return reply(400, { error: 'Invalid request.' });
     if (typeof input.request_id !== 'string' || !uuid.test(input.request_id) || !input.profile || typeof input.profile !== 'object') return reply(400, { error: 'Invalid registration data. Refresh the page and try again.' });
-    if (password.length < 8 || password.length > 72) return reply(400, { error: 'Choose a password of 8 to 72 characters.', field: 'password' });
-    const profileEmail = typeof (input.profile as Record<string, unknown>).email === 'string' ? String((input.profile as Record<string, unknown>).email).trim().toLowerCase() : '';
-    if (profileEmail && profileEmail === password.trim().toLowerCase()) return reply(400, { error: 'Do not use your email address as your password.', field: 'password' });
     requestId = input.request_id;
 
     const { data: reserved, error: beginError } = await service.rpc('crossfire_begin_student_registration', { p_request_id: requestId, p_profile: input.profile });
@@ -68,30 +58,37 @@ Deno.serve(async (request: Request) => {
       const { data: existing, error: lookupError } = await service.auth.admin.getUserById(userId);
       if (lookupError && lookupError.status !== 404) return reply(503, { error: 'Registration could not be confirmed. Retry with the same details.' });
       if (existing?.user && !owns(existing.user)) { await service.rpc('crossfire_abandon_student_registration', { p_request_id: requestId }); return reply(409, { error: 'This registration could not be completed. Contact the organisers.' }); }
-      if (!existing?.user) {
+      let identity = existing?.user;
+      if (!identity) {
         // Email ownership is not verified by this flow. The reserved ID makes an
         // ambiguous create response safe to read back on retry.
         const { data: account, error: createError } = await service.auth.admin.createUser({
-          id: userId, email, password, email_confirm: true,
+          id: userId, email, password: crypto.randomUUID() + crypto.randomUUID().replaceAll('-', ''), email_confirm: false, ban_duration: '876000h',
           app_metadata: { crossfire_request_id: requestId }, user_metadata: { app: 'crossfire_student_registration' },
         });
-        if (createError || !owns(account?.user)) {
-          const { data: readback } = await service.auth.admin.getUserById(userId);
-          if (!owns(readback?.user)) {
-            await service.rpc('crossfire_abandon_student_registration', { p_request_id: requestId });
+        identity = account?.user;
+        if (createError || !owns(identity)) {
+          const { data: readback, error: readError } = await service.auth.admin.getUserById(userId);
+          if (readError && readError.status !== 404) return reply(503, { error: 'Registration could not be confirmed. Retry with the same details.' });
+          identity = readback?.user;
+          if (!owns(identity)) {
             const code = (createError as { code?: string } | null)?.code;
-            if (code === 'weak_password') return reply(400, { error: 'Choose a stronger password.', field: 'password' });
-            if (code === 'email_exists' || /already (been )?registered/i.test(createError?.message || '')) return reply(409, { error: 'This email is already registered. Sign in with your password, or ask the organisers for a password reset link.' });
-            return reply(503, { error: 'Your login could not be created. Please try again.' });
+            if (code === 'email_exists' || /already (been )?registered/i.test(createError?.message || '')) {
+              await service.rpc('crossfire_abandon_student_registration', { p_request_id: requestId });
+              return reply(409, { error: 'This email is already registered. Contact the organisers if you need help with access.' });
+            }
+            return reply(503, { error: 'Registration could not be completed. Please try again.' });
           }
         }
       }
-      owned = true;
+      if (!identity || identity.email_confirmed_at || !(Date.parse(identity.banned_until || '') > Date.now())) {
+        return reply(503, { error: 'Registration access could not be verified. Retry with the same details.' });
+      }
     }
 
     const { data: receipt, error: completeError } = await service.rpc('crossfire_complete_student_registration', { p_request_id: requestId });
     if (completeError) {
-      if (completeError.code === 'P0001') { await compensate(userId); return reply(409, { error: completeError.message }); }
+      if (completeError.code === 'P0001') { await service.rpc('crossfire_abandon_student_registration', { p_request_id: requestId }); return reply(409, { error: completeError.message }); }
       // A transport error may follow a commit; the same request ID resumes safely.
       return reply(503, { error: 'Registration could not be confirmed. Retry with the same details.' });
     }

@@ -77,7 +77,7 @@ test('the notice never queries data itself and never renders raw HTML',()=>{
     assert.doesNotMatch(source,/supabase|fetch\(|\.rpc\(|setInterval|dangerouslySetInnerHTML|localStorage/,name);
   }
   assert.match(notice,/aria-label="Close registration announcement"/);
-  for(const copy of ['Registration open','CrossFire 2026','Registration is now <span>LIVE</span>','For +2 final-year students','Create your student account, choose your competitions, and get your QR entry pass after successful registration.','Register now','Maybe later','Already registered?','Sign in'])
+  for(const copy of ['Registration open','CrossFire 2026','Registration is now <span>LIVE</span>','For +2 final-year students','Choose your competitions and get your QR entry pass immediately. The organisers will email your student portal credentials separately.','Register now','Maybe later','Already registered?','Sign in'])
     assert.ok(notice.includes(copy),copy);
   assert.doesNotMatch(notice,/onClick=\{[^}]*\}\s*\n?\s*>\s*\n?\s*<div className="cf-reg-notice__card"/,'no click handler on the dialog container');
   assert.equal((app.match(/<RegistrationLiveNotice/g)||[]).length,1,'mounted once');

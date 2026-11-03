@@ -2,17 +2,21 @@ import React, { useEffect, useRef, useState } from 'react';
 import { X, ShieldCheck, GraduationCap, ExternalLink } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { dashboardFor } from '../lib/roles';
+import { PUBLIC_STUDENT_SIGNIN } from '../lib/studentAccess';
 
 const backupForm = 'https://docs.google.com/forms/d/e/1FAIpQLSfIPctLilosmqJukeZze--Z9MKpcazZ3zJRq1pstA59bcfWzA/viewform';
-export const AuthModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ isOpen, onClose }) => {
+// studentEntry: opened from the controlled #student-login entry, which keeps the
+// student tab available while public student sign-in is hidden.
+export const AuthModal: React.FC<{ isOpen: boolean; onClose: () => void; studentEntry?: boolean }> = ({ isOpen, onClose, studentEntry = false }) => {
   const { login, isRegistrationOpen } = useAuth();
   const dialog = useRef<HTMLDialogElement>(null);
-  const [staff, setStaff] = useState(false);
+  const showStudent = PUBLIC_STUDENT_SIGNIN || studentEntry;
+  const [staff, setStaff] = useState(!showStudent);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
-  useEffect(() => { if (isOpen) { dialog.current?.showModal(); setStaff(false); setPassword(''); setError(''); } }, [isOpen]);
+  useEffect(() => { if (isOpen) { dialog.current?.showModal(); setStaff(!showStudent); setPassword(''); setError(''); } }, [isOpen, showStudent]);
   if (!isOpen) return null;
   const register = () => { onClose(); window.location.hash = 'register'; };
   const submit = async (event: React.FormEvent) => {
@@ -33,19 +37,21 @@ export const AuthModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ 
       <button onClick={onClose} aria-label="Close sign in" className="p-1 shrink-0"><X size={22}/></button>
     </header>
     <div className="p-5 sm:p-7">
-      <div role="tablist" aria-label="Portal login type" className="grid grid-cols-2 gap-2 mb-6">{[false, true].map(value => <button role="tab" aria-selected={staff === value} type="button" key={String(value)} disabled={busy} onClick={() => { setStaff(value); setPassword(''); setError(''); }} className={'rounded-xl px-2 py-3 text-xs sm:text-sm font-bold flex items-center justify-center gap-2 ' + (staff === value ? 'bg-navy text-white' : 'bg-slate-100 text-slate-600')}>
+      {showStudent && <div role="tablist" aria-label="Portal login type" className="grid grid-cols-2 gap-2 mb-6">{[false, true].map(value => <button role="tab" aria-selected={staff === value} type="button" key={String(value)} disabled={busy} onClick={() => { setStaff(value); setPassword(''); setError(''); }} className={'rounded-xl px-2 py-3 text-xs sm:text-sm font-bold flex items-center justify-center gap-2 ' + (staff === value ? 'bg-navy text-white' : 'bg-slate-100 text-slate-600')}>
         {value ? <ShieldCheck size={18}/> : <GraduationCap size={18}/>} {value ? 'Staff, Judge & VIP' : 'Student Login'}
-      </button>)}</div>
-      <p className="text-sm text-slate-600 mb-5">{staff ? 'Use the email and password from the organisers. A first sign-in asks you to choose your own password. Super admins also verify an authenticator.' : 'Use the email and password you chose when you registered.'}</p>
+      </button>)}</div>}
+      {!showStudent && <p className="mb-4 text-xs font-black tracking-wide text-navy flex items-center gap-2"><ShieldCheck size={18}/> Staff, Judge &amp; VIP sign-in</p>}
+      <p className="text-sm text-slate-600 mb-5">{staff ? 'Use the email and password from the organisers. A first sign-in asks you to choose your own password. Super admins also verify an authenticator.' : 'Use the student ID and temporary password emailed by the organisers. Returning students can also use their registered email.'}</p>
       <form onSubmit={submit} className="space-y-4">
-        <label className="block text-sm font-semibold">Email<input className={field + ' mt-1'} type="email" autoComplete="email" required maxLength={254} value={email} onChange={event=>setEmail(event.target.value)}/></label>
+        <label className="block text-sm font-semibold">{staff ? 'Email' : 'Student ID or registered email'}<input className={field + ' mt-1'} type={staff ? 'email' : 'text'} autoComplete="username" required maxLength={254} value={email} onChange={event=>setEmail(event.target.value)}/></label>
         <label className="block text-sm font-semibold">Password<input className={field + ' mt-1'} type="password" autoComplete="current-password" required maxLength={200} value={password} onChange={event=>setPassword(event.target.value)}/></label>
         {error && <p role="alert" className="text-sm text-red-700 bg-red-50 p-3 rounded-xl">{error}</p>}
         <button disabled={busy} className="w-full bg-orange-500 text-white rounded-xl font-bold py-3 disabled:opacity-50">{busy ? 'Signing in…' : 'Sign in'}</button>
       </form>
       <p className="mt-4 text-xs text-slate-600">Forgot your password? {staff ? 'Ask your CrossFire administrator to reset your access.' : 'Contact the CrossFire organisers. They can send a secure password reset link to your registered email.'}</p>
       <div className="mt-6 pt-5 border-t text-center text-xs text-slate-600 space-y-3">
-        {isRegistrationOpen ? <p>Haven’t registered for CrossFire 2026 yet? <button type="button" className="text-orange-600 font-bold" onClick={register}>Complete Free Registration</button></p> : <p>New student registration is closed. Registered students can still sign in.</p>}
+        {!showStudent && <p>Students: use the student sign-in link provided by the CrossFire organisers.</p>}
+        {isRegistrationOpen ? <p>Haven’t registered for CrossFire 2026 yet? <button type="button" className="text-orange-600 font-bold" onClick={register}>Complete Free Registration</button></p> : <p>New student registration is closed.{showStudent ? ' Registered students can still sign in.' : ''}</p>}
         <p>Facing problems with online registration? <a href={backupForm} target="_blank" rel="noopener noreferrer" className="font-bold text-navy inline-flex items-center gap-1">Use Official Google Form Backup <ExternalLink size={12}/></a></p>
       </div>
     </div>

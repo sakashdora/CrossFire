@@ -3,6 +3,7 @@ import { accountLabel, formatStudentDate } from './studentRecordsModel';
 
 export interface StudentRecord {
   id: string; request_id: string | null; reference: string; pass_code: string | null; student_id: string | null; has_login: boolean;
+  portal_state?: 'pending' | 'first_sign_in' | 'active'; delivery_status?: string;
   name: string; email: string; contact_number: string; whatsapp_number: string;
   institute_name: string; city_town: string; course_stream: string; board: string;
   food_preference: string; competitions: string; status: string; created_at: string;

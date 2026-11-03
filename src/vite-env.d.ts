@@ -5,6 +5,7 @@ interface ImportMetaEnv {
   readonly VITE_SUPABASE_ANON_KEY: string;
   readonly VITE_APP_NAME: string;
   readonly VITE_EVENT_DATE: string;
+  readonly VITE_STUDENT_SIGNIN_PUBLIC?: string;
 }
 
 interface ImportMeta {

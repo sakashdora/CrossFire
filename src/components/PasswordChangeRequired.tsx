@@ -33,7 +33,7 @@ export function PasswordChangeRequired() {
     <KeyRound className="text-orange-500 mb-3" size={30}/>
     <p className="text-xs text-orange-600 uppercase tracking-widest font-bold">Account setup</p>
     <h1 className="text-2xl font-black mt-2">Choose your own password</h1>
-    <p className="text-sm text-slate-600 my-4">You signed in with an initial password from the organisers. It works only once. Choose a new private password to continue.</p>
+    <p className="text-sm text-slate-600 my-4">You signed in with an initial password from the organisers. Choose a new private password to open your dashboard.</p>
     <form onSubmit={submit} className="space-y-4">
       {[{label:'New password',value:password,set:setPassword},{label:'Confirm new password',value:confirm,set:setConfirm}].map(field=><label className="block text-sm font-semibold" key={field.label}>{field.label}<input type="password" autoComplete="new-password" minLength={12} maxLength={72} required value={field.value} onChange={event=>field.set(event.target.value)} disabled={busy} className="mt-2 block w-full rounded-xl border px-4 py-3"/></label>)}
       <p className="text-xs text-slate-500">At least 12 characters. A password manager is recommended.</p>

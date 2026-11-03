@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { dashboardFor, ROLE_LABELS } from '../lib/roles';
+import { PUBLIC_STUDENT_SIGNIN } from '../lib/studentAccess';
 import { 
   Trophy, 
   Calendar, 
@@ -347,7 +348,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                     onClick={() => openAuthModal('login')}
                     className="px-4 py-2 text-sm font-bold text-gray-300 hover:text-white transition-colors"
                   >
-                    Sign In
+                    {PUBLIC_STUDENT_SIGNIN ? 'Sign In' : 'Staff Sign In'}
                   </button>
                 </div>
               )}
@@ -448,7 +449,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                         }}
                         className="flex-1 py-2.5 text-center rounded-xl bg-white/10 text-white font-bold text-xs hover:bg-white/15 transition-colors"
                       >
-                        Sign In
+                        {PUBLIC_STUDENT_SIGNIN ? 'Sign In' : 'Staff Sign In'}
                       </button>
                     </div>
                   )}

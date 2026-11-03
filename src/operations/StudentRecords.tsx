@@ -25,7 +25,7 @@ function Details({ row, close, children }: { row: StudentRecord; close: () => vo
     <div className="student-detail-body">
       <div className="student-detail-status"><span className={`ops-badge ${row.status === 'registered' && row.has_login ? 'good' : 'warn'}`}>{registrationLabel(row)}</span><span>{accountLabel(row)}</span></div>
       <dl className="student-detail-fields">{fields.map(([label, value]) => <div key={label}><dt>{label}</dt><dd>{value || '—'}</dd></div>)}</dl>
-      <div className="student-detail-pass"><div><h3>Student QR pass</h3><code>{row.pass_code || 'Not issued'}</code><p>{row.status === 'inactive' ? 'This account is suspended. Its pass cannot be used for check-in.' : row.has_login ? 'The student can also find this pass in their dashboard.' : 'This older submission has no login or QR pass yet.'}</p></div>{row.pass_code && <StudentQRCode studentId={row.pass_code} name={row.name} size={150} downloadable/>}</div>
+      <div className="student-detail-pass"><div><h3>Student QR pass</h3><code>{row.pass_code || 'Not issued'}</code><p>{row.status === 'inactive' ? 'This account is suspended. Its pass cannot be used for check-in.' : row.has_login ? 'The student can also find this pass in their dashboard.' : row.pass_code ? 'This pass is ready for gate check-in while portal credentials are pending.' : 'This older submission has no login or QR pass yet.'}</p></div>{row.pass_code && <StudentQRCode studentId={row.pass_code} name={row.name} size={150} downloadable/>}</div>
       {children}
     </div>
   </dialog>;
@@ -118,11 +118,26 @@ export function StudentRecords() {
   const clearFilters = () => { setSearch(''); setFilter('all'); setPassFilter('all'); setCompetition(''); setCourse(''); setPage(0); };
   const stats = [
     { label: 'Total registrations', hint: 'All submissions', count: records.length, icon: Users, tone: 'blue' },
-    { label: 'Registered', hint: 'Complete accounts', count: records.filter(record => record.has_login && record.status === 'registered').length, icon: CheckCircle2, tone: 'green' },
+    { label: 'Registered', hint: 'Admitted students', count: records.filter(record => (record.has_login || !!record.portal_state) && record.status === 'registered').length, icon: CheckCircle2, tone: 'green' },
     { label: 'No login', hint: 'Login pending', count: records.filter(record => !record.has_login).length, icon: Clock3, tone: 'orange' },
     { label: 'Issued passes', hint: 'QR passes created', count: records.filter(record => record.pass_code).length, icon: Ticket, tone: 'purple' },
     { label: 'Today', hint: 'New submissions · IST', count: records.filter(record => studentDay(record.created_at) === studentDay(new Date().toISOString())).length, icon: Users, tone: 'pink' },
   ];
+  const [outcomes, setOutcomes] = useState<string[]>([]);
+  const issue = (rows: StudentRecord[]) => run(async () => {
+    const results: string[] = [];
+    setOutcomes([]);
+    for (const student of rows) {
+      if (!student.request_id || !student.portal_state || student.status !== 'registered') { results.push(student.name + ": Ineligible"); continue; }
+      try {
+        const { data, error } = await supabase.functions.invoke('student-portal', { body: { action: 'issue', request_id: student.request_id } });
+        const labels: Record<string,string> = {accepted:'Email accepted', failed:'Delivery failed. Retry', uncertain:'Delivery unconfirmed. Retry', in_progress:'Delivery in progress', needs_review:'Check the original email provider receipt before retrying', already_issued:'Already issued'};
+        results.push(student.name + ": " + ((!error && labels[data?.status]) || 'Could not confirm. Refresh and retry'));
+      } catch { results.push(student.name + ": Could not confirm. Refresh and retry"); }
+      setOutcomes([...results]);
+    }
+    setOutcomes(results); await refresh();
+  });
   const row = records.find(record => record.id === selected);
   const requestId = row?.request_id;
   useEffect(() => {
@@ -140,7 +155,7 @@ export function StudentRecords() {
       <div className="records-updated"><span>Last updated<strong>{updated ? `${formatStudentDate(updated)} IST` : 'Waiting for records'}</strong></span><button className="ops-icon" disabled={busy || refreshing} onClick={() => void refresh()} aria-label="Refresh student records"><RefreshCw size={19} className={refreshing ? 'records-spinning' : ''}/></button></div>
       <div className="records-actions">
         <div className="records-bulk" ref={bulkRef}><button className="records-bulk-trigger" aria-expanded={bulkOpen} aria-controls="records-bulk-menu" onClick={() => setBulkOpen(!bulkOpen)}>Bulk actions{checked.size > 0 && ` (${checked.size})`}<ChevronDown size={15}/></button>
-          {bulkOpen && <div id="records-bulk-menu" className="records-bulk-menu"><small>{checked.size} selected across pages</small><button disabled={busy || !checked.size} onClick={() => { setBulkOpen(false); void exportRecords('xlsx', 'selected'); }}>Export selected Excel</button><button disabled={busy || !checked.size} onClick={() => { setBulkOpen(false); void exportRecords('pdf', 'selected'); }}>Export selected PDF</button><button disabled={!checked.size} onClick={() => { setChecked(new Set()); setBulkOpen(false); }}>Clear selection</button></div>}
+          {bulkOpen && <div id="records-bulk-menu" className="records-bulk-menu"><small>{checked.size} selected across pages</small><button disabled={busy || !checked.size} onClick={() => { setBulkOpen(false); void exportRecords('xlsx', 'selected'); }}>Export selected Excel</button><button disabled={busy || !checked.size} onClick={() => { setBulkOpen(false); void issue(records.filter(r => checked.has(r.id))); }}>Approve and issue credentials</button><button disabled={busy || !checked.size} onClick={() => { setBulkOpen(false); void exportRecords('pdf', 'selected'); }}>Export selected PDF</button><button disabled={!checked.size} onClick={() => { setChecked(new Set()); setBulkOpen(false); }}>Clear selection</button></div>}
         </div>
         <button disabled={busy || loading || !filtered.length} title="Export all matching student records" onClick={() => void exportRecords('xlsx')}><Download size={17}/>Export Excel</button>
         <button className="records-pdf" disabled={busy || loading || !filtered.length} title="Export all matching student records" onClick={() => void exportRecords('pdf')}><FileText size={17}/>Export PDF</button>
@@ -155,6 +170,7 @@ export function StudentRecords() {
       <label>Course / Board<select value={course} onChange={event => { setCourse(event.target.value); setPage(0); }}><option value="">All</option>{courses.map(value => <option key={value}>{value}</option>)}</select></label>
     </div>
     {error && <p role="alert" className="ops-message error">{error}{updated && ' Showing the last successfully loaded records.'}</p>}
+    {outcomes.length > 0 && <div role="status" className="ops-message"><strong>Credential delivery</strong><ul>{outcomes.map((result,i) => <li key={i}>{result}</li>)}</ul></div>}
     {notice && <p role="status" className="ops-message success">{notice}</p>}
     {busy && <p role="status">Preparing current records…</p>}
     <div className="records-table-card">
@@ -168,7 +184,7 @@ export function StudentRecords() {
         <td data-label="Institute / City">{record.institute_name || '—'}<small>{record.city_town}</small></td>
         <td data-label="Class / Course">{record.course_stream || '—'}<small>{[record.board,record.food_preference].filter(Boolean).join(' · ')}</small></td>
         <td data-label="Competitions">{record.competitions || 'No competitions recorded'}</td>
-        <td data-label="Status"><span className={`records-status ${record.status === 'registered' && record.has_login ? 'registered' : 'pending'}`}>{registrationLabel(record)}</span></td>
+        <td data-label="Status"><span className={`records-status ${record.status === 'registered' && (record.has_login || !!record.portal_state) ? 'registered' : 'pending'}`}>{registrationLabel(record)}</span></td>
         <td data-label="Gate pass"><span className={`records-status ${record.status === 'inactive' ? 'pending' : record.pass_code ? 'registered' : 'unissued'}`}>{record.status === 'inactive' && record.pass_code ? 'Suspended' : record.checked_in_at ? 'Checked in' : record.pass_code ? 'Issued' : 'Not issued'}</span></td>
         <td><button aria-label={`View details for ${record.name}`} onClick={() => setSelected(record.id)}><Eye size={16}/>View</button></td>
       </tr>)}</tbody></table></div>
@@ -176,7 +192,8 @@ export function StudentRecords() {
     <div className="records-pagination"><span>Showing {filtered.length ? currentPage * pageSize + 1 : 0}–{Math.min((currentPage + 1) * pageSize, filtered.length)} of {filtered.length} registrations{checked.size > 0 && ` · ${checked.size} selected`}</span><div><select aria-label="Sort students" value={sort} onChange={event => { setSort(event.target.value as StudentSort); setPage(0); }}><option value="newest">Newest first</option><option value="oldest">Oldest first</option><option value="name">Name A–Z</option></select><button aria-label="Previous page" disabled={currentPage === 0} onClick={() => setPage(currentPage - 1)}><ChevronLeft size={16}/></button><span className="records-current" aria-label={`Page ${currentPage + 1} of ${lastPage + 1}`}>{currentPage + 1}</span><button aria-label="Next page" disabled={currentPage === lastPage} onClick={() => setPage(currentPage + 1)}><ChevronRight size={16}/></button><select aria-label="Students per page" value={pageSize} onChange={event => { setPageSize(Number(event.target.value)); setPage(0); }}>{[10,25,50].map(size => <option key={size} value={size}>{size} / page</option>)}</select></div></div>
     </div>
     {row && <Details row={row} close={() => { if (!working.current) setSelected(null); }}>
-      {requestId && <section className="student-detail-recovery"><h3>{row.has_login ? 'Account recovery' : 'Set up student login'}</h3><p>{row.has_login ? 'Send a password reset link to the registered email using the configured college sender.' : 'An older submission needs a portal invitation to create its login and QR pass.'}</p>
+      {row.portal_state && <section className="student-detail-recovery"><h3>Portal credentials</h3><p>{accountLabel(row)} · Email: {row.delivery_status?.replace(/_/g, ' ') || 'not sent'}</p>{row.portal_state !== 'active' && row.delivery_status !== 'accepted' && <button disabled={busy || row.status !== 'registered'} onClick={() => void issue([row])}>{row.portal_state === 'pending' ? 'Approve and issue credentials' : 'Retry credential delivery'}</button>}{outcomes.length > 0 && <p role="status">{outcomes[outcomes.length - 1]}</p>}</section>}
+      {requestId && (!row.portal_state || row.portal_state === 'active') && <section className="student-detail-recovery"><h3>{row.has_login ? 'Account recovery' : 'Set up student login'}</h3><p>{row.has_login ? 'Send a password reset link to the registered email using the configured college sender.' : 'An older submission needs a portal invitation to create its login and QR pass.'}</p>
         {invitationError && <p role="alert">{invitationError}</p>}
         {invitation && <p>Last delivery: {invitation.status === 'none' ? 'No invitation sent' : invitation.status}{invitation.failure_code ? ` (${invitation.failure_code})` : ''}</p>}
         {row.status === 'registered' && <button disabled={busy || !invitation || ['preparing', 'ready', 'sending', 'uncertain'].includes(invitation.status)} onClick={() => void run(async () => {

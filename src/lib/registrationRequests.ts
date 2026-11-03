@@ -39,9 +39,9 @@ export class RegistrationError extends Error {
 
 // Reusing the same request ID with the same details is safe: the server returns
 // the saved receipt instead of creating a second account.
-export async function registerStudent(requestId: string, profile: RegistrationRequestInput, password: string): Promise<RegistrationReceipt> {
+export async function registerStudent(requestId: string, profile: RegistrationRequestInput): Promise<RegistrationReceipt> {
   if (!isSupabaseConfigured) throw new RegistrationError('Registration is temporarily unavailable. Please contact the college organisers.');
-  const { data, error } = await supabase.functions.invoke('register-student', { body: { request_id: requestId, profile, password } });
+  const { data, error } = await supabase.functions.invoke('register-student', { body: { request_id: requestId, profile } });
   if (error) {
     let detail: { error?: string; field?: string } = {};
     if (error.context instanceof Response) {
@@ -51,7 +51,7 @@ export async function registerStudent(requestId: string, profile: RegistrationRe
   }
   const receipt = data?.receipt as RegistrationReceipt | undefined;
   if (!data?.success || !receipt || !/^CF26-[0-9A-F]{32}$/.test(receipt.pass_id) || !/^CFS-\d+$/.test(receipt.student_id)) {
-    throw new RegistrationError('Your registration receipt could not be confirmed. Submit again with the same details, or sign in to check your registration.');
+    throw new RegistrationError('Your registration receipt could not be confirmed. Submit again with the same details.');
   }
   return receipt;
 }

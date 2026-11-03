@@ -3,6 +3,7 @@ import type { UserProfile, UserRole } from '../types';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { PROVISIONED_ROLES } from '../lib/roles';
 import { registrationStatusFromSetting } from '../lib/registrationNotice';
+import { PUBLIC_STUDENT_SIGNIN } from '../lib/studentAccess';
 
 type Result = { success: boolean; error?: string; role?: UserRole };
 /** 'error' means the setting could not be read; it is never treated as open. */
@@ -122,12 +123,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (!isSupabaseConfigured) return { success: false, error: unavailable };
     setAuthStatus(status => status === 'anonymous' ? 'loading' : status);
     try {
-      const { error } = await supabase.auth.signInWithPassword({ email: email.trim().toLowerCase(), password });
+      let error;
+      if (audience === 'student' && /^CFS-\d+$/i.test(email.trim())) {
+        const grant = await supabase.functions.invoke('student-portal', { body: { action: 'login', student_id: email.trim(), password } });
+        error = grant.error || (!grant.data?.access_token || !grant.data?.refresh_token
+          ? new Error('Invalid credentials') : (await supabase.auth.setSession(grant.data)).error);
+      } else {
+        ({ error } = await supabase.auth.signInWithPassword({ email: email.trim().toLowerCase(), password }));
+      }
       if (error) { await loadProfile(); return { success: false, error: genericLoginError }; }
       const { data, error: profileError } = await supabase.rpc('crossfire_current_profile');
       if (profileError || !data?.active || (audience === 'staff' ? !PROVISIONED_ROLES.includes(data.role) : data.role !== 'student')) {
         await supabase.auth.signOut({ scope: 'local' });
-        return { success: false, error: profileError || !data?.active ? genericLoginError : audience === 'staff' ? 'This is a student account. Use the Student Login tab.' : 'This account is not a student account. Use the Staff, Judge & VIP tab.' };
+        return { success: false, error: profileError || !data?.active ? genericLoginError : audience === 'staff' ? (PUBLIC_STUDENT_SIGNIN ? 'This is a student account. Use the Student Login tab.' : 'This is a student account. Use the student sign-in link provided by the organisers.') : 'This account is not a student account. Use the Staff, Judge & VIP tab.' };
       }
       await loadProfile();
       return { success: true, role: data.role };

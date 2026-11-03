@@ -10,6 +10,7 @@ import { dashboardFor, ROLE_LABELS } from './lib/roles';
 import { CinematicIntro } from './components/CinematicIntro';
 import { RegistrationLiveNotice } from './components/RegistrationLiveNotice';
 import { useRegistrationNotice } from './hooks/useRegistrationNotice';
+import { isStudentLoginHash } from './lib/studentAccess';
 import { LandingPage } from './pages/LandingPage';
 import { EventItem } from './types';
 
@@ -98,11 +99,21 @@ const CrossFireApp: React.FC = () => {
     return () => window.removeEventListener('hashchange', onHashChange);
   }, []);
 
-  const [authModalOpen, setAuthModalOpen] = useState(false);
+  // The controlled student entry is read once at load (before the view effect
+  // rewrites the hash) and again on later hash changes.
+  const [initialStudentEntry] = useState(() => isStudentLoginHash(window.location.hash));
+  const [studentEntry, setStudentEntry] = useState(initialStudentEntry);
+  const [authModalOpen, setAuthModalOpen] = useState(initialStudentEntry);
   useEffect(() => {
-    const open = () => setAuthModalOpen(true);
+    const open = () => { setStudentEntry(false); setAuthModalOpen(true); };
+    const openStudentEntry = () => {
+      if (!isStudentLoginHash(window.location.hash)) return;
+      window.history.replaceState(null, '', '#landing');
+      setStudentEntry(true); setAuthModalOpen(true);
+    };
     window.addEventListener('crossfire_open_login', open);
-    return () => window.removeEventListener('crossfire_open_login', open);
+    window.addEventListener('hashchange', openStudentEntry);
+    return () => { window.removeEventListener('crossfire_open_login', open); window.removeEventListener('hashchange', openStudentEntry); };
   }, []);
   const [selectedLandingEvent, setSelectedLandingEvent] = useState<EventItem | null>(null);
   
@@ -114,7 +125,7 @@ const CrossFireApp: React.FC = () => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
   // Only greet visitors arriving at the landing page; deep links stay direct.
-  const [showIntro, setShowIntro] = useState(() => currentView === 'landing' && !window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+  const [showIntro, setShowIntro] = useState(() => currentView === 'landing' && !initialStudentEntry && !window.matchMedia('(prefers-reduced-motion: reduce)').matches);
 
   const handleIntroComplete = useCallback(() => {
     setShowIntro(false);
@@ -155,6 +166,7 @@ const CrossFireApp: React.FC = () => {
       setCurrentView('register');
       return;
     }
+    setStudentEntry(false);
     setAuthModalOpen(true);
   };
 
@@ -353,7 +365,8 @@ const CrossFireApp: React.FC = () => {
       {/* Portal Sign In Modal */}
       <AuthModal
         isOpen={authModalOpen}
-        onClose={() => setAuthModalOpen(false)}
+        studentEntry={studentEntry}
+        onClose={() => { setAuthModalOpen(false); setStudentEntry(false); }}
       />
 
     </div>

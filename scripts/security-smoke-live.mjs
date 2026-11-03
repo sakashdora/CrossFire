@@ -19,7 +19,9 @@ await check('published leaderboard responds without private fields','/rest/v1/rp
 await check('student request table denies anonymous reads','/rest/v1/crossfire_registration_requests?select=*&limit=1',{},r=>[401,403].includes(r.status));
 await check('staff review list denies anonymous callers','/rest/v1/rpc/crossfire_list_registration_requests',{method:'POST',body:'{}'},r=>[401,403].includes(r.status));
 await check('review writes deny anonymous callers','/rest/v1/rpc/crossfire_review_registration_request',{method:'POST',body:JSON.stringify({p_id:null,p_status:'reviewed',p_notes:'',p_expected_updated_at:null})},r=>[401,403].includes(r.status));
-await check('public intake rejects an invalid payload without saving a record','/rest/v1/rpc/crossfire_submit_registration_request',{method:'POST',body:JSON.stringify({p_request_id:null,p_profile:{}})},(r,b)=>r.status===400&&b?.code==='P0001'&&b?.message==='Invalid registration data.');
+// Retired by 20261030090100: execute is revoked, so the denial itself is the expected result.
+// Intake validation is covered at the supported register-student entry and in the SQL suites.
+await check('retired public intake RPC denies anonymous execution','/rest/v1/rpc/crossfire_submit_registration_request',{method:'POST',body:JSON.stringify({p_request_id:null,p_profile:{}})},(r,b)=>[401,403].includes(r.status)&&b?.code==='42501');
 const endpoint=origin+'/functions/v1/provision-staff';
 const allowed=await fetch(endpoint,{method:'OPTIONS',headers:{Origin:'https://cross-fire-three.vercel.app','Access-Control-Request-Method':'POST'},signal:AbortSignal.timeout(15000)});
 assert.ok(allowed.ok);assert.equal(allowed.headers.get('Access-Control-Allow-Origin'),'https://cross-fire-three.vercel.app');passed++;console.log('PASS: deployed Edge endpoint accepts the configured Vercel preflight');

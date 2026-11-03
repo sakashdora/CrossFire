@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, type PointerEvent } from 'react';
 import { ArrowRight, GraduationCap, Megaphone, X } from 'lucide-react';
 import './registration-live-notice.css';
+import { PUBLIC_STUDENT_SIGNIN } from '../lib/studentAccess';
 
 interface RegistrationLiveNoticeProps {
   open: boolean;
@@ -141,7 +142,7 @@ export function RegistrationLiveNotice({ open, onOpened, onOpenFailed, onDismiss
         <h2 ref={titleRef} tabIndex={-1} id="cf-reg-notice-title" className="cf-reg-notice__title">Registration is now <span>LIVE</span></h2>
         <p id="cf-reg-notice-subtitle" className="cf-reg-notice__subtitle"><GraduationCap size={28} aria-hidden="true" /><span>For +2 final-year students</span></p>
         <p id="cf-reg-notice-body" className="cf-reg-notice__body">
-          Create your student account, choose your competitions, and get your QR entry pass after successful registration.
+          Choose your competitions and get your QR entry pass immediately. The organisers will email your student portal credentials separately.
         </p>
         <div className="cf-reg-notice__actions">
           <button ref={primaryRef} type="button" className="cf-reg-notice__primary" onClick={register}>
@@ -149,9 +150,9 @@ export function RegistrationLiveNotice({ open, onOpened, onOpenFailed, onDismiss
           </button>
           <button type="button" className="cf-reg-notice__secondary" onClick={dismiss}>Maybe later</button>
         </div>
-        <p className="cf-reg-notice__footer">
+        {PUBLIC_STUDENT_SIGNIN && <p className="cf-reg-notice__footer">
           Already registered? <button type="button" className="cf-reg-notice__link" onClick={signIn}>Sign in</button>
-        </p>
+        </p>}
       </div>
     </dialog>
   );

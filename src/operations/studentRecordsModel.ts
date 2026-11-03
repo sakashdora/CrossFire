@@ -4,7 +4,7 @@ export type StudentFilter = 'all' | 'registered' | 'no_login' | 'inactive' | 'de
 export type StudentSort = 'newest' | 'oldest' | 'name';
 export type DirectoryFilters = { pass?: string; competition?: string; course?: string };
 export function registrationLabel(row: StudentRecord): string {
-  return row.status === 'inactive' ? 'Suspended' : row.status === 'declined' ? 'Declined' : !row.has_login ? 'No login' : 'Registered';
+  return row.status === 'inactive' ? 'Suspended' : row.status === 'declined' ? 'Declined' : !row.has_login && !row.portal_state ? 'No login' : 'Registered';
 }
 export function studentDay(value: string): string {
   return Number.isFinite(Date.parse(value)) ? new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date(value)) : '';
@@ -15,8 +15,11 @@ export function directoryMatches(row: StudentRecord, filters: DirectoryFilters):
     && (!filters.course || [row.course_stream, row.board].includes(filters.course));
 }
 export function accountLabel(row: StudentRecord): string {
+  if (row.status === 'inactive') return 'Login suspended';
+  if (row.portal_state === 'pending') return 'Awaiting credentials';
+  if (row.portal_state === 'first_sign_in') return 'Password change required';
   if (!row.has_login) return 'No login yet';
-  return row.status === 'inactive' ? 'Login suspended' : 'Login available';
+  return 'Login available';
 }
 export function formatStudentDate(value: string | null): string {
   if (!value || !Number.isFinite(Date.parse(value))) return '—';
@@ -26,7 +29,7 @@ export function selectStudents(records: StudentRecord[], query: string, filter: 
   const words = query.trim().toLowerCase().split(/\s+/).filter(Boolean);
   return records.filter(row => {
     const haystack = [row.name, row.email, row.reference, row.student_id, row.pass_code, row.contact_number, row.whatsapp_number, row.institute_name, row.city_town, row.course_stream, row.board, row.competitions].join(' ').toLowerCase();
-    const matches = filter === 'all' || (filter === 'no_login' ? !row.has_login : filter === 'checked_in' ? !!row.checked_in_at : filter === 'registered' ? row.status === 'registered' && row.has_login : row.status === filter);
+    const matches = filter === 'all' || (filter === 'no_login' ? !row.has_login : filter === 'checked_in' ? !!row.checked_in_at : filter === 'registered' ? row.status === 'registered' && (row.has_login || !!row.portal_state) : row.status === filter);
     return matches && directoryMatches(row, extra) && words.every(word => haystack.includes(word));
   }).sort((a, b) => {
     if (sort === 'name') return a.name.localeCompare(b.name, 'en', { sensitivity: 'base' }) || a.id.localeCompare(b.id);

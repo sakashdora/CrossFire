@@ -1,6 +1,6 @@
 // Run by Vite before bundling. Errors never include environment values.
 export function validatePublicEnvironment(env) {
-  const allowed = new Set(['VITE_SUPABASE_URL', 'VITE_SUPABASE_ANON_KEY', 'VITE_EMAIL_AUTH_READY', 'VITE_APP_NAME', 'VITE_EVENT_DATE']);
+  const allowed = new Set(['VITE_SUPABASE_URL', 'VITE_SUPABASE_ANON_KEY', 'VITE_EMAIL_AUTH_READY', 'VITE_STUDENT_SIGNIN_PUBLIC', 'VITE_APP_NAME', 'VITE_EVENT_DATE']);
   for (const key of Object.keys(env)) {
     if (!key.startsWith('VITE_')) continue;
     if (allowed.has(key)) continue;
@@ -17,4 +17,5 @@ export function validatePublicEnvironment(env) {
     if (payload.role !== 'anon' || payload.ref !== 'foklyhoplcghivghuebp') throw new Error('Only this project’s public anon key may be bundled. Never use a service-role key.');
   }
   if (env.VITE_EMAIL_AUTH_READY && !['true','false'].includes(env.VITE_EMAIL_AUTH_READY)) throw new Error('VITE_EMAIL_AUTH_READY must be true or false.');
+  if (env.VITE_STUDENT_SIGNIN_PUBLIC && !['true','false'].includes(env.VITE_STUDENT_SIGNIN_PUBLIC)) throw new Error('VITE_STUDENT_SIGNIN_PUBLIC must be true or false.');
 }

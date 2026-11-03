@@ -4,6 +4,7 @@ import { CourseStream, FoodPreference, EventItem, SchoolBoard } from '../types';
 import { escapeHtml } from '../lib/security';
 import { registerStudent, RegistrationError, type RegistrationReceipt } from '../lib/registrationRequests';
 import { dashboardFor } from '../lib/roles';
+import { PUBLIC_STUDENT_SIGNIN } from '../lib/studentAccess';
 import { StudentQRCode } from '../components/StudentQRCode';
 
 
@@ -44,7 +45,7 @@ export const RegistrationPage: React.FC<RegistrationPageProps> = ({
   setCurrentView,
   focusHeadingOnMount = false,
 }) => {
-  const { user, login, logout, isRegistrationOpen, registrationStatus, refreshRegistrationStatus } = useAuth();
+  const { user, logout, isRegistrationOpen, registrationStatus, refreshRegistrationStatus } = useAuth();
   const heading = useRef<HTMLHeadingElement>(null);
   const [checkingStatus, setCheckingStatus] = useState(false);
   useEffect(() => {
@@ -70,8 +71,6 @@ export const RegistrationPage: React.FC<RegistrationPageProps> = ({
   const [board, setBoard] = useState<SchoolBoard>('CBSE');
   const [foodPreference, setFoodPreference] = useState<FoodPreference>('Veg');
   const [consent, setConsent] = useState(false);
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
   const [website, setWebsite] = useState('');
   // One request ID per set of details: resubmitting after a lost response
   // returns the saved account instead of creating a second one.
@@ -84,7 +83,6 @@ export const RegistrationPage: React.FC<RegistrationPageProps> = ({
   const [errorField, setErrorField] = useState<string | undefined>();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [receipt, setReceipt] = useState<RegistrationReceipt | null>(null);
-  const [signedIn, setSignedIn] = useState(false);
 
   const groupAEvents = events.filter(e => e.group === 'Group A');
   const groupBEvents = events.filter(e => e.group === 'Group B');
@@ -139,9 +137,6 @@ export const RegistrationPage: React.FC<RegistrationPageProps> = ({
     if (selectedCompetitions.length === 0) return fail('Please select at least 1 competition to participate.');
     if (groupASelectedCount > 2) return fail('You can select a maximum of 2 competitions from Group A.');
     if (groupBSelectedCount > 2) return fail('You can select a maximum of 2 competitions from Group B.');
-    if (password.length < 8 || password.length > 72) return fail('Choose a password of 8 to 72 characters.', 'password');
-    if (password !== confirmPassword) return fail('The two passwords do not match.', 'password');
-    if (password.trim().toLowerCase() === emailId.trim().toLowerCase()) return fail('Do not use your email address as your password.', 'password');
 
     setIsSubmitting(true);
     try {
@@ -153,13 +148,9 @@ export const RegistrationPage: React.FC<RegistrationPageProps> = ({
       };
       const payload = JSON.stringify(profile);
       if (intakeAttempt.current?.payload !== payload) intakeAttempt.current = { id: crypto.randomUUID(), payload };
-      const saved = await registerStudent(intakeAttempt.current.id, profile, password);
+      const saved = await registerStudent(intakeAttempt.current.id, profile);
       setReceipt(saved);
       confetti({ particleCount: 150, spread: 90, origin: { y: 0.6 } });
-      // Sign in with the new account so the student can open their own dashboard.
-      const session = await login(saved.email, password, 'student');
-      setSignedIn(session.success);
-      setPassword(''); setConfirmPassword('');
       onSuccess(events.filter(event => saved.competitions.includes(event.name)));
     } catch (err) {
       if (err instanceof RegistrationError) fail(err.message, err.field);
@@ -170,11 +161,10 @@ export const RegistrationPage: React.FC<RegistrationPageProps> = ({
   };
 
   const resetForm = async () => {
-    if (signedIn) await logout();
-    setReceipt(null); setSignedIn(false);
+    setReceipt(null);
     setStudentName(''); setEmailId(''); setContactNo(''); setWhatsappNo('');
     setSelectedCompetitions([]); setInstituteName(''); setCityTown(''); setConsent(false);
-    setPassword(''); setConfirmPassword(''); setWebsite(''); intakeAttempt.current = null;
+    setWebsite(''); intakeAttempt.current = null;
   };
 
   const handlePrintSlip = () => {
@@ -245,7 +235,7 @@ export const RegistrationPage: React.FC<RegistrationPageProps> = ({
     <div class="notice">
       <strong>Important Instructions for Registered Participants:</strong><br/>
       1. Show this QR pass at the campus gate on Nov 15, 2026 at Srusti Campus, Chandrasekharpur, Bhubaneswar. Staff verify it against the live registration record.<br/>
-      2. Sign in with your registered email and the password you chose to view your pass and details. The pass ID is not a password; never share your password.<br/>
+      2. Your QR is ready for admission. The organisers will email your portal credentials separately.<br/>
       3. For any queries or verification, contact Event Coordinators Mr. N.R. Swain (+91-7008671339) or Mr. A. Meher (+91-8455090984).
     </div>
     <div class="footer">
@@ -276,7 +266,7 @@ export const RegistrationPage: React.FC<RegistrationPageProps> = ({
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10 pb-28 lg:pb-16">
       
-      {!receipt && isRegistrationOpen && !user && <p className="p-4 mb-5 rounded-xl border border-blue-200 bg-blue-50 text-sm text-navy">Register below to create your CrossFire student account. You will receive your entry QR pass immediately and can sign in later with your email and password.</p>}
+      {!receipt && isRegistrationOpen && !user && <p className="p-4 mb-5 rounded-xl border border-blue-200 bg-blue-50 text-sm text-navy">Register to receive your acknowledgement and entry QR immediately. The organisers issue student portal credentials separately by email.</p>}
       {/* Srusti Official Branding Header */}
       <div className="bg-white rounded-3xl border border-gray-200 shadow-xl overflow-hidden mb-6 sm:mb-8">
         <div className="bg-navy p-5 sm:p-7 md:p-8 text-white relative overflow-hidden">
@@ -390,7 +380,7 @@ export const RegistrationPage: React.FC<RegistrationPageProps> = ({
               <span className="text-[10px] font-black uppercase text-navy/70 tracking-widest">Entry QR pass</span>
             </div>
             <dl className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {([['Student ID', receipt.student_id], ['Pass ID', receipt.pass_id], ['Name', receipt.name], ['Email (login)', receipt.email], ['Contact / WhatsApp', `${receipt.contact_number} / ${receipt.whatsapp_number}`], ['Institute', `${receipt.institute_name} · ${receipt.city_town}`], ['Course & board', `${receipt.course_stream} · ${receipt.board}`], ['Meal preference', receipt.food_preference], ['Competitions', receipt.competitions.join(' & ')], ['Reference', receipt.reference_code]] as const).map(([label, value]) => <div key={label} className="min-w-0">
+              {([['Student ID', receipt.student_id], ['Pass ID', receipt.pass_id], ['Name', receipt.name], ['Registered email', receipt.email], ['Contact / WhatsApp', `${receipt.contact_number} / ${receipt.whatsapp_number}`], ['Institute', `${receipt.institute_name} · ${receipt.city_town}`], ['Course & board', `${receipt.course_stream} · ${receipt.board}`], ['Meal preference', receipt.food_preference], ['Competitions', receipt.competitions.join(' & ')], ['Reference', receipt.reference_code]] as const).map(([label, value]) => <div key={label} className="min-w-0">
                 <dt className="text-[10px] font-bold uppercase text-gray-400">{label}</dt>
                 <dd className={`font-bold text-navy break-words ${label === 'Pass ID' || label === 'Student ID' ? 'font-mono text-orange-600' : ''}`}>{value}</dd>
               </div>)}
@@ -403,7 +393,7 @@ export const RegistrationPage: React.FC<RegistrationPageProps> = ({
               <span>Next steps</span>
             </div>
             <p className="text-[11px] leading-relaxed text-amber-900">
-              Save or print your QR pass and show it at the gate. You can sign in at any time with <strong>{receipt.email}</strong> and the password you chose to see this pass and your details again{signedIn ? ' — you are signed in now.' : '.'} The pass ID identifies your registration; it is not a password.
+              Save or print your QR pass for the gate. The organisers will email your student ID and temporary password when they issue portal access.
             </p>
           </div>
 
@@ -416,19 +406,12 @@ export const RegistrationPage: React.FC<RegistrationPageProps> = ({
               <Printer className="w-4 h-4 text-orange-400" />
               <span>Print Pass &amp; Acknowledgement Slip</span>
             </button>
-            {signedIn && <button
-              type="button"
-              onClick={() => setCurrentView('dashboard')}
-              className="py-3.5 px-5 bg-orange-500 hover:bg-orange-600 text-white font-bold text-xs rounded-xl transition-all cursor-pointer text-center"
-            >
-              Open My Dashboard
-            </button>}
             <button
               type="button"
               onClick={() => void resetForm()}
               className="py-3.5 px-4 bg-orange-50 hover:bg-orange-100 text-orange-700 font-bold text-xs rounded-xl transition-all cursor-pointer text-center"
             >
-              {signedIn ? 'Sign Out & Register Another' : 'Register Another Student'}
+              Register Another Student
             </button>
           </div>
         </div>
@@ -447,8 +430,8 @@ export const RegistrationPage: React.FC<RegistrationPageProps> = ({
         <section className="p-6 sm:p-8 bg-white border border-amber-200 rounded-3xl text-center space-y-4">
           <Lock className="w-8 h-8 text-orange-600 mx-auto" />
           <h2 className="font-black text-xl text-navy">Student registration is closed</h2>
-          <p className="text-sm text-gray-600">New registrations are no longer accepted. Registered students can still sign in to view their details and QR pass.</p>
-          <button type="button" onClick={openStudentLogin} className="py-3 px-5 bg-orange-500 text-white font-bold text-sm rounded-xl">Student sign in</button>
+          <p className="text-sm text-gray-600">New registrations are no longer accepted. {PUBLIC_STUDENT_SIGNIN ? 'Registered students can still sign in to view their details and QR pass.' : 'Registered students can sign in through the student sign-in link provided by the organisers.'}</p>
+          {PUBLIC_STUDENT_SIGNIN && <button type="button" onClick={openStudentLogin} className="py-3 px-5 bg-orange-500 text-white font-bold text-sm rounded-xl">Student sign in</button>}
         </section>
       ) : (
         /* Main Registration Form */
@@ -458,7 +441,7 @@ export const RegistrationPage: React.FC<RegistrationPageProps> = ({
               <p className="text-sm font-bold text-navy">Registration status could not be checked. Please try again.</p>
               <div className="flex flex-wrap gap-2 shrink-0">
                 <button type="button" onClick={() => void retryStatus()} disabled={checkingStatus} className="min-h-[44px] py-2.5 px-4 bg-navy text-white font-bold text-sm rounded-xl disabled:opacity-60">{checkingStatus ? 'Checking…' : 'Try again'}</button>
-                <button type="button" onClick={openStudentLogin} className="min-h-[44px] py-2.5 px-4 bg-gray-100 text-gray-800 font-bold text-sm rounded-xl">Student sign in</button>
+                {PUBLIC_STUDENT_SIGNIN && <button type="button" onClick={openStudentLogin} className="min-h-[44px] py-2.5 px-4 bg-gray-100 text-gray-800 font-bold text-sm rounded-xl">Student sign in</button>}
               </div>
             </div>
           )}
@@ -535,7 +518,7 @@ export const RegistrationPage: React.FC<RegistrationPageProps> = ({
                   />
                 </div>
                 <span className="text-[10px] text-gray-400 mt-1 block">
-                  Use your own email. It becomes your login and the college uses it for updates and password resets.
+                  Use your own email. The organisers will send your private portal credentials here.
                 </span>
               </div>
 
@@ -901,12 +884,6 @@ export const RegistrationPage: React.FC<RegistrationPageProps> = ({
         {/* SUBMIT BUTTON */}
         <div className="pt-2">
           {(eventsError || eventsLoading) && <p role="status" className="p-3 mb-3 text-sm text-slate-600">{eventsError || 'Loading available competitions…'}</p>}
-          <fieldset className="p-5 mb-4 bg-white border border-gray-200 rounded-2xl grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <legend className="px-1 text-sm font-black text-navy">Create your login password *</legend>
-            <label className="block text-xs font-bold text-gray-700">Password<input type="password" autoComplete="new-password" minLength={8} maxLength={72} required value={password} onChange={e => setPassword(e.target.value)} aria-invalid={errorField === 'password'} className={`w-full mt-1.5 p-3 border rounded-xl bg-white text-sm ${errorField === 'password' ? 'border-red-400' : 'border-gray-300'}`} /></label>
-            <label className="block text-xs font-bold text-gray-700">Confirm password<input type="password" autoComplete="new-password" minLength={8} maxLength={72} required value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} aria-invalid={errorField === 'password'} className={`w-full mt-1.5 p-3 border rounded-xl bg-white text-sm ${errorField === 'password' ? 'border-red-400' : 'border-gray-300'}`} /></label>
-            <p className="sm:col-span-2 text-[11px] text-gray-500">8 to 72 characters. You will sign in with your email and this password. The organisers never see it.</p>
-          </fieldset>
           {errorMessage && <p role="alert" className="p-3 mb-3 rounded-xl bg-red-50 border border-red-200 text-sm font-bold text-red-800">{errorMessage}</p>}
           <button
             type="submit"
