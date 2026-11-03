@@ -92,6 +92,8 @@ export const Navbar: React.FC<NavbarProps> = ({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  const volunteerDesk = currentView === 'volunteer' && role === 'volunteer';
+  const coordinatorDesk = currentView === 'coordinator' && role === 'coordinator';
   const management = currentView === 'admin' && (role === 'admin' || role === 'super_admin');
   const navItems = [
     { id: 'landing', label: 'Overview', icon: null },
@@ -104,7 +106,7 @@ export const Navbar: React.FC<NavbarProps> = ({
     <>
       {/* Fixed Full-Width Modern Glass Navbar (Zero layout shifting, zero jitter) */}
       <header 
-        className={`${management ? 'cf-management-header' : ''} fixed top-0 left-0 right-0 z-50 w-full transition-all duration-300 ${
+        className={`${volunteerDesk || coordinatorDesk ? 'cf-duty-header' : ''} ${management ? 'cf-management-header' : ''} fixed top-0 left-0 right-0 z-50 w-full transition-all duration-300 ${
           scrolled || currentView !== 'landing'
             ? 'bg-[#000d1a]/90 backdrop-blur-xl border-b border-cyan-500/20 shadow-[0_4px_30px_rgba(0,0,0,0.6)]' 
             : 'bg-[#000d1a]/40 backdrop-blur-md border-b border-white/10'
@@ -122,7 +124,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               className="cf-navbar-brand flex items-center gap-3 cursor-pointer group select-none shrink-0"
               aria-label="CrossFire home"
             >
-              {currentView === 'events' || currentView === 'landing' ? <>
+              {volunteerDesk || coordinatorDesk ? <><span className="cf-duty-brand">CROSS<b>FIRE</b></span><span className="cf-duty-divider">{coordinatorDesk ? 'Results desk' : 'Volunteer desk'}</span></> : currentView === 'events' || currentView === 'landing' ? <>
                 <img className="cf-events-nav-logo" src="/hero-crossfire-title.png" alt="CrossFire" width="158" height="36" />
                 <span className="cf-events-nav-year">2026</span>
               </> : <>

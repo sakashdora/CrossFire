@@ -11,13 +11,24 @@ export const LiveQRScanner: React.FC<LiveQRScannerProps> = ({ onScanSuccess, onC
   const [cameras, setCameras] = useState<{ id: string; label: string }[]>([]);
   const [selectedCamera, setSelectedCamera] = useState<string>('');
   const [isScanning, setIsScanning] = useState(false);
-  const isScanningRef = useRef(false);  // ref mirror to avoid stale closures in cleanup
+  const cameraQueue = useRef(Promise.resolve());
+  const onDecode = useRef(onScanSuccess);
+  onDecode.current = onScanSuccess;
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [mode, setMode] = useState<'camera' | 'file'>('camera');
-  const scannerRef = useRef<Html5Qrcode | null>(null);
+  const dialogRef = useRef<HTMLDialogElement>(null);
+  const fileAttempt = useRef(0);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const containerId = 'crossfire-qr-reader';
+
+  useEffect(() => {
+    const dialog = dialogRef.current;
+    dialog?.showModal();
+    return () => dialog?.close();
+  }, []);
+
+  useEffect(() => () => { fileAttempt.current++; }, [mode]);
 
   // Initialize and get camera devices
   useEffect(() => {
@@ -43,82 +54,53 @@ export const LiveQRScanner: React.FC<LiveQRScannerProps> = ({ onScanSuccess, onC
 
     return () => {
       isMounted = false;
-      stopCamera();
     };
   }, []);
 
-  const startCamera = async (cameraId: string) => {
-    if (!cameraId) return;
-    setErrorMsg(null);
-
-    try {
-      if (scannerRef.current) {
-        await stopCamera();
-      }
-
-      const html5QrCode = new Html5Qrcode(containerId);
-      scannerRef.current = html5QrCode;
-
-      await html5QrCode.start(
-        cameraId,
-        {
-          fps: 10,
-          qrbox: { width: 250, height: 250 },
-          aspectRatio: 1.0,
-        },
-        (decodedText: string) => {
-          // Play audio beep tone
-          try {
-            const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
-            const osc = ctx.createOscillator();
-            const gain = ctx.createGain();
-            osc.connect(gain);
-            gain.connect(ctx.destination);
-            osc.frequency.setValueAtTime(800, ctx.currentTime);
-            gain.gain.setValueAtTime(0.2, ctx.currentTime);
-            osc.start();
-            osc.stop(ctx.currentTime + 0.15);
-          } catch {
-            // Ignore audio error
-          }
-          onScanSuccess(decodedText);
-        },
-        () => {
-          // Frame parse failure - standard per frame, ignore
-        }
-      );
-
-      setIsScanning(true);
-      isScanningRef.current = true;
-    } catch (err: any) {
-      console.warn('[CROSSFIRE] Failed to start camera:', err);
-      setErrorMsg(err.message || 'Unable to access camera. Please check browser permissions.');
-      setIsScanning(false);
-    }
-  };
-
-  const stopCamera = async () => {
-    if (scannerRef.current && isScanningRef.current) {
-      try {
-        await scannerRef.current.stop();
-        scannerRef.current.clear();
-      } catch (err) {
-        console.warn('[CROSSFIRE] Error stopping scanner:', err);
-      }
-      setIsScanning(false);
-      isScanningRef.current = false;
-    }
-  };
-
-  // Start camera when selectedCamera is ready and mode is camera
+  // Camera startup and shutdown are asynchronous. Finish releasing the previous
+  // stream before switching devices, modes, or leaving the desk.
   useEffect(() => {
-    if (mode === 'camera' && selectedCamera) {
-      startCamera(selectedCamera);
-    } else {
-      stopCamera();
-    }
+    if (mode !== 'camera' || !selectedCamera) return;
+    let cancelled = false;
+    let delivered = false;
+    let streaming = false;
+    let reader: Html5Qrcode | null = null;
+    const started = cameraQueue.current.then(async () => {
+      if (cancelled) return;
+      setErrorMsg(null);
+      try {
+        reader = new Html5Qrcode(containerId);
+        await reader.start(selectedCamera, { fps: 10, qrbox: { width: 250, height: 250 }, aspectRatio: 1 },
+          code => {
+            if (cancelled || delivered) return;
+            delivered = true;
+            try {
+              const audio = new AudioContext();
+              const tone = audio.createOscillator();
+              const volume = audio.createGain();
+              tone.connect(volume);
+              volume.connect(audio.destination);
+              tone.frequency.value = 800;
+              volume.gain.value = 0.2;
+              tone.onended = () => { void audio.close(); };
+              tone.start();
+              tone.stop(audio.currentTime + 0.15);
+            } catch { /* Audio may be unavailable on this device. */ }
+            onDecode.current(code);
+          }, () => {});
+        streaming = true;
+        if (!cancelled) setIsScanning(true);
+      } catch (error) {
+        if (!cancelled) setErrorMsg(error instanceof Error ? error.message : 'Unable to access camera. Check browser permissions or upload a pass image.');
+      }
+    });
     return () => {
-      stopCamera();
+      cancelled = true;
+      setIsScanning(false);
+      cameraQueue.current = started.then(async () => {
+        if (streaming) await reader?.stop();
+        reader?.clear();
+      }).catch(error => console.warn('[CROSSFIRE] Error releasing scanner:', error));
     };
   }, [selectedCamera, mode]);
 
@@ -126,25 +108,28 @@ export const LiveQRScanner: React.FC<LiveQRScannerProps> = ({ onScanSuccess, onC
   const handleFileScan = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    const attempt = ++fileAttempt.current;
+    e.target.value = '';
+    setErrorMsg(null);
 
     try {
       const html5QrCode = new Html5Qrcode('crossfire-file-reader');
-      const result = await html5QrCode.scanFile(file, true);
+      const result = await html5QrCode.scanFile(file, false);
       html5QrCode.clear();
-      onScanSuccess(result);
-    } catch (err: any) {
-      setErrorMsg('Could not detect a valid QR code in the uploaded image.');
+      if (attempt === fileAttempt.current) onScanSuccess(result);
+    } catch {
+      if (attempt === fileAttempt.current) setErrorMsg('Could not detect a valid QR code in the uploaded image.');
     }
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-navy-dark/85 backdrop-blur-md animate-fadeIn">
+    <dialog ref={dialogRef} aria-label="Pass scanner" onCancel={event => { event.preventDefault(); onClose(); }} className="m-auto w-[calc(100%-2rem)] max-w-md max-h-[90dvh] overflow-auto rounded-3xl p-0 backdrop:bg-navy-dark/85">
       <div className="bg-white rounded-3xl shadow-2xl max-w-md w-full overflow-hidden border border-gray-200 flex flex-col">
         {/* Header */}
         <div className="px-5 py-4 bg-navy text-white flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Camera className="w-5 h-5 text-orange-400 animate-pulse" />
-            <h3 className="font-black text-sm tracking-wide">Live Gate QR Scanner</h3>
+            <h3 className="font-black text-sm tracking-wide">Pass QR scanner</h3>
             {mode === 'camera' && (
               <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${isScanning ? 'bg-emerald-500/20 text-emerald-300' : 'bg-white/10 text-gray-400'}`}>
                 {isScanning ? '● Live' : 'Ready'}
@@ -152,10 +137,8 @@ export const LiveQRScanner: React.FC<LiveQRScannerProps> = ({ onScanSuccess, onC
             )}
           </div>
           <button
-            onClick={() => {
-              stopCamera();
-              onClose();
-            }}
+            onClick={onClose}
+            aria-label="Close scanner"
             className="p-1.5 rounded-xl text-white/60 hover:text-white hover:bg-white/10 transition-colors"
           >
             <X className="w-5 h-5" />
@@ -205,6 +188,7 @@ export const LiveQRScanner: React.FC<LiveQRScannerProps> = ({ onScanSuccess, onC
               {cameras.length > 1 && (
                 <div className="mt-3 w-full max-w-[280px]">
                   <select
+                    aria-label="Select camera"
                     value={selectedCamera}
                     onChange={(e) => setSelectedCamera(e.target.value)}
                     className="w-full text-xs font-bold bg-gray-100 border border-gray-300 rounded-xl px-3 py-2 text-navy"
@@ -219,7 +203,7 @@ export const LiveQRScanner: React.FC<LiveQRScannerProps> = ({ onScanSuccess, onC
               )}
 
               <p className="text-[11px] text-gray-500 font-medium text-center mt-3">
-                Align the student's admit pass QR code inside the viewfinder window.
+                Align the pass QR code inside the viewfinder window.
               </p>
             </div>
           ) : (
@@ -250,16 +234,13 @@ export const LiveQRScanner: React.FC<LiveQRScannerProps> = ({ onScanSuccess, onC
             CROSSFIRE GATE SCANNER • SRUSTI 2026
           </span>
           <button
-            onClick={() => {
-              stopCamera();
-              onClose();
-            }}
+            onClick={onClose}
             className="px-4 py-1.5 bg-gray-200 hover:bg-gray-300 font-bold text-gray-700 rounded-xl cursor-pointer"
           >
             Cancel
           </button>
         </div>
       </div>
-    </div>
+    </dialog>
   );
 };

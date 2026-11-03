@@ -1,0 +1,54 @@
+@font-face { font-family: DutyAnton; src: url('/fonts/anton.ttf'); font-display: swap }
+@font-face { font-family: DutyBarlow; src: url('/fonts/barlow-condensed-semibold.ttf'); font-display: swap }
+.ops-volunteer { background: #f4f5f1; color: #102a43 }
+.ops-volunteer .ops-shell { display: block }
+.ops-volunteer .ops-content { max-width: 1130px; padding: 38px 26px; margin: auto }
+.vd { font: 16px/1.45 "Segoe UI", sans-serif }
+.vd-label { font: 15px DutyBarlow,sans-serif; text-transform: uppercase; letter-spacing: 2px; color: #4f6473 }
+.vd h1 { font: clamp(38px,5vw,60px)/1.1 DutyAnton,sans-serif; margin: 7px 0 24px }
+.vd h2 { font: 34px/1.15 DutyBarlow,sans-serif }
+.vd h3 { font: 25px DutyBarlow,sans-serif }
+.vd-assignment { display: flex; justify-content: space-between; align-items: center; gap: 12px; background: #082e4c; color: white; border-radius: 12px; padding: 24px 30px; position: relative; isolation: isolate; overflow: hidden }
+.vd-assignment::after { content: ''; position: absolute; right: 19%; top: -32px; height: 200px; width: 48px; border-left: 12px solid #184362; border-right: 4px solid #184362; transform: skew(-24deg); z-index: -1 }
+.vd-assignment .vd-label { color: #aec3d3 }
+.vd-assignment h2 { color: white; font-size: 38px; margin: 3px 0 }
+.vd-status { display: inline-flex; align-items: center; gap: 7px; background: #fff0ce; color: #754400; border-radius: 20px; padding: 5px 13px; font-size: 14px; font-weight: 650; white-space: nowrap }
+.vd-status.active { background: #def4e9; color: #15553b }
+.vd-status::before { content: ''; width: 8px; height: 8px; background: currentColor; border-radius: 50% }
+.vd-grid { display: grid; grid-template-columns: minmax(0,1.65fr) minmax(0,1fr); gap: 20px; margin-top: 20px }
+.vd-card { background: white; border: 1px solid #d5dfe0; border-radius: 12px; padding: 24px; overflow-wrap: anywhere }
+.vd-heading { display: flex; align-items: center; gap: 12px; margin-bottom: 16px }
+.vd-heading span { font: 18px DutyBarlow,sans-serif; color: #a33d14; background: #fff0e6; padding: 4px 9px; border-radius: 4px }
+.vd-card p, .vd-card dt { color: #506474 }
+.vd-viewfinder { display: grid; place-items: center; min-height: 130px; margin: 18px 0 14px; background: #eff3f3; border: 1px dashed #a4b7bc; border-radius: 8px }
+.vd-viewfinder svg { grid-area: 1/1; width: 92px; height: 92px; color: #dd602c; stroke-width: .85 }
+.vd-viewfinder svg + svg { width: 52px; height: 52px; color: #0b314a; stroke-width: 2.5 }
+.vd-side { display: grid; align-content: start; gap: 16px }
+.vd-card dl { margin: 12px 0; font-size: 16px }
+.vd-card dl > div { display: flex; justify-content: space-between; gap: 10px; border-top: 1px solid #e2e8e9; padding: 10px 0 }
+.vd-card dd { color: #102a43; font-weight: 650; text-align: right }
+.vd-notes { margin-bottom: 12px; white-space: pre-line }
+.ops-volunteer button { min-height: 44px }
+.vd button { font: 650 15px "Segoe UI",sans-serif; color: #102a43 }
+.vd .vd-primary, .vd .vd-primary:hover { background: #ff753e; border-color: #ff753e; width: 100% }
+.vd .vd-primary:hover:enabled { background: #ff8758 }
+.vd .vd-manual { display: block; margin: 4px auto 0; text-decoration: underline; border: 0 }
+.vd .vd-wide,.vd .vd-secondary { width: 100% }
+.vd-secondary { margin-top: 12px }
+.vd .vd-report { color: #8d340f; border: 0; padding: 0 }
+.vd-lookup { display: flex; align-items: end; gap: 8px; margin-top: 12px }
+.vd-lookup label { min-width: 0; flex: 1 }
+.vd-lookup input { width: 100%; display: block }
+.vd-tools { display: flex; align-items: start; gap: 12px; flex-wrap: wrap; margin-top: 18px }
+.vd-tools summary,.vd-tools button { font: 14px "Segoe UI",sans-serif; color: #445a6a; padding: 12px 4px; cursor: pointer }
+.vd-tools button { background: transparent; border: 0 }
+.vd-event { display: grid; gap: 4px; padding: 8px 0; font-size: 14px }
+@media(max-width:730px) {
+  .ops-volunteer .ops-content { padding: 22px 16px }
+  .vd-grid { grid-template-columns: minmax(0,1fr) }
+  .vd-assignment { padding: 20px; align-items: start }
+  .vd-assignment::after { display: none }
+  .vd-assignment h2 { font-size: 30px }
+  .vd-card { padding: 19px }
+  .vd-viewfinder { min-height: 105px }
+}

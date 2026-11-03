@@ -1,5 +1,5 @@
 // Matches the database user_role enum exactly.
-export type UserRole = 'super_admin' | 'admin' | 'student' | 'volunteer' | 'vip_guest' | 'judge';
+export type UserRole = 'super_admin' | 'admin' | 'student' | 'volunteer' | 'vip_guest' | 'judge' | 'coordinator';
 export type SchoolBoard = 'CBSE' | 'ICSE' | 'CHSE';
 export type CourseStream = '12th Science' | '12th Commerce' | '12th Arts';
 export type FoodPreference = 'Veg' | 'Non-veg';

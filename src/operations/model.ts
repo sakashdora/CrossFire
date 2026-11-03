@@ -1,5 +1,5 @@
 export type OpsRole = 'super_admin' | 'admin' | 'volunteer';
-export type StaffRole = OpsRole | 'judge' | 'vip_guest';
+export type StaffRole = OpsRole | 'judge' | 'coordinator' | 'vip_guest';
 export type GuestStatus = 'Invited' | 'Confirmed' | 'Arrived' | 'Departed' | 'Declined';
 export type Station = 'gate' | 'food' | 'event' | 'guest' | 'support';
 export const STATIONS: Record<Station, string> = { gate: 'Registration gate', food: 'Meal counter', event: 'Event room', guest: 'VIP & guest desk', support: 'Operations support' };
@@ -26,7 +26,7 @@ export function canManageStaff(actor: OpsActor, target: Pick<OpsStaff, 'id' | 'r
   if (actor.id === target.id) return false;
   // VIP guest logins belong to one invitation and never change role.
   if ((target.role === 'vip_guest') !== (nextRole === 'vip_guest')) return false;
-  const limited = ['judge', 'volunteer', 'vip_guest'];
+  const limited = ['judge', 'coordinator', 'volunteer', 'vip_guest'];
   return actor.role === 'super_admin' || (actor.role === 'admin' && limited.includes(target.role) && limited.includes(nextRole));
 }
 export function guestTransitions(status: GuestStatus, manager: boolean): GuestStatus[] {

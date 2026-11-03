@@ -22,13 +22,14 @@ const EventsDiscoveryPage = lazy(() => import('./pages/EventsDiscoveryPage').the
 const StudentDashboard = lazy(() => import('./pages/StudentDashboard').then(module => ({ default: module.StudentDashboard })));
 const JudgePanel = lazy(() => import('./pages/JudgePanel').then(module => ({ default: module.JudgePanel })));
 const AdminDashboard = lazy(() => import('./operations/OperationsDashboard').then(module => ({ default: module.OperationsDashboard })));
+const CoordinatorDashboard = lazy(() => import('./operations/ResultsDesk').then(m => ({ default: m.ResultsDesk })));
 const VolunteerDashboard = AdminDashboard;
 const AccountSecurity = lazy(() => import('./pages/AccountSecurity').then(module => ({ default: module.AccountSecurity })));
 const LeaderboardPage = lazy(() => import('./pages/LeaderboardPage').then(module => ({ default: module.LeaderboardPage })));
 const RegistrationPage = lazy(() => import('./pages/RegistrationPage').then(module => ({ default: module.RegistrationPage })));
 const StudentActivation = lazy(() => import('./pages/StudentActivation').then(module => ({ default: module.StudentActivation })));
 const VipDashboard = lazy(() => import('./pages/VipDashboard').then(module => ({ default: module.VipDashboard })));
-const VIEWS = ['landing','register','events','dashboard','judge','volunteer','admin','vip','leaderboard','account','activate'];
+const VIEWS = ['landing','register','events','dashboard','coordinator','judge','volunteer','admin','vip','leaderboard','account','activate'];
 
 const ProtectedRoute = ({ children, allowedRoles }: { children: React.ReactNode, allowedRoles?: string[] }) => {
   const { user, role, isLoading, needsMfa, mustChangePassword } = useAuth();
@@ -272,8 +273,9 @@ const CrossFireApp: React.FC = () => {
         {currentView === 'leaderboard' && (
           <LeaderboardPage />
         )}
+        {currentView === 'coordinator' && <ProtectedRoute allowedRoles={['coordinator']}><CoordinatorDashboard /></ProtectedRoute>}
         {currentView === 'vip' && <ProtectedRoute allowedRoles={['vip_guest']}><VipDashboard /></ProtectedRoute>}
-        {currentView === 'account' && <ProtectedRoute allowedRoles={['admin','super_admin','judge','volunteer','vip_guest']}><AccountSecurity /></ProtectedRoute>}
+        {currentView === 'account' && <ProtectedRoute allowedRoles={['admin','super_admin','judge','coordinator','volunteer','vip_guest']}><AccountSecurity /></ProtectedRoute>}
         {currentView === 'activate' && <StudentActivation />}
         </Suspense>
       </main>
@@ -331,7 +333,7 @@ const CrossFireApp: React.FC = () => {
             setCurrentView(dashboardFor(role));
           }}
           className={`flex flex-col items-center gap-0.5 py-1 px-2 rounded-xl text-[10px] font-bold transition-colors ${
-            ['dashboard','judge','volunteer','admin','vip'].includes(currentView)
+            ['dashboard','coordinator','judge','volunteer','admin','vip'].includes(currentView)
               ? 'text-orange-400 bg-white/10' 
               : 'text-gray-400'
           }`}

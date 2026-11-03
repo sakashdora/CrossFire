@@ -50,7 +50,7 @@ Deno.serve(async (request: Request) => {
   const phone = typeof input.contact_number === 'string' ? input.contact_number.trim() : '';
   const role = String(input.role || '');
   const guestId = typeof input.guest_id === 'string' ? input.guest_id : '';
-  if (!['volunteer', 'judge', 'vip_guest', 'admin', 'super_admin'].includes(role) || (profile.role !== 'super_admin' && !['volunteer', 'judge', 'vip_guest'].includes(role))) return reply(403, { error: 'Only super admins can create admin-level accounts.' });
+  if (!['volunteer', 'judge', 'coordinator', 'vip_guest', 'admin', 'super_admin'].includes(role) || (profile.role !== 'super_admin' && !['volunteer', 'judge', 'coordinator', 'vip_guest'].includes(role))) return reply(403, { error: 'Only super admins can create admin-level accounts.' });
   if (role === 'vip_guest' && !/^[0-9a-f-]{36}$/i.test(guestId)) return reply(400, { error: 'Choose the invited guest for this VIP login.' });
   if (name.length < 2 || name.length > 100 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email.length > 254 || !/^\+?[0-9]{10,13}$/.test(phone) || password.length < 12 || password.length > 72) return reply(400, { error: 'Enter a valid name, email, 10–13 digit phone number, and password of 12–72 characters.' });
   // Check verified identity, current role, MFA and the shared rate limit before

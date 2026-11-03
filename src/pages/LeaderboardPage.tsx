@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { PublishedAwards } from '../operations/ResultsDesk';
 import { useLeaderboard } from '../hooks/useLeaderboard';
 import { 
   Trophy, 
@@ -49,12 +50,12 @@ export const LeaderboardPage: React.FC = () => {
             {leaderboard.length > 0 ? (
               <span className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-bold uppercase tracking-wider">
                 <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                Published Results • Updates Automatically
+                Published Scores • Updates Automatically
               </span>
             ) : (
               <span className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-800 text-[10px] font-bold uppercase tracking-wider">
                 <Clock className="w-3 h-3 text-amber-600 animate-pulse" />
-                {error ? 'Results Unavailable' : isLoading ? 'Loading Results' : 'Awaiting Published Results'} • Nov 15, 2026
+                {error ? 'Results Unavailable' : isLoading ? 'Loading Scores' : 'Awaiting Published Scores'} • Nov 15, 2026
               </span>
             )}
           </div>
@@ -63,7 +64,7 @@ export const LeaderboardPage: React.FC = () => {
             <span>CrossFire 2026 Leaderboard</span>
           </h1>
           <p className="text-xs sm:text-sm text-gray-600 mt-1">
-            Published scores from completed CrossFire events at Srusti Academy.
+            Approved event awards and published score standings from CrossFire.
           </p>
         </div>
 
@@ -78,6 +79,7 @@ export const LeaderboardPage: React.FC = () => {
         )}
       </div>
 
+      <PublishedAwards />
       {error ? <p role="alert" className="bg-red-50 text-red-700 rounded-xl p-5">{error}</p> : isLoading ? <p role="status" className="p-5 text-slate-600">Loading published results…</p> : leaderboard.length === 0 ? (
         /* Empty state reflects published results, not whether the festival has started. */
         <div className="bg-white rounded-3xl border border-gray-200/80 p-8 sm:p-14 text-center shadow-sm space-y-6 max-w-3xl mx-auto my-6">
@@ -88,10 +90,10 @@ export const LeaderboardPage: React.FC = () => {
           <div className="space-y-2">
             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-navy/5 text-navy text-xs font-bold uppercase tracking-wider">
               <Clock className="w-3.5 h-3.5 text-orange-500" />
-              <span>No Results Published Yet</span>
+              <span>No Scores Published Yet</span>
             </div>
             <h2 className="text-2xl sm:text-3xl font-black text-navy tracking-tight">
-              Official Results Will Appear Here
+              Score Standings Will Appear Here
             </h2>
             <p className="text-xs sm:text-sm text-gray-500 max-w-lg mx-auto leading-relaxed">
               CrossFire 2026 state-level heats and campus grand finals take place on <strong>Sunday, November 15, 2026</strong> at Srusti Academy of Graduate Studies. 

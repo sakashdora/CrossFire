@@ -34,9 +34,9 @@ for (const [key,station,event] of [['gate','gate',null],['food','food',null],['r
 const legacyRequest = randomUUID();
 await db.query(`insert into crossfire_registration_requests(id,profile,events,status) values($1,$2,'[]','registered')`,[legacyRequest,JSON.stringify({student_name:'Legacy Student',email:'legacy@example.test',contact_number:'9111111111'})]);
 
-for (const name of ['20261030090000_vip_guest_role.sql','20261030090100_accounts_registration_qr.sql','20261030120000_least_privilege_review.sql','20261101090000_student_phone_length.sql']) await db.exec(await migration(name));
+for (const name of ['20261030090000_vip_guest_role.sql','20261030090100_accounts_registration_qr.sql','20261030120000_least_privilege_review.sql','20261101090000_student_phone_length.sql','20261103091000_legacy_volunteer_assignments.sql','20261103092000_coordinator_role.sql','20261103093000_event_declarations.sql']) await db.exec(await migration(name));
 // Forward migrations must be safe to apply twice.
-for (const name of ['20261030090000_vip_guest_role.sql','20261030090100_accounts_registration_qr.sql','20261030120000_least_privilege_review.sql','20261101090000_student_phone_length.sql']) await db.exec(await migration(name));
+for (const name of ['20261030090000_vip_guest_role.sql','20261030090100_accounts_registration_qr.sql','20261030120000_least_privilege_review.sql','20261101090000_student_phone_length.sql','20261103091000_legacy_volunteer_assignments.sql','20261103092000_coordinator_role.sql','20261103093000_event_declarations.sql']) await db.exec(await migration(name));
 
 async function as(actor, sql, args=[], aal) {
   await db.exec('reset role');
@@ -55,6 +55,18 @@ const snapshot = actor => one(actor,'select crossfire_ops_snapshot()');
 const lookup = (actor, code) => one(actor,'select crossfire_ops_lookup_pass($1)',[code]);
 const setRegistration = open => action('super','settings.registration',{open});
 
+await test('admin can edit an unlinked volunteer without creating access or overwriting newer assignments',async()=>{
+  const {rows:[legacy]} = await db.query("insert into volunteers(volunteer_id,name,email,contact_number) values('VOL-LEGACY','Legacy crew','crew@example.test','9000000000') returning id,updated_at::text");
+  const payload = {id:legacy.id,expected_updated_at:legacy.updated_at,station:'gate',shift:'Morning Shift',attendance_status:'Assigned',kit_issued:true,walkie_channel:'CH-2'};
+  await denied(action('gate','volunteer.save',payload),/admin/i);
+  await action('admin','volunteer.save',payload);
+  const saved = (await snapshot('admin')).volunteers.find(v=>v.id===legacy.id);
+  assert.equal(saved.user_id,null);
+  assert.equal(saved.station,'gate');
+  assert.equal(saved.walkie_channel,'CH-2');
+  assert.equal(saved.kit_issued,true);
+  await denied(action('admin','volunteer.save',payload),/assignment has changed/i);
+});
 // Mirrors the register-student Edge function: reserve, create the Auth user, complete.
 async function register(n, { id = randomUUID(), extra = {} } = {}) {
   const begin = await one('service','select crossfire_begin_student_registration($1,$2::jsonb)',[id,JSON.stringify(profile(n,extra))]);
@@ -452,4 +464,51 @@ await test('volunteers cannot perform admin or super-admin actions',async()=>{
     await denied(action('gate',name,payload),/requires an admin|super admin/);
 });
 
+await test('admin provisions and manages coordinator access',async()=>{
+  actors.coord=randomUUID();
+  await db.query("insert into auth.users(id,email,email_confirmed_at,encrypted_password,raw_app_meta_data) values($1,'coord@example.test',now(),'initial',jsonb_build_object('crossfire_provisioned_by',$2::text))",[actors.coord,actors.admin]);
+  await as('admin','select crossfire_ops_provision($1)',[{id:actors.coord,name:'Result coordinator',role:'coordinator',contact_number:'9000000123'}]);
+  await denied(as('coord','select result_desk()'),/permission|sign in/i);
+  await db.query("update auth.users set encrypted_password='changed' where id=$1",[actors.coord]);
+  await as('coord','select crossfire_complete_password_change()');
+  assert.ok((await snapshot('admin')).staff.some(s=>s.role==='coordinator'));
+  await action('admin','staff.access',{id:actors.coord,role:'coordinator',active:false});
+  await denied(as('coord','select result_desk()'),/permission|sign in/i);
+  await action('super','staff.access',{id:actors.coord,role:'coordinator',active:true});
+});
+await test('only reviewed event placements become public, with Champion independent of podium order',async()=>{
+  const event=await eventId('Event 1');
+  const publicRows=async()=>(await as(null,'select * from published_event_awards()')).rows;
+  const change=(actor,version,op,picks=null,feedback=null)=>as(actor,'select result_action($1,$2,$3,$4,$5,$6)',[event,version,op,picks,actors.coord,feedback]);
+  const sheet=async()=>(await one('coord','select result_desk()')).events[0];
+  assert.equal(await sheet(),undefined);
+  await denied(change('coord',0,'save'),/not assigned/);
+  await change('admin',0,'assign');
+  const initial=await sheet();assert.equal(initial.id,event);assert.ok(initial.entries.length>=3);
+  const [a,b,c]=initial.entries.map(r=>r.id);
+  await change('coord',1,'save',[a,null,null,null]);
+  await denied(change('coord',1,'submit',[a,b,c,b]),/changed/);
+  await denied(change('coord',2,'submit',[a,a,c,b]),/different/);
+  await denied(change('coord',2,'submit',[a,b,c,randomUUID()]),/eligible/);
+  await denied(change('coord',2,'submit',[a,b,c,b]),/event day/);
+  await db.query("update events set start_time=now(),end_time=now()+interval '1 hour' where id=$1",[event]);
+  await change('coord',2,'submit',[a,b,c,b]);
+  assert.equal((await publicRows()).length,0);
+  await denied(as(null,'select * from event_declarations'),/permission/);
+  await denied(change('coord',3,'approve'),/role/);
+  await denied(change('coord',3,'save',[a,b,c,b]),/locked/);
+  await change('admin',3,'return',null,'Check the third place entry');
+  assert.equal((await sheet()).feedback,'Check the third place entry');
+  assert.equal((await publicRows()).length,0);
+  await change('coord',4,'submit',[c,b,a,b]);
+  await change('super',5,'approve');
+  const [published]=await publicRows();
+  assert.equal(published.event_name,'Event 1');
+  assert.deepEqual(published.awards,[c,b,a,b].map(id=>initial.entries.find(r=>r.id===id).name));
+  await denied(change('admin',6,'approve'),/submitted/);
+  await action('super','staff.access',{id:actors.coord,active:false,role:'coordinator'});
+  await action('admin','staff.access',{id:actors.coord,active:true,role:'coordinator'});
+  assert.equal(await sheet(),undefined);
+  assert.equal((await publicRows()).length,1);
+});
 console.log(`\n${count} account, registration and QR checks passed in a disposable local database.`);

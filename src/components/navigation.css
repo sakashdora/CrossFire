@@ -194,3 +194,8 @@
 @media(max-width:600px){.cf-management-header>div{padding-left:14px;padding-right:14px}}
 .cf-management-header .cf-navbar-brand{font-family:Inter,Arial,sans-serif}.cf-management-header .cf-navbar-brand .text-xl{font-size:20px;letter-spacing:0;font-weight:750}.cf-management-header .cf-navbar-brand .rounded-full:not(.w-8){background:#1675f6;border-color:#1675f6;color:#071a32;box-shadow:none;font-size:14px;line-height:1;padding:3px 6px}
 .cf-management-header .cf-desktop-nav button[aria-current=page]>div{background:#1c2c43;border-color:transparent;box-shadow:none}.cf-management-header .cf-desktop-nav button[aria-current=page]>span,.cf-management-header .cf-desktop-nav button[aria-current=page] svg{color:white}
+.cf-duty-header { background: #001f3f; box-shadow: none; border: 0 }
+.cf-duty-brand { font: 28px DutyAnton, sans-serif; color: white }
+.cf-duty-brand b { color: #ff7742; font-weight: inherit }
+.cf-duty-divider { border-left: 1px solid #7790a2; padding-left: 12px; font: 14px "Segoe UI", sans-serif; color: white }
+@media(max-width:380px) { .cf-duty-header .cf-navbar-actions { gap: 0 } .cf-duty-divider { padding-left: 6px; font-size: 12px } }

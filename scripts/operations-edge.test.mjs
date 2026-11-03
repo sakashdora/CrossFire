@@ -47,6 +47,7 @@ await test('staff password length is bounded before Auth creation',async()=>{
   assert.equal((await run({}, {...valid,password:'x'.repeat(72)})).status,200);
 });
 await test('admin provisions a volunteer without returning a password',async()=>{const r=await run();assert.equal(r.status,200);assert.equal(calls.created[0].app_metadata.crossfire_provisioned_by,'admin-user');assert.equal(calls.provisions[0].p_data.id,'new-user');assert.ok(!r.text.includes(valid.password));assert.equal(calls.deleted.length,0);});
+await test('admins and super admins provision coordinators',async()=>{for(const role of ['admin','super_admin']){assert.equal((await run({role},{...valid,role:'coordinator'})).status,200);assert.equal(calls.provisions[0].p_data.role,'coordinator');}});
 await test('super admin may provision an admin',async()=>{assert.equal((await run({role:'super_admin'}, {...valid,role:'admin'})).status,200);});
 await test('duplicate Auth account does not invoke provisioning or cleanup',async()=>{assert.equal((await run({createError:true})).status,409);assert.equal(calls.provisions.length,0);assert.equal(calls.deleted.length,0);});
 await test('failed profile setup compensates only the new Auth account',async()=>{assert.equal((await run({provisionError:true})).status,503);assert.deepEqual(calls.deleted,['new-user']);});
