@@ -5,6 +5,7 @@ import { StudentQRCode } from '../components/StudentQRCode';
 import { useLiveRevision } from './live';
 import type { StudentRecord } from './studentExports';
 import { accountLabel, formatStudentDate, registrationLabel, studentDay, selectStudents, type StudentFilter, type StudentSort } from './studentRecordsModel';
+import { deleteRegistrationRequest, deleteStudent } from './client';
 import { invitationRequest } from './EmailSettings';
 
 type Invitation = { status: string; failure_code: string | null };
@@ -31,7 +32,8 @@ function Details({ row, close, children }: { row: StudentRecord; close: () => vo
   </dialog>;
 }
 
-export function StudentRecords() {
+export function StudentRecords({ canDelete = false }: { canDelete?: boolean }) {
+  const [confirmation, setConfirmation] = useState('');
   const [records, setRecords] = useState<StudentRecord[]>([]);
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState<StudentFilter>('all');
@@ -175,6 +177,7 @@ export function StudentRecords() {
     {busy && <p role="status">Preparing current records…</p>}
     <div className="records-table-card">
     {loading ? <div className="ops-empty" role="status">Loading registered students…</div> : !filtered.length ? <div className="ops-empty"><Users size={28}/><p>{records.length ? 'No students match these filters.' : error ? 'Records are unavailable. Use Refresh to retry.' : 'No student registrations yet. New registrations will appear here automatically.'}</p>{records.length > 0 && <button onClick={clearFilters}>Clear filters</button>}</div> : <>
+      <label className="records-mobile-select"><input type="checkbox" aria-label="Select visible students" checked={allChecked} onChange={event => toggle(visible.map(record => record.id),event.target.checked)}/> Select this page</label>
       <div className="ops-table-wrap"><table className="records-table"><caption className="sr-only">Student registrations. Exports include all matching rows; bulk actions export selected rows across pages.</caption><thead><tr><th><input ref={selectAllRef} type="checkbox" aria-label="Select all students on this page" checked={allChecked} onChange={event => toggle(visible.map(record => record.id), event.target.checked)}/></th><th>#</th><th>Reg. ID</th><th>Name</th><th>Contact</th><th>Institute / City</th><th>Class / Course</th><th>Competitions</th><th>Status</th><th>Gate pass</th><th>Actions</th></tr></thead><tbody>{visible.map((record,index) => <tr key={record.id} data-selected={checked.has(record.id)}>
         <td><input type="checkbox" aria-label={`Select ${record.name}`} checked={checked.has(record.id)} onChange={event => toggle([record.id], event.target.checked)}/></td>
         <td className="records-number">{currentPage * pageSize + index + 1}</td>
@@ -186,7 +189,7 @@ export function StudentRecords() {
         <td data-label="Competitions">{record.competitions || 'No competitions recorded'}</td>
         <td data-label="Status"><span className={`records-status ${record.status === 'registered' && (record.has_login || !!record.portal_state) ? 'registered' : 'pending'}`}>{registrationLabel(record)}</span></td>
         <td data-label="Gate pass"><span className={`records-status ${record.status === 'inactive' ? 'pending' : record.pass_code ? 'registered' : 'unissued'}`}>{record.status === 'inactive' && record.pass_code ? 'Suspended' : record.checked_in_at ? 'Checked in' : record.pass_code ? 'Issued' : 'Not issued'}</span></td>
-        <td><button aria-label={`View details for ${record.name}`} onClick={() => setSelected(record.id)}><Eye size={16}/>View</button></td>
+        <td><button aria-label={`View details for ${record.name}`} onClick={() => { setSelected(record.id); setConfirmation(''); setError(''); setNotice(''); }}><Eye size={16}/>View</button></td>
       </tr>)}</tbody></table></div>
     </>}
     <div className="records-pagination"><span>Showing {filtered.length ? currentPage * pageSize + 1 : 0}–{Math.min((currentPage + 1) * pageSize, filtered.length)} of {filtered.length} registrations{checked.size > 0 && ` · ${checked.size} selected`}</span><div><select aria-label="Sort students" value={sort} onChange={event => { setSort(event.target.value as StudentSort); setPage(0); }}><option value="newest">Newest first</option><option value="oldest">Oldest first</option><option value="name">Name A–Z</option></select><button aria-label="Previous page" disabled={currentPage === 0} onClick={() => setPage(currentPage - 1)}><ChevronLeft size={16}/></button><span className="records-current" aria-label={`Page ${currentPage + 1} of ${lastPage + 1}`}>{currentPage + 1}</span><button aria-label="Next page" disabled={currentPage === lastPage} onClick={() => setPage(currentPage + 1)}><ChevronRight size={16}/></button><select aria-label="Students per page" value={pageSize} onChange={event => { setPageSize(Number(event.target.value)); setPage(0); }}>{[10,25,50].map(size => <option key={size} value={size}>{size} / page</option>)}</select></div></div>
@@ -204,6 +207,35 @@ export function StudentRecords() {
         })}>{busy ? 'Sending…' : row.has_login ? 'Send password reset link' : 'Send portal invitation'}</button>}
         {error && <p role="alert" className="ops-message error">{error}</p>}{notice && <p role="status" className="ops-message success">{notice}</p>}
       </section>}
+      {canDelete && (row.pass_code || (row.id.startsWith('request:') && row.request_id)) && <details className="student-remove">
+        <summary>Delete this record</summary>
+        <form onSubmit={event => {
+          event.preventDefault();
+          const expected = row.pass_code || row.reference;
+          if (!expected || confirmation.trim().toUpperCase() !== expected.toUpperCase()) return;
+          void run(async () => {
+            let message = 'Registration removed.';
+            if (row.id.startsWith('account:') && row.pass_code) {
+              const result = await deleteStudent(row.id.slice('account:'.length), confirmation.trim());
+              message = result.login_removed ? 'Student record and login removed.' : 'Student record removed. Login removal was not confirmed.';
+            } else if (row.id.startsWith('request:') && row.request_id) {
+              await deleteRegistrationRequest(row.request_id);
+            } else throw new Error('Refresh and reopen this record.');
+            setSelected(null); setConfirmation('');
+            setChecked(previous => { const next = new Set(previous); next.delete(row.id); return next; });
+            setRecords(previous => previous.filter(record => record.id !== row.id));
+            if (pending.current) await pending.current;
+            await refresh(); setNotice(message);
+          });
+        }}>
+          <p>{row.pass_code ? 'This permanently removes the student, their event registrations and scores.' : 'This permanently removes the intake submission.'}</p>
+          <label>Type the {row.pass_code ? 'Pass ID' : 'submission reference'} to confirm <strong>{row.pass_code || row.reference}</strong>
+            <input value={confirmation} disabled={busy} onChange={event => setConfirmation(event.target.value)} autoComplete="off" />
+          </label>
+          <button disabled={busy || !confirmation.trim() || confirmation.trim().toUpperCase() !== (row.pass_code || row.reference)?.toUpperCase()}>Permanently delete record</button>
+          {error && <p role="alert">{error}</p>}
+        </form>
+      </details>}
     </Details>}
   </section>;
 }

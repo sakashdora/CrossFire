@@ -45,7 +45,7 @@ export function EmailSettings() {
   };
   return <section className="ops-panel">
     <div className="ops-panel-head"><h2><Mail size={20} /> Official college email</h2><button disabled={busy} onClick={()=>void load()}><RefreshCw size={16}/> Refresh</button></div>
-    <p className="ops-panel-note">Send approved students their Student ID, Pass ID and a private link to choose or recover a password. Passwords are never sent by email. Invitations are available after the super admin opens the student portal.</p>
+    <p className="ops-panel-note">Configure the sender used by Student records to deliver initial credentials and password recovery links.</p>
     <p className={`ops-message ${provider ? 'success' : 'error'}`} role="status">{provider === null ? 'Email service connection has not been verified.' : provider ? 'Server email configuration is present. The sender domain must also be verified with Resend before sending.' : 'Email sending is not connected yet. The project owner must verify the college sender domain in Resend and add its API key to the server configuration.'}</p>
     {error && <p role="alert" className="ops-message error">{error}</p>}
     {notice && <p role="status" className="ops-message success">{notice}</p>}
@@ -57,6 +57,6 @@ export function EmailSettings() {
         <label><span>Enable student invitations</span><input type="checkbox" checked={settings.enabled} disabled={busy || provider !== true} onChange={e=>setSettings({...settings,enabled:e.target.checked})}/><small>The sender must be verified before enabling.</small></label>
       </div><footer><button type="submit" className="primary" disabled={busy}>{busy?'Saving…':'Save official sender'}</button></footer>
     </form>}
-    <p className="ops-panel-note">Workflow: review registration → open student portal → send invitation → student sets password → sign in. “Accepted by provider” does not confirm delivery to the inbox. WhatsApp messages are not sent by this feature.</p>
+    <p className="ops-panel-note">In Student records, open the student and choose Approve and issue credentials. The student changes their temporary password at first sign-in. Provider acceptance confirms submission to the mail service.</p>
   </section>;
 }

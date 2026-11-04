@@ -44,9 +44,9 @@ function EventSheet({ event, staff, manager, reload }: { event: ResultEvent; sta
     {manager && <section className="vd-card"><h3>Assigned coordinator</h3><label><span className="sr-only">Assigned coordinator</span><select disabled={busy} value={coordinator} onChange={e=>setCoordinator(e.target.value)}><option value="">Unassigned</option>{staff.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}</select></label><button disabled={busy || coordinator===(event.coordinator || '')} onClick={()=>void act('assign')}>Save assignment</button><p>Manage coordinator logins in Staff access.</p></section>}</div></div>
   </>;
 }
-export function ResultsDesk({ manager=false }: { manager?: boolean }) {
+export function ResultsDesk({ manager=false, initialEventId='' }: { manager?: boolean; initialEventId?: string }) {
   const [desk,setDesk]=useState<Desk|null>(null);
-  const [eventId,setEvent]=useState('');
+  const [eventId,setEvent]=useState(initialEventId);
   const [error,setError]=useState('');
   const [notice,setNotice]=useState('');
 
@@ -55,8 +55,10 @@ export function ResultsDesk({ manager=false }: { manager?: boolean }) {
     const id=++sequence.current;
     const {data,error}=await supabase.rpc('result_desk');
     if(sequence.current!==id)return;
-    setNotice(savedMessage);setError(error?.message || '');setDesk(error?null:data as Desk);
-  },[]);
+    const next = error ? null : data as Desk;
+    setNotice(savedMessage);setError(error?.message || '');setDesk(next);
+    if (next) setEvent(current => next.events.some(event => event.id === current) ? current : ((manager && next.events.find(event => event.state === 'In review')?.id) || next.events[0]?.id || ''));
+  },[manager]);
   useEffect(()=>{void load();return()=>{sequence.current++}},[load]);
   const selected=desk?.events.find(e=>e.id===eventId)||desk?.events[0];
   return <div className="vd result-desk"><p className="vd-label">CrossFire 2026 &nbsp; / &nbsp; Event day</p><h1>{manager?'Review event results':'Declare event results'}</h1>

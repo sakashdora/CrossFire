@@ -1,0 +1,22 @@
+.ops-manager .manager-section-picker{display:none}
+.manager-work{background:#082e4c;color:#fff;border-radius:12px;padding:22px;margin-bottom:20px}
+.manager-work-title{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:18px}
+.manager-work-title .ops-eyebrow{color:#c1d4e0}.manager-work-title h2{font-size:25px;color:white;font-weight:750}
+.manager-work-title>span{font-size:13px;background:#e8f2ee;color:#233e38;border-radius:16px;padding:5px 12px}
+.manager-launchers{display:grid;grid-template-columns:repeat(auto-fit,minmax(144px,1fr));gap:10px}
+.ops-manager .manager-launchers button{display:grid;justify-content:stretch;align-content:start;text-align:left;gap:7px;padding:16px;color:#102a43;background:white;min-width:0}
+.manager-launchers svg{color:#b74419;width:19px;height:19px}.manager-launchers strong{font-size:16px}.manager-launchers small{font-size:12px;line-height:1.5;color:#526576}
+.ops-manager .manager-launchers button:hover{background:#fff5ee;border-color:#ff9668}
+.ops-manager .student-remove{margin-top:18px;border-top:1px solid #ddd;padding-top:14px}.student-remove summary{cursor:pointer;font-weight:650;color:#973916}.student-remove form{display:grid;gap:10px;margin-top:10px}.student-remove label{display:grid;gap:5px}
+@media(max-width:800px){
+.ops-manager .ops-sidebar nav{display:none}.ops-manager .ops-sidebar{padding:10px 16px}
+.ops-manager .manager-section-picker{display:flex;align-items:center;justify-content:space-between;gap:12px;color:#e5edf4;font-weight:600}
+.ops-manager .manager-section-picker select{min-width:0;min-height:44px;font-size:15px;max-width:75%;flex:1}
+.ops-manager .ops-content{padding:18px 14px 32px}.ops-manager .ops-heading{margin-bottom:16px}
+.manager-work{padding:16px}.manager-work-title{align-items:start;flex-wrap:wrap}.manager-launchers{grid-template-columns:repeat(2,minmax(0,1fr))}
+.ops-manager .manager-launchers button{padding:12px}.ops-manager .ops-topbar{height:auto;min-height:44px;padding:4px 14px}.ops-manager .result-desk{padding:12px 0}.ops-manager .ops-event-grid{grid-template-columns:minmax(0,1fr)}
+}
+@media(max-width:420px){.ops-manager .records-heading,.ops-manager .records-toolbar{min-width:0}.ops-manager .ops-toolbar select{max-width:100%}}
+.manager-nav-group{display:grid;gap:3px}.manager-nav-group>span{padding:12px 14px 4px;color:#a9b9d1;font-size:11px;font-weight:700;letter-spacing:1.1px;text-transform:uppercase}
+.records-mobile-select{display:none}
+@media(max-width:600px){.records-mobile-select{display:flex;align-items:center;gap:9px;min-height:44px;margin-bottom:6px;color:#415674}}
