@@ -43,9 +43,9 @@ const profile = n => ({ student_name: 'Contract Student ' + n, email: `contract$
 // Mirrors the server registration path. The Auth row is written as confirmed on
 // purpose: the database must not rely on an unconfirmed email to deny access,
 // because OTP or recovery flows can confirm it later.
-async function register(n) {
+async function register(n, competitions = ['Event 1']) {
   const id = randomUUID();
-  const begin = await one('service', 'select crossfire_begin_student_registration($1,$2::jsonb)', [id, JSON.stringify(profile(n))]);
+  const begin = await one('service', 'select crossfire_begin_student_registration($1,$2::jsonb)', [id, JSON.stringify({ ...profile(n), selected_competitions: competitions })]);
   await db.query('insert into auth.users(id,email,email_confirmed_at,encrypted_password,raw_app_meta_data) values($1,$2,now(),$3,$4) on conflict do nothing', [begin.user_id, begin.email, 'hash-bootstrap', JSON.stringify({ crossfire_request_id: id })]);
   const receipt = await one('service', 'select crossfire_complete_student_registration($1)', [id]);
   actors['student' + n] = begin.user_id;
@@ -57,7 +57,20 @@ const orphan = randomUUID();
 await db.query(`insert into auth.users(id,email,email_confirmed_at,raw_user_meta_data) values($1,'orphan@example.test',now(),'{"app":"crossfire"}')`,[orphan]);
 assert.equal((await db.query('select role from users where id=$1',[orphan])).rows[0]?.role, 'student', 'the legacy Auth trigger created this untrusted student');
 const pending = (await readdir(new URL('../supabase/migrations/', import.meta.url))).filter(name => name.endsWith('.sql') && name > BASELINE).sort();
-for (const name of pending) await db.exec(await migration(name));
+let dancePreserved = false;
+const protectedTables = ['users','registrations','scores','crossfire_registration_requests','crossfire_student_accounts','crossfire_student_credentials','crossfire_checkins','crossfire_revoked_passes'];
+const snapshot = async () => Object.fromEntries(await Promise.all(protectedTables.map(async table => [table, (await db.query('select * from public.' + table + ' order by to_jsonb(' + table + ')::text')).rows])));
+for (const name of pending) {
+  if (!name.endsWith('_dance_event.sql')) { await db.exec(await migration(name)); continue; }
+  const before = await snapshot();
+  const oldEvents = (await db.query('select * from events order by id')).rows;
+  await db.exec(await migration(name));
+  await db.exec(await migration(name));
+  assert.deepEqual(await snapshot(), before, 'adding/reapplying Dance preserves all student records and passes');
+  assert.deepEqual((await db.query("select * from events where slug <> 'dance' order by id")).rows, oldEvents);
+  assert.equal((await db.query("select count(*)::int n from events where slug='dance'")).rows[0].n, 1);
+  dancePreserved = true;
+}
 console.log(`# cutover migrations applied: ${pending.length ? pending.join(', ') : 'none yet'}`);
 const fresh = await register(2);
 
@@ -117,4 +130,25 @@ test('the directory reports portal access separately from admission', async () =
   const record = (await one('admin', 'select crossfire_student_records()')).find(r => r.email === 'contract2@example.test');
   assert.equal(record.has_login, false);
   assert.ok('portal_state' in record);
+});
+
+
+test('Dance addition is idempotent and preserves existing students, event entries and passes', () => {
+  assert.equal(dancePreserved, true);
+});
+test('Dance is publicly discoverable as solo Group A with the requested prizes', async () => {
+  const dance = (await as(null, "select * from events where slug='dance'")).rows[0];
+  assert.equal(dance.event_group, 'Group A'); assert.equal(dance.event_type, 'solo'); assert.equal(dance.team_size, 1);
+  assert.equal(dance.prize_pool, 6000); assert.deepEqual(dance.prize_distribution, {'1st':3000,'2nd':2000,'3rd':1000});
+});
+test('a new student can register for Dance and receives a gate pass without altering existing entries', async () => {
+  // Event date is fixed in the release; isolate the test from the wall clock.
+  await db.query("update events set registration_deadline=now()+interval '1 day' where slug='dance'");
+  const before = (await db.query('select * from registrations where user_id=$1 order by id',[legacy.userId])).rows;
+  const dancer = await register(3, ['Dance','Event 1']);
+  assert.match(dancer.receipt.pass_id, /^CF26-[0-9A-F]{32}$/);
+  assert.ok(dancer.receipt.competitions.includes('Dance'));
+  assert.equal((await db.query('select count(*)::int n from registrations where user_id=$1',[dancer.userId])).rows[0].n,2);
+  assert.deepEqual((await db.query('select * from registrations where user_id=$1 order by id',[legacy.userId])).rows,before);
+  await assert.rejects(register(4,['Dance','Event 1','Event 2']), /maximum|2|two/i);
 });

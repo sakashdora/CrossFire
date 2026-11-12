@@ -17,6 +17,7 @@ import {
   Mail, 
   Send, 
   Sparkles, 
+  Music,
   Brain, 
   Video, 
   MessageSquareQuote, 
@@ -253,6 +254,7 @@ export const RegistrationPage: React.FC<RegistrationPageProps> = ({
 
   const getEventIcon = (iconName: string) => {
     switch (iconName) {
+      case 'Music': return <Music className="w-5 h-5 text-orange-500" />;
       case 'Brain': return <Brain className="w-5 h-5 text-orange-500" />;
       case 'MessageSquareQuote': return <MessageSquareQuote className="w-5 h-5 text-orange-500" />;
       case 'Palette': return <Palette className="w-5 h-5 text-orange-500" />;
@@ -315,7 +317,7 @@ export const RegistrationPage: React.FC<RegistrationPageProps> = ({
                 <span className="hidden sm:inline">&bull;</span>
                 <span className="text-orange-400 font-bold">Nov 15, 2026</span>
                 <span className="hidden sm:inline">&bull;</span>
-                <span className="text-emerald-400 font-bold">₹50,000 Cash Prizes</span>
+                <span className="text-emerald-400 font-bold">₹{events.reduce((total, event) => total + event.prize_pool, 0).toLocaleString('en-IN')} Cash Prizes</span>
               </div>
             </div>
           </div>

@@ -17,11 +17,13 @@ const PRESENTATION: Record<string, { photo: number; tagline: string }> = {
   'treasure-hunt': { photo: 3, tagline: 'Follow the clues. Find the win.' },
   'ramp-walk': { photo: 4, tagline: 'Own the stage.' },
   reels: { photo: 5, tagline: 'Make every frame count.' },
+  dance: { photo: 6, tagline: 'Own the stage.' },
 };
 const money = (value: number) => `₹${value.toLocaleString('en-IN')}`;
 const format = (event: EventItem) => event.event_type === 'solo' ? 'Solo' : `Team of ${event.team_size}`;
 
 function EventPhoto({ photo }: { photo: number }) {
+  if (photo === 6) return <svg className="cf-event-photo" viewBox="0 0 1024 1024" preserveAspectRatio="xMidYMin slice" aria-hidden="true" focusable="false"><image href="/images/dance-poster-v2.png" width="1024" height="1024" /></svg>;
   return <svg className="cf-event-photo" viewBox={`${(photo % 3) * 512} ${Math.floor(photo / 3) * 512} 512 512`} preserveAspectRatio={photo === 0 || photo === 1 || photo === 4 ? 'xMidYMin slice' : 'xMidYMid slice'} aria-hidden="true" focusable="false">
     <image href="/images/events-atlas.png" width="1536" height="1024" />
   </svg>;
@@ -54,6 +56,7 @@ function EventCriteria({ event, onClose, onRegister }: { event: EventItem; onClo
         <section className="cf-event-brief" aria-labelledby="event-brief-title">
           <h3 id="event-brief-title">Event brief</h3>
           <p>{event.description}</p>
+          {event.slug === 'dance' && <a href="/images/dance-poster-v2.png" target="_blank" rel="noreferrer">View Dance poster <ArrowUpRight size={14} /></a>}
           <div className="cf-event-location"><MapPin size={15} /><span>{event.venue_location}</span></div>
         </section>
         <section className="cf-event-prizes" aria-labelledby="event-prizes-title">
@@ -64,7 +67,7 @@ function EventCriteria({ event, onClose, onRegister }: { event: EventItem; onClo
           {otherPrizes.length > 0 && <p className="cf-event-other-prizes">{otherPrizes.map(([place, amount]) => `${place} place: ${money(amount)}`).join(' · ')}</p>}
         </section>
         <section className="cf-event-rubric" aria-labelledby="event-rubric-title">
-          <div className="cf-event-detail-heading"><h3 id="event-rubric-title">Official scoring rubric</h3><span>Max score: {event.scoring_rubric.criteria.reduce((total,criterion)=>total+criterion.max,0)} pts</span></div>
+          <div className="cf-event-detail-heading"><h3 id="event-rubric-title">Official scoring rubric</h3><span>{event.scoring_rubric.criteria.length ? `Max score: ${event.scoring_rubric.criteria.reduce((total,criterion)=>total+criterion.max,0)} pts` : 'To be announced'}</span></div>
           <ul>{event.scoring_rubric.criteria.map(criterion => <li key={criterion.name}>
             <div><h4>{criterion.name}</h4><span>{criterion.weight} pts ({criterion.weight}%)</span></div>
             {criterion.description && <p>{criterion.description}</p>}
@@ -97,7 +100,7 @@ export function EventsDiscoveryPage({ initialEvent = null, userRegistrations, on
         <div className="cf-events-intro">
           <p className="cf-events-kicker">The competitions / 2026</p>
           <h1>Find your <span>arena.</span></h1>
-          <p className="cf-events-subtitle">Six competitions. One stage to make your mark.</p>
+          <p className="cf-events-subtitle">{events.length || 'Discover'} competitions. One stage to make your mark.</p>
         </div>
         <div className="cf-events-overview">
           <dl className="cf-events-stats">

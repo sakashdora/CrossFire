@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from 'react';
 import { ArrowRight } from 'lucide-react';
 import './cinematic-intro.css';
+import { useEvents } from '../context/EventsContext';
 
 interface CinematicIntroProps {
   onComplete: () => void;
@@ -16,6 +17,7 @@ const EMBERS = Array.from({ length: 18 }, (_, index) => ({
 
 /** Tactical Esports skippable brand reveal with live telemetry & event ticker */
 export function CinematicIntro({ onComplete }: CinematicIntroProps) {
+  const { events } = useEvents();
   const dialogRef = useRef<HTMLDialogElement>(null);
   const completeRef = useRef(onComplete);
   const finishedRef = useRef(false);
@@ -114,11 +116,11 @@ export function CinematicIntro({ onComplete }: CinematicIntroProps) {
         <div className="cf-header-center" aria-live="polite">
           <div className="cf-header-ledger">
             <span className="cf-ledger-item">
-              <span className="cf-ledger-accent">₹50,000</span> PRIZE POOL
+              <span className="cf-ledger-accent">{events.length ? `₹${events.reduce((total, event) => total + event.prize_pool, 0).toLocaleString('en-IN')}` : '—'}</span> PRIZE POOL
             </span>
             <span className="cf-ledger-sep" aria-hidden="true">/</span>
             <span className="cf-ledger-item">
-              <span className="cf-ledger-light">6 ARENAS</span> SOLO & TEAM
+              <span className="cf-ledger-light">{events.length || '—'} ARENAS</span> SOLO & TEAM
             </span>
             <span className="cf-ledger-sep" aria-hidden="true">/</span>
             <span className="cf-ledger-item">
@@ -168,7 +170,7 @@ export function CinematicIntro({ onComplete }: CinematicIntroProps) {
         <p className="cf-intro-tagline"><span>Ignite</span> <span>your</span> <span>talent.</span></p>
         <div className="cf-intro-loading">
           <div className="cf-intro-ignition" aria-hidden="true"><span /></div>
-          <p id="cf-intro-description" className="cf-intro-caption"><span>Six arenas.</span><span>One spotlight.</span></p>
+          <p id="cf-intro-description" className="cf-intro-caption"><span>{events.length || 'Your'} arenas.</span><span>One spotlight.</span></p>
         </div>
       </div>
 

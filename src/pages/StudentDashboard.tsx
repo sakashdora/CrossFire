@@ -304,7 +304,7 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
           </div>
           <div className="min-w-0">
             <span className="text-lg sm:text-xl font-black text-navy block leading-none">
-              ₹50,000
+              ₹{events.reduce((total, event) => total + event.prize_pool, 0).toLocaleString('en-IN')}
             </span>
             <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mt-1 block truncate">
               Total Cash Prize Pool
@@ -619,7 +619,7 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
                 <Trophy className="w-4 h-4 text-orange-500 shrink-0" />
                 <strong className="text-orange-600 text-sm">04:00 PM - 05:00 PM</strong>
               </div>
-              <span className="text-orange-700 font-black sm:text-right">Grand Valedictory, ₹50,000 Cash Handover & College Champions Trophy</span>
+              <span className="text-orange-700 font-black sm:text-right">Grand Valedictory, ₹{events.reduce((total, event) => total + event.prize_pool, 0).toLocaleString('en-IN')} Cash Handover & College Champions Trophy</span>
             </div>
           </div>
         </div>

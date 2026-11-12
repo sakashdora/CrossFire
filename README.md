@@ -25,6 +25,15 @@ The application has no demo route, simulated staff sessions or browser-only data
 
 ## Development
 
+### Dance addition (12 November 2026)
+
+- Dance is a solo Group A event with ₹3,000 / ₹2,000 / ₹1,000 prizes. The existing two-per-group limit is unchanged; existing students are not automatically enrolled or moved.
+- The matching poster is `public/images/dance-poster-v2.png`. Event cards reuse its central artwork. Counts and prize labels read the event data, so the seven-event total becomes ₹56,000 once Dance is added.
+- `supabase/migrations/20261112090000_dance_event.sql` inserts only Dance and does nothing if its slug already exists. It does not update existing events, registrations, profiles, passes, authentication or registration settings. Test this migration on an isolated database; do not replay historical migrations on production.
+- The event uses 15 November day bounds internally, not an announced performance slot. Stage and judging criteria remain pending. The existing default nominal capacity is 100 with the existing overflow handling; no new hard cap was introduced. Registration closes at the standard 14 November 23:59:59 IST deadline and still respects the global registration switch. Judging requires an approved rubric before scores can be submitted.
+- Release the matching frontend and apply only the Dance migration to the confirmed target. A local frontend shows the events in its configured database. Use isolated data for registration tests; do not submit test students to production.
+- Verification: `npm run test:portal-contracts`, `npm run test:student-dashboard`, `npm run test:student-access`, `npm run build`, and `npm run security:bundle`. Local browser checks with synthetic data covered 1440px and 390px views; screenshots are under ignored `artifacts/dance-review/`.
+
 Use Node.js 22 or 24 and the committed npm lockfile. Copy `.env.example` to `.env` and supply this project's public Supabase anon/publishable key. Server credentials must never use a `VITE_` prefix.
 
 ```powershell

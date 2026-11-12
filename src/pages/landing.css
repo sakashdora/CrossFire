@@ -1040,3 +1040,7 @@
     transform: none;
   }
 }
+
+/* Keep the existing six-card composition; Dance gets its own responsive row. */
+.cf-arena-dance { grid-column: 1 / -1; grid-row: 4; min-height: 300px; }
+@media (max-width: 600px) { .cf-arena-dance { grid-row: 6; min-height: 280px; } }

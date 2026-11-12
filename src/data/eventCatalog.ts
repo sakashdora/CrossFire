@@ -34,7 +34,7 @@ export const EVENT_METADATA = {
     }
   ],
   mediaPartners: ['Prameya News', 'News 7'],
-  totalPrizePool: 50000,
+  totalPrizePool: 56000,
   currency: 'INR',
   entryFee: 0,
   rules: [
