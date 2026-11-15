@@ -1,4 +1,7 @@
-export const CROSSFIRE_START = '2026-11-15T09:30:00+05:30';
+export const CROSSFIRE_START = '2026-11-15T09:00:00+05:30';
+export const CROSSFIRE_START_LABEL = new Intl.DateTimeFormat('en-US', {
+  timeZone: 'Asia/Kolkata', hour: 'numeric', minute: '2-digit', hour12: true,
+}).format(new Date(CROSSFIRE_START));
 
 /** Calculate from the clock each time so sleeping tabs never accumulate drift. */
 export function getCountdown(targetDate: string, now = Date.now()) {

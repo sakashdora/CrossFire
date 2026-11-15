@@ -12,6 +12,11 @@ create table auth.sessions(id uuid primary key default gen_random_uuid(),user_id
 create function auth.uid() returns uuid language sql stable as $$select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid$$;
 create function auth.jwt() returns jsonb language sql stable as $$select coalesce(nullif(current_setting('request.jwt.claims',true),''),'{}')::jsonb$$;
 grant usage on schema public,auth to anon,authenticated,service_role; grant execute on function auth.uid(),auth.jwt() to anon,authenticated,service_role;`);
+// Stand-in for Supabase Vault (same names and signatures). Only the database owner can reach it, as in production.
+await db.exec(`create schema vault;
+create table vault.secrets(id uuid primary key default gen_random_uuid(),name text unique,description text not null default '',secret text not null,key_id uuid,created_at timestamptz not null default now(),updated_at timestamptz not null default now());
+create view vault.decrypted_secrets as select id,name,description,secret,secret as decrypted_secret,key_id,created_at,updated_at from vault.secrets;
+create function vault.create_secret(new_secret text,new_name text default null,new_description text default '',new_key_id uuid default null) returns uuid language sql as $$insert into vault.secrets(name,description,secret,key_id) values(new_name,coalesce(new_description,''),new_secret,new_key_id) returning id$$;`);
 await db.exec((await readFile(new URL('../supabase/schema.sql',import.meta.url),'utf8')).split('-- 13. SEED:')[0].replace('create extension if not exists pgcrypto;',''));
 const migration = name => readFile(new URL('../supabase/migrations/'+name,import.meta.url),'utf8');
 for (const name of ['20261019_access_containment.sql','20261016_operations.sql','20261019_production_security.sql','20261019_public_event_access.sql','20261019_rpc_privileges.sql','20261020_registration_intake.sql','20261020_student_invitations.sql','20261029_live_ops_and_access.sql','20261029160000_direct_registration.sql']) await db.exec(await migration(name));
@@ -34,9 +39,9 @@ for (const [key,station,event] of [['gate','gate',null],['food','food',null],['r
 const legacyRequest = randomUUID();
 await db.query(`insert into crossfire_registration_requests(id,profile,events,status) values($1,$2,'[]','registered')`,[legacyRequest,JSON.stringify({student_name:'Legacy Student',email:'legacy@example.test',contact_number:'9111111111'})]);
 
-for (const name of ['20261030090000_vip_guest_role.sql','20261030090100_accounts_registration_qr.sql','20261030120000_least_privilege_review.sql','20261101090000_student_phone_length.sql','20261103091000_legacy_volunteer_assignments.sql','20261103092000_coordinator_role.sql','20261103093000_event_declarations.sql']) await db.exec(await migration(name));
+for (const name of ['20261030090000_vip_guest_role.sql','20261030090100_accounts_registration_qr.sql','20261030120000_least_privilege_review.sql','20261101090000_student_phone_length.sql','20261103091000_legacy_volunteer_assignments.sql','20261103092000_coordinator_role.sql','20261103093000_event_declarations.sql','20261114090000_fixed_crew_credentials.sql']) await db.exec(await migration(name));
 // Forward migrations must be safe to apply twice.
-for (const name of ['20261030090000_vip_guest_role.sql','20261030090100_accounts_registration_qr.sql','20261030120000_least_privilege_review.sql','20261101090000_student_phone_length.sql','20261103091000_legacy_volunteer_assignments.sql','20261103092000_coordinator_role.sql','20261103093000_event_declarations.sql']) await db.exec(await migration(name));
+for (const name of ['20261030090000_vip_guest_role.sql','20261030090100_accounts_registration_qr.sql','20261030120000_least_privilege_review.sql','20261101090000_student_phone_length.sql','20261103091000_legacy_volunteer_assignments.sql','20261103092000_coordinator_role.sql','20261103093000_event_declarations.sql','20261114090000_fixed_crew_credentials.sql']) await db.exec(await migration(name));
 
 async function as(actor, sql, args=[], aal) {
   await db.exec('reset role');
@@ -258,7 +263,7 @@ await action('admin','guest.save',{id:judgeGuest,name:'Visiting Judge',designati
 async function provision(by, key, role, extra={}) {
   const id = randomUUID();
   await db.query('insert into auth.users(id,email,email_confirmed_at,encrypted_password,raw_app_meta_data) values($1,$2,now(),$3,$4)',[id,key+'@example.test','initial-hash-'+key,JSON.stringify({crossfire_provisioned_by:actors[by]})]);
-  await as(by,'select crossfire_ops_provision($1::jsonb)',[JSON.stringify({id,name:'New '+key,role,contact_number:'9000000123',...extra})]);
+  await as(by,'select crossfire_ops_provision($1::jsonb)',[JSON.stringify({id,name:'New '+key,role,contact_number:'9000000123',...(['volunteer','coordinator'].includes(role)?{password:'Fixed-Crew-Pass-'+key}:{}),...extra})]);
   actors[key]=id; return id;
 }
 await test('admins provision volunteer, judge and VIP guest logins but never admin-level ones',async()=>{
@@ -279,22 +284,83 @@ await test('unprovisioned users cannot self-register as staff, VIP or judge',asy
   await assert.rejects(provision('admin','foreign','volunteer').then(()=>as('admin','select crossfire_ops_provision($1::jsonb)',[JSON.stringify({id:outsider,name:'Me',role:'volunteer',contact_number:'9000000000'})])),/Auth account not found/);
 });
 await test('a provisioned login must replace its initial password before any access',async()=>{
-  for (const key of ['newvol','newjudge','vip','newadmin']) {
+  for (const key of ['newjudge','vip','newadmin']) {
     const me = await one(key,'select crossfire_current_profile()');
     assert.equal(me.must_change_password,true);
     assert.equal(me.pass_code,null);
     assert.equal(await one(key,'select current_user_role()'),null);
   }
-  await denied(snapshot('newvol'));
   await denied(as('newjudge','select crossfire_judge_snapshot()'));
   await denied(as('vip','select crossfire_vip_snapshot()'));
-  await assert.rejects(as('newvol','select crossfire_complete_password_change()'),/new password/);
-  for (const key of ['newvol','newjudge','vip','newadmin']) {
+  await assert.rejects(as('newjudge','select crossfire_complete_password_change()'),/new password/);
+  for (const key of ['newjudge','vip','newadmin']) {
     await db.query("update auth.users set encrypted_password='changed-'||id where id=$1",[actors[key]]);
     await as(key,'select crossfire_complete_password_change()');
     assert.equal((await one(key,'select crossfire_current_profile()')).must_change_password,false);
   }
-  assert.equal((await db.query('select count(*)::int n from crossfire_temporary_passwords where user_id=any($1)',[['newvol','newjudge','vip','newadmin'].map(key=>actors[key])])).rows[0].n,0);
+  assert.equal((await db.query('select count(*)::int n from crossfire_temporary_passwords where user_id=any($1)',[['newjudge','vip','newadmin'].map(key=>actors[key])])).rows[0].n,0);
+});
+await test('volunteer and coordinator logins are fixed: usable at once, never forced to reset, admins can view them',async()=>{
+  await provision('admin','crewcoord','coordinator');
+  const me = await one('newvol','select crossfire_current_profile()');
+  assert.equal(me.must_change_password,false);
+  assert.equal(await one('newvol','select current_user_role()'),'volunteer');
+  assert.equal((await snapshot('newvol')).actor.role,'volunteer');
+  assert.equal((await db.query('select count(*)::int n from crossfire_temporary_passwords where user_id=any($1)',[[actors.newvol,actors.crewcoord]])).rows[0].n,0);
+  const seen = await one('admin','select crossfire_staff_credential($1)',[actors.newvol]);
+  assert.deepEqual(seen,{login_id:'newvol@example.test',password:'Fixed-Crew-Pass-newvol',issued_at:seen.issued_at});
+  assert.equal((await one('super','select crossfire_staff_credential($1)',[actors.crewcoord])).password,'Fixed-Crew-Pass-crewcoord');
+  assert.ok((await db.query("select 1 from audit_logs where action='staff.credentials.viewed' and entity_id=$1",[actors.newvol])).rows.length>=1);
+  // Only admins may read them; judges, VIP guests and admin-level accounts have none.
+  for (const actor of ['newvol','crewcoord','newjudge','vip','gate','student1',null]) await denied(as(actor,'select crossfire_staff_credential($1)',[actors.newvol]));
+  await denied(as('admin','select crossfire_staff_credential($1)',[actors.newjudge]),/Only volunteer and coordinator/);
+  await assert.rejects(as('admin','select * from crossfire_staff_credentials'),/permission denied/);
+  // The password is only in the vault: the credential table holds a reference, never the text.
+  const columns=(await db.query("select column_name from information_schema.columns where table_name='crossfire_staff_credentials'")).rows.map(r=>r.column_name);
+  assert.ok(columns.includes('secret_id') && !columns.includes('secret') && !columns.includes('password'));
+  assert.equal((await db.query("select count(*)::int n from crossfire_staff_credentials c where to_jsonb(c)::text like '%Fixed-Crew-Pass%'")).rows[0].n,0);
+  for (const actor of ['admin','super','newvol']) await assert.rejects(as(actor,'select * from vault.decrypted_secrets'),/permission denied/);
+  assert.ok(!JSON.stringify(await snapshot('super')).includes('Fixed-Crew-Pass'));
+  await assert.rejects(provision('admin','nopass','volunteer',{password:''}),/password of 12 to 72/);
+  assert.equal((await db.query("select count(*)::int n from users where email='nopass@example.test'")).rows[0].n,0);
+});
+await test('admins re-issue a crew password; it stays fixed and ends open sessions',async()=>{
+  await as('admin','select crossfire_save_staff_credential($1,$2)',[actors.newvol,'Reissued-Crew-Pass-9']);
+  assert.equal((await one('admin','select crossfire_staff_credential($1)',[actors.newvol])).password,'Reissued-Crew-Pass-9');
+  assert.equal((await one('newvol','select crossfire_current_profile()')).must_change_password,false);
+  await assert.rejects(as('admin','select crossfire_save_staff_credential($1,$2)',[actors.newvol,'short']),/12 to 72/);
+  await assert.rejects(as('admin','select crossfire_save_staff_credential($1,$2)',[actors.newjudge,'Reissued-Crew-Pass-9']),/Only volunteer and coordinator/);
+  for (const actor of ['newvol','crewcoord','newjudge','gate']) await denied(as(actor,'select crossfire_save_staff_credential($1,$2)',[actors.newvol,'Reissued-Crew-Pass-9']));
+});
+await test('a cleared crew password is gone from the vault, never shown stale, and re-issuing restores it',async()=>{
+  const secrets=async()=>(await db.query("select count(*)::int n from vault.secrets where name like 'crossfire-crew-login-%'")).rows[0].n;
+  const before=await secrets();
+  for (const actor of ['newvol','crewcoord','newjudge','gate','student1',null]) await denied(as(actor,'select crossfire_clear_staff_credential($1)',[actors.newvol]));
+  await as('admin','select crossfire_clear_staff_credential($1)',[actors.newvol]);
+  assert.equal(await secrets(),before-1);
+  await assert.rejects(as('admin','select crossfire_staff_credential($1)',[actors.newvol]),/No password is saved/);
+  assert.ok((await db.query("select 1 from audit_logs where action='staff.credentials.cleared' and entity_id=$1",[actors.newvol])).rows.length>=1);
+  await as('admin','select crossfire_save_staff_credential($1,$2)',[actors.newvol,'Reissued-Again-Pass-3']);
+  assert.equal((await one('admin','select crossfire_staff_credential($1)',[actors.newvol])).password,'Reissued-Again-Pass-3');
+  assert.equal(await secrets(),before);
+  // Re-issuing replaces the secret rather than accumulating copies.
+  await as('admin','select crossfire_save_staff_credential($1,$2)',[actors.newvol,'Reissued-Third-Pass-4']);
+  assert.equal(await secrets(),before);
+  assert.equal((await db.query("select count(*)::int n from vault.secrets where secret like 'Reissued-Again%'")).rows[0].n,0);
+});
+await test('a saved crew password is removed with its role or its account',async()=>{
+  const secrets=async()=>(await db.query("select count(*)::int n from vault.secrets where name like 'crossfire-crew-login-%'")).rows[0].n;
+  const before=await secrets();
+  await provision('admin','crewmoved','volunteer');
+  assert.equal(await secrets(),before+1);
+  await action('super','staff.access',{id:actors.crewmoved,role:'judge',active:true});
+  assert.equal((await db.query('select count(*)::int n from crossfire_staff_credentials where user_id=$1',[actors.crewmoved])).rows[0].n,0);
+  assert.equal(await secrets(),before);
+  await assert.rejects(as('admin','select crossfire_staff_credential($1)',[actors.crewmoved]),/Only volunteer and coordinator/);
+  await provision('admin','crewgone','coordinator');
+  assert.equal(await secrets(),before+1);
+  await db.query('delete from crossfire_staff_credentials where user_id=$1',[actors.crewgone]);
+  assert.equal(await secrets(),before);
 });
 await test('each role reaches only its own dashboard data',async()=>{
   assert.equal((await snapshot('newvol')).actor.role,'volunteer');
@@ -467,10 +533,9 @@ await test('volunteers cannot perform admin or super-admin actions',async()=>{
 await test('admin provisions and manages coordinator access',async()=>{
   actors.coord=randomUUID();
   await db.query("insert into auth.users(id,email,email_confirmed_at,encrypted_password,raw_app_meta_data) values($1,'coord@example.test',now(),'initial',jsonb_build_object('crossfire_provisioned_by',$2::text))",[actors.coord,actors.admin]);
-  await as('admin','select crossfire_ops_provision($1)',[{id:actors.coord,name:'Result coordinator',role:'coordinator',contact_number:'9000000123'}]);
-  await denied(as('coord','select result_desk()'),/permission|sign in/i);
-  await db.query("update auth.users set encrypted_password='changed' where id=$1",[actors.coord]);
-  await as('coord','select crossfire_complete_password_change()');
+  await as('admin','select crossfire_ops_provision($1)',[{id:actors.coord,name:'Result coordinator',role:'coordinator',contact_number:'9000000123',password:'Fixed-Coordinator-1'}]);
+  // A coordinator signs in with the fixed password; no first-sign-in reset is required.
+  assert.ok(await one('coord','select result_desk()'));
   assert.ok((await snapshot('admin')).staff.some(s=>s.role==='coordinator'));
   await action('admin','staff.access',{id:actors.coord,role:'coordinator',active:false});
   await denied(as('coord','select result_desk()'),/permission|sign in/i);

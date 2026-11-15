@@ -5,6 +5,17 @@ function message(error: { message?: string; code?: string }) {
   if (error.code === 'PGRST202' || error.code === '42883') return 'The operations database update has not been installed. Ask the project administrator to apply the operations migration.';
   return error.message || 'The request failed. Check your connection and try again.';
 }
+async function callProvisioning(body: object, fallback: string) {
+  const { data, error } = await supabase.functions.invoke('provision-staff', { body });
+  if (error) {
+    let detail = '';
+    if (error.context instanceof Response) {
+      try { detail = (await error.context.json()).error || ''; } catch { /* Use the generic service error below. */ }
+    }
+    throw new Error(detail || 'Staff provisioning is unavailable. Check that the provision-staff function is deployed and try again.');
+  }
+  if (!data?.success) throw new Error(data?.error || fallback);
+}
 export const liveOperationsClient: OperationsClient = {
   async load() {
     if (!isSupabaseConfigured) throw new Error('Connect Supabase to use live operations. The development preview uses separate sample data.');
@@ -25,16 +36,14 @@ export const liveOperationsClient: OperationsClient = {
     if (!data?.id || !data.pass_id) throw new Error('The pass lookup returned an incomplete record. Try again.');
     return data;
   },
-  async createStaff(input) {
-    const { data, error } = await supabase.functions.invoke('provision-staff', { body: input });
-    if (error) {
-      let detail = '';
-      if (error.context instanceof Response) {
-        try { detail = (await error.context.json()).error || ''; } catch { /* Use the generic service error below. */ }
-      }
-      throw new Error(detail || 'Staff provisioning is unavailable. Check that the provision-staff function is deployed and try again.');
-    }
-    if (!data?.success) throw new Error(data?.error || 'The staff account was not created.');
+  async createStaff(input) { await callProvisioning(input, 'The staff account was not created.'); },
+  async setStaffPassword(userId, password) { await callProvisioning({ action: 'set_password', user_id: userId, password }, 'The password was not saved.'); },
+  // Admin and super admin only (enforced by the database); each view is logged.
+  async credential(userId) {
+    const { data, error } = await supabase.rpc('crossfire_staff_credential', { p_user: userId });
+    if (error) throw new Error(message(error));
+    if (!data?.login_id || !data.password) throw new Error('No saved login was returned. Set a new password to share.');
+    return { login_id: data.login_id, password: data.password };
   },
 };
 

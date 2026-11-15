@@ -18,7 +18,15 @@ export interface OpsAudit { id: string; actor: string; action: string; entity_ty
 export interface OpsSnapshot { actor: OpsActor; students: OpsStudent[]; guests: OpsGuest[]; volunteers: OpsVolunteer[]; events: OpsEvent[]; staff: OpsStaff[]; incidents: OpsIncident[]; audit: OpsAudit[]; settings: { student_portal_open: boolean; student_registration_open: boolean }; fetched_at: string }
 export type OpsAction = 'guest.save' | 'guest.status' | 'guest.meal' | 'guest.archive' | 'volunteer.save' | 'volunteer.attendance' | 'student.checkin' | 'student.meal' | 'student.room' | 'registration.status' | 'event.status' | 'event.judge' | 'incident.report' | 'incident.resolve' | 'staff.access' | 'settings.registration' | 'student.pass.regenerate' | 'announcement.send';
 export type OpsPayload = Record<string, unknown>;
-export interface OperationsClient { load(): Promise<OpsSnapshot>; act(action: OpsAction, payload: OpsPayload): Promise<void>; createStaff(input: StaffInput): Promise<void>; lookup(passId: string): Promise<OpsStudent> }
+export interface OperationsClient { load(): Promise<OpsSnapshot>; act(action: OpsAction, payload: OpsPayload): Promise<void>; createStaff(input: StaffInput): Promise<void>; lookup(passId: string): Promise<OpsStudent>; credential(userId: string): Promise<StaffCredential>; setStaffPassword(userId: string, password: string): Promise<void> }
+export interface StaffCredential { login_id: string; password: string }
+// Volunteers and coordinators keep the ID and password an admin gives them; they never reset it.
+export const hasFixedLogin = (role: string) => role === 'volunteer' || role === 'coordinator';
+export function generatePassword(length = 14) {
+  const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789';
+  const bytes = crypto.getRandomValues(new Uint8Array(length));
+  return Array.from(bytes, byte => alphabet[byte % alphabet.length]).join('');
+}
 export interface StaffInput { name: string; email: string; contact_number: string; role: StaffRole; password: string; guest_id?: string }
 
 export const isManager = (role: string) => role === 'admin' || role === 'super_admin';

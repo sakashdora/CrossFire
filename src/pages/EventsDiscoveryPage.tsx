@@ -2,6 +2,8 @@ import { useLayoutEffect, useRef, useState } from 'react';
 import { ArrowRight, ArrowUpRight, CalendarDays, CheckCircle2, MapPin, Trophy, X } from 'lucide-react';
 import { EventItem, Registration } from '../types';
 import { useEvents } from '../context/EventsContext';
+import { useAuth } from '../context/AuthContext';
+import { ROOM_SCHEDULE } from '../data/eventDay';
 import './event-directory.css';
 
 interface EventsDiscoveryPageProps {
@@ -30,6 +32,8 @@ function EventPhoto({ photo }: { photo: number }) {
 }
 
 function EventCriteria({ event, onClose, onRegister }: { event: EventItem; onClose: () => void; onRegister: () => void }) {
+  const { registrationStatus } = useAuth();
+  const rooms = registrationStatus === 'closed' ? ROOM_SCHEDULE.filter(row => row.slug === event.slug) : [];
   const dialogRef = useRef<HTMLDialogElement>(null);
   useLayoutEffect(() => {
     const dialog = dialogRef.current;
@@ -55,9 +59,10 @@ function EventCriteria({ event, onClose, onRegister }: { event: EventItem; onClo
       <div className="cf-event-dialog-body">
         <section className="cf-event-brief" aria-labelledby="event-brief-title">
           <h3 id="event-brief-title">Event brief</h3>
-          <p>{event.description}</p>
+          <p>{rooms.length && event.slug === 'dance' ? 'Solo dance competition at CrossFire 2026.' : event.description}</p>
           {event.slug === 'dance' && <a href="/images/dance-poster-v2.png" target="_blank" rel="noreferrer">View Dance poster <ArrowUpRight size={14} /></a>}
-          <div className="cf-event-location"><MapPin size={15} /><span>{event.venue_location}</span></div>
+          {rooms.length ? rooms.map(row => <div className="cf-event-location" key={row.name}><MapPin size={15} /><span>{[rooms.length > 1 ? row.name : '', row.venue, row.floor, row.session].filter(Boolean).join(' · ')}</span></div>) :
+            <div className="cf-event-location"><MapPin size={15} /><span>{event.venue_location}</span></div>}
         </section>
         <section className="cf-event-prizes" aria-labelledby="event-prizes-title">
           <div className="cf-event-detail-heading"><h3 id="event-prizes-title"><Trophy size={15} />Prize distribution</h3><span>{money(event.prize_pool)} pool</span></div>
@@ -74,12 +79,13 @@ function EventCriteria({ event, onClose, onRegister }: { event: EventItem; onClo
           </li>)}</ul>
         </section>
       </div>
-      <footer className="cf-event-dialog-footer"><button className="cf-events-close-button" onClick={onClose}>Close</button><button className="cf-events-register" onClick={onRegister}>Register Now <ArrowRight size={18} /></button></footer>
+      <footer className="cf-event-dialog-footer"><button className="cf-events-close-button" onClick={onClose}>Close</button>{registrationStatus === 'open' && <button className="cf-events-register" onClick={onRegister}>Register Now <ArrowRight size={18} /></button>}</footer>
     </div>
   </dialog>;
 }
 
 export function EventsDiscoveryPage({ initialEvent = null, userRegistrations, onRegister }: EventsDiscoveryPageProps) {
+  const { registrationStatus } = useAuth();
   const { events, isLoading, error } = useEvents();
   const [filter, setFilter] = useState<'all' | 'solo' | 'team'>('all');
   const [selectedEvent, setSelectedEvent] = useState<EventItem | null>(initialEvent);
@@ -147,12 +153,12 @@ export function EventsDiscoveryPage({ initialEvent = null, userRegistrations, on
       {(isLoading || error) && <p className="cf-events-empty" role="status">{isLoading ? 'Loading event information…' : error}</p>}
       {!isLoading && !error && filteredEvents.length === 0 && <div className="cf-events-empty"><p>No events in this category.</p><button onClick={() => setFilter('all')}>View all events <ArrowRight size={16} /></button></div>}
 
-      <section className="cf-events-ticket" aria-labelledby="events-ticket-title">
+      {registrationStatus === 'open' && <section className="cf-events-ticket" aria-labelledby="events-ticket-title">
         <span className="cf-events-ticket-star" aria-hidden="true">✳</span>
         <h2 id="events-ticket-title">Your next big moment.</h2>
         <p>Free entry for Class 12 students</p>
         <button className="cf-events-register" onClick={register}>Register Now <ArrowRight size={19} /></button>
-      </section>
+      </section>}
     </div>
     {selectedEvent && <EventCriteria event={selectedEvent} onClose={() => setSelectedEvent(null)} onRegister={register} />}
   </div>;

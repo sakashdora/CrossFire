@@ -50,8 +50,7 @@ export const EVENT_METADATA = {
     'The decision of the Judges will be final & binding.'
   ],
   schedule: [
-    { time: '09:30 AM', activity: 'Registration & Check-in' },
-    { time: '10:00 AM', activity: 'Opening Ceremony' },
+    { time: '9:00 AM', activity: 'Opening Ceremony' },
     { time: '10:30 AM', activity: 'Quiz Event Starts (Written Round)' },
     { time: '11:30 AM', activity: 'Ramp Walk Event' },
     { time: '12:30 PM', activity: 'Lunch Break & Refreshments' },

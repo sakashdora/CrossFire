@@ -39,8 +39,9 @@ export const LiveQRScanner: React.FC<LiveQRScannerProps> = ({ onScanSuccess, onC
         if (isMounted && devices && devices.length > 0) {
           setCameras(devices);
           // Prefer back camera if available on mobile
-          const backCam = devices.find((d: any) => d.label.toLowerCase().includes('back') || d.label.toLowerCase().includes('environment'));
-          setSelectedCamera(backCam ? backCam.id : devices[0].id);
+          // Without a labelled rear camera, the last device is normally the rear one on phones.
+          const backCam = devices.find((d: any) => /back|rear|environment/i.test(d.label || ''));
+          setSelectedCamera(backCam ? backCam.id : devices[devices.length - 1].id);
         } else if (isMounted) {
           setErrorMsg('No camera detected on this device. You can still scan by uploading an image or entering Pass ID.');
         }
@@ -70,7 +71,8 @@ export const LiveQRScanner: React.FC<LiveQRScannerProps> = ({ onScanSuccess, onC
       setErrorMsg(null);
       try {
         reader = new Html5Qrcode(containerId);
-        await reader.start(selectedCamera, { fps: 10, qrbox: { width: 250, height: 250 }, aspectRatio: 1 },
+        // The scan box follows the viewfinder, so small phones never get a box larger than the video.
+        await reader.start(selectedCamera, { fps: 10, qrbox: (width: number, height: number) => { const side = Math.max(100, Math.floor(Math.min(width, height) * 0.8)); return { width: side, height: side }; }, aspectRatio: 1 },
           code => {
             if (cancelled || delivered) return;
             delivered = true;
@@ -181,7 +183,7 @@ export const LiveQRScanner: React.FC<LiveQRScannerProps> = ({ onScanSuccess, onC
               {/* Camera view container */}
               <div 
                 id={containerId} 
-                className="w-full max-w-[280px] h-[280px] rounded-2xl overflow-hidden bg-black border-2 border-orange-500 shadow-lg relative"
+                className={`w-full max-w-[280px] h-[280px] rounded-2xl overflow-hidden bg-black border-2 border-orange-500 shadow-lg relative ${errorMsg && !isScanning ? 'hidden' : ''}`}
               />
 
               {/* Camera Selector */}
@@ -203,7 +205,7 @@ export const LiveQRScanner: React.FC<LiveQRScannerProps> = ({ onScanSuccess, onC
               )}
 
               <p className="text-[11px] text-gray-500 font-medium text-center mt-3">
-                Align the pass QR code inside the viewfinder window.
+                {errorMsg && !isScanning ? 'No live camera. Use Upload Image, or close this and type the pass ID.' : 'Align the pass QR code inside the viewfinder window.'}
               </p>
             </div>
           ) : (

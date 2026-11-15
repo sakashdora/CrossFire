@@ -12,6 +12,8 @@ import { RegistrationLiveNotice } from './components/RegistrationLiveNotice';
 import { useRegistrationNotice } from './hooks/useRegistrationNotice';
 import { isStudentLoginHash } from './lib/studentAccess';
 import { LandingPage } from './pages/LandingPage';
+import { EventDayPage } from './pages/EventDayPage';
+import { showEventSchedule } from './data/eventDay';
 import { EventItem } from './types';
 
 import { Home, Calendar, Trophy, User, ShieldCheck, Gavel, UserPlus, HeartHandshake, ArrowUp, Star } from 'lucide-react';
@@ -81,7 +83,7 @@ const ProtectedRoute = ({ children, allowedRoles }: { children: React.ReactNode,
 };
 
 const CrossFireApp: React.FC = () => {
-  const { role, user } = useAuth();
+  const { role, user, registrationStatus } = useAuth();
   const [currentView, setCurrentView] = useState<string>(() => {
     const hash = window.location.hash.slice(1).split('?')[0];
     return VIEWS.includes(hash) ? hash : 'landing';
@@ -215,7 +217,8 @@ const CrossFireApp: React.FC = () => {
       {/* Main View Router */}
       <main id="main-content" tabIndex={-1} className={`flex-grow min-h-[75vh] ${currentView !== 'landing' ? `pt-16 sm:pt-[72px] ${currentView === 'events' ? '' : 'pb-12'}` : ''}`}>
         <Suspense fallback={<div className="min-h-[60vh] grid place-items-center text-slate-500" role="status">Loading page…</div>}>
-        {currentView === 'landing' && (
+        {currentView === 'landing' && registrationStatus === 'closed' && <EventDayPage onSelectEvent={handleSelectEvent} introActive={showIntro} onReplayIntro={handleReplayIntro} />}
+        {currentView === 'landing' && registrationStatus !== 'closed' && (
           <LandingPage
             onSelectEvent={handleSelectEvent}
             setCurrentView={setCurrentView}
@@ -275,7 +278,7 @@ const CrossFireApp: React.FC = () => {
         )}
         {currentView === 'coordinator' && <ProtectedRoute allowedRoles={['coordinator']}><CoordinatorDashboard /></ProtectedRoute>}
         {currentView === 'vip' && <ProtectedRoute allowedRoles={['vip_guest']}><VipDashboard /></ProtectedRoute>}
-        {currentView === 'account' && <ProtectedRoute allowedRoles={['admin','super_admin','judge','coordinator','volunteer','vip_guest']}><AccountSecurity /></ProtectedRoute>}
+        {currentView === 'account' && <ProtectedRoute allowedRoles={['admin','super_admin','judge','vip_guest']}><AccountSecurity /></ProtectedRoute>}
         {currentView === 'activate' && <StudentActivation />}
         </Suspense>
       </main>
@@ -305,7 +308,10 @@ const CrossFireApp: React.FC = () => {
           <span>Events</span>
         </button>
 
-        <button
+        {registrationStatus === 'closed' && currentView === 'landing' && <button onClick={showEventSchedule} className="flex flex-col items-center gap-0.5 py-1 px-2.5 rounded-xl text-[10px] font-bold text-orange-400">
+          <Calendar className="w-4 h-4" /><span>Schedule</span>
+        </button>}
+        {registrationStatus === 'open' && <button
           onClick={() => setCurrentView('register')}
           className={`flex flex-col items-center gap-0.5 py-1 px-2.5 rounded-xl text-[10px] font-black transition-all ${
             currentView === 'register' 
@@ -315,7 +321,7 @@ const CrossFireApp: React.FC = () => {
         >
           <UserPlus className="w-4 h-4" />
           <span>Register</span>
-        </button>
+        </button>}
 
         <button
           onClick={() => setCurrentView('leaderboard')}

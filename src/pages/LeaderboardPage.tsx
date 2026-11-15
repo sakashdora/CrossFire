@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { PublishedAwards } from '../operations/ResultsDesk';
 import { useLeaderboard } from '../hooks/useLeaderboard';
+import { CROSSFIRE_START_LABEL } from '../lib/countdown';
 import { 
   Trophy, 
   Search, 
@@ -104,13 +105,13 @@ export const LeaderboardPage: React.FC = () => {
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2 max-w-xl mx-auto text-left">
             <div className="bg-gray-50 p-4 rounded-2xl border border-gray-100">
               <span className="text-[10px] uppercase font-bold text-gray-400 block">Competition Tracks</span>
-              <span className="text-xs font-black text-navy mt-1 block">6 State-Level Events</span>
-              <span className="text-[10px] text-gray-500 mt-0.5 block">Debate, Quiz, Posters, Reels, Ramp & Hunt</span>
+              <span className="text-xs font-black text-navy mt-1 block">7 State-Level Events</span>
+              <span className="text-[10px] text-gray-500 mt-0.5 block">Quiz, Debate, Poster Making, Treasure Hunt, Ramp Walk, Reels &amp; Dance</span>
             </div>
             <div className="bg-gray-50 p-4 rounded-2xl border border-gray-100">
               <span className="text-[10px] uppercase font-bold text-gray-400 block">Festival Schedule</span>
               <span className="text-xs font-black text-navy mt-1 block">Sunday, Nov 15, 2026</span>
-              <span className="text-[10px] text-gray-500 mt-0.5 block">Gate Entry & Check-In at 09:30 AM</span>
+              <span className="text-[10px] text-gray-500 mt-0.5 block">Programme starts at {CROSSFIRE_START_LABEL} IST</span>
             </div>
             <div className="bg-gray-50 p-4 rounded-2xl border border-gray-100">
               <span className="text-[10px] uppercase font-bold text-gray-400 block">Official Results</span>

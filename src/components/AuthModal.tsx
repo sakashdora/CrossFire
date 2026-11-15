@@ -41,7 +41,7 @@ export const AuthModal: React.FC<{ isOpen: boolean; onClose: () => void; student
         {value ? <ShieldCheck size={18}/> : <GraduationCap size={18}/>} {value ? 'Staff, Judge & VIP' : 'Student Login'}
       </button>)}</div>}
       {!showStudent && <p className="mb-4 text-xs font-black tracking-wide text-navy flex items-center gap-2"><ShieldCheck size={18}/> Staff, Judge &amp; VIP sign-in</p>}
-      <p className="text-sm text-slate-600 mb-5">{staff ? 'Use the email and password from the organisers. A first sign-in asks you to choose your own password. Super admins also verify an authenticator.' : 'Use the student ID and temporary password emailed by the organisers. Returning students can also use their registered email.'}</p>
+      <p className="text-sm text-slate-600 mb-5">{staff ? 'Use the ID (email) and password given to you by the organisers. Volunteers and coordinators keep the password they were given. Judges, VIP guests and admins choose their own password at first sign-in. Super admins also verify an authenticator.' : 'Use the student ID and temporary password emailed by the organisers. Returning students can also use their registered email.'}</p>
       <form onSubmit={submit} className="space-y-4">
         <label className="block text-sm font-semibold">{staff ? 'Email' : 'Student ID or registered email'}<input className={field + ' mt-1'} type={staff ? 'email' : 'text'} autoComplete="username" required maxLength={254} value={email} onChange={event=>setEmail(event.target.value)}/></label>
         <label className="block text-sm font-semibold">Password<input className={field + ' mt-1'} type="password" autoComplete="current-password" required maxLength={200} value={password} onChange={event=>setPassword(event.target.value)}/></label>

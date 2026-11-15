@@ -44,6 +44,25 @@ Deno.serve(async (request: Request) => {
     input = JSON.parse(new TextDecoder().decode(body));
   } catch { return reply(400, { error: 'Invalid request.' }); }
   if (!input || typeof input !== 'object' || Array.isArray(input)) return reply(400, { error: 'Invalid request.' });
+  const crew = ['volunteer', 'coordinator'];
+  if (input.action === 'set_password') {
+    // Volunteer and coordinator logins keep a fixed password that admins can view and re-issue.
+    const targetId = typeof input.user_id === 'string' ? input.user_id : '';
+    const fixed = typeof input.password === 'string' ? input.password : '';
+    if (!/^[0-9a-f-]{36}$/i.test(targetId) || fixed.length < 12 || fixed.length > 72) return reply(400, { error: 'Choose a password of 12–72 characters.' });
+    const { error: limitError } = await caller.rpc('crossfire_provision_guard');
+    if (limitError) return reply(limitError.message?.includes('limit reached') ? 429 : 403, { error: 'Staff provisioning is unavailable. Verify your authenticator and permissions, or try again later if you reached the hourly limit.' });
+    const { data: target } = await service.from('users').select('id,role,active').eq('id', targetId).maybeSingle();
+    if (!target || !crew.includes(target.role)) return reply(404, { error: 'Only volunteer and coordinator logins can use a fixed password.' });
+    // Clear the saved copy first: whatever fails next, the admin panel never shows a password that is no longer current.
+    const { error: clearError } = await caller.rpc('crossfire_clear_staff_credential', { p_user: targetId });
+    if (clearError) return reply(503, { error: 'The saved password could not be cleared, so nothing was changed. Try again.' });
+    const { error: passwordError } = await service.auth.admin.updateUserById(targetId, { password: fixed });
+    if (passwordError) return reply(409, { error: 'The password could not be set. It may not meet the project password policy. The saved copy was cleared and their previous password may still work; set a new password again to share one.' });
+    const { error: saveError } = await caller.rpc('crossfire_save_staff_credential', { p_user: targetId, p_password: fixed });
+    if (saveError) return reply(503, { error: 'The password was changed but could not be saved for viewing. Set it again to retry.' });
+    return reply(200, { success: true, id: targetId });
+  }
   const name = typeof input.name === 'string' ? input.name.trim() : '';
   const email = typeof input.email === 'string' ? input.email.trim().toLowerCase() : '';
   const password = typeof input.password === 'string' ? input.password : '';
@@ -62,8 +81,8 @@ Deno.serve(async (request: Request) => {
   const { data: created, error: createError } = await service.auth.admin.createUser({ email, password, email_confirm: true, app_metadata: { crossfire_provisioned_by: auth.user.id }, user_metadata: { app: 'crossfire_operations', full_name: name } });
   if (createError || !created.user) return reply(409, { error: 'The account could not be created. The email may already be registered, or the password may not meet the project policy.' });
   const id = created.user.id;
-  // The profile requires a password change at first sign-in; this password is single-use.
-  const { error: provisionError } = await caller.rpc('crossfire_ops_provision', { p_data: { id, name, role, contact_number: phone, ...(role === 'vip_guest' ? { guest_id: guestId } : {}) } });
+  // Volunteers and coordinators keep this password; other roles must replace it at first sign-in.
+  const { error: provisionError } = await caller.rpc('crossfire_ops_provision', { p_data: { id, name, role, contact_number: phone, ...(role === 'vip_guest' ? { guest_id: guestId } : {}), ...(crew.includes(role) ? { password } : {}) } });
   if (provisionError) {
     // Read back first: a transport error can occur after the transaction committed.
     const { data: persisted, error: readError } = await service.from('users').select('id,role,active').eq('id', id).maybeSingle();

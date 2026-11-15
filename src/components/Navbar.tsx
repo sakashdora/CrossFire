@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { dashboardFor, ROLE_LABELS } from '../lib/roles';
 import { PUBLIC_STUDENT_SIGNIN } from '../lib/studentAccess';
+import { showEventSchedule } from '../data/eventDay';
 import { 
   Trophy, 
   Calendar, 
@@ -30,7 +31,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   setCurrentView,
   openAuthModal
 }) => {
-  const { user, role, logout } = useAuth();
+  const { user, role, logout, registrationStatus } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
@@ -98,9 +99,18 @@ export const Navbar: React.FC<NavbarProps> = ({
   const navItems = [
     { id: 'landing', label: 'Overview', icon: null },
     { id: 'events', label: 'Events', icon: Calendar },
+    ...(currentView === 'landing' && registrationStatus === 'closed' ? [{ id: 'schedule', label: 'Schedule', icon: null }] : []),
     { id: 'leaderboard', label: 'Leaderboard', icon: Trophy },
     ...(management ? [{ id: 'admin', label: 'Registrations', icon: LayoutDashboard }] : [])
   ];
+  function navigateItem(id: string) {
+    if (id === 'schedule') showEventSchedule();
+    else {
+      setCurrentView(id);
+      if (id === 'admin') window.dispatchEvent(new Event('crossfire:open-student-records'));
+    }
+    setMobileMenuOpen(false);
+  }
 
   return (
     <>
@@ -161,7 +171,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                     <button
                       key={item.id}
                       aria-current={isActive ? 'page' : undefined}
-                      onClick={() => { setCurrentView(item.id); if (item.id === 'admin') window.dispatchEvent(new Event('crossfire:open-student-records')); }}
+                      onClick={() => navigateItem(item.id)}
                       className="relative px-5 py-2 text-sm font-semibold rounded-full group outline-none transition-colors"
                     >
                       {isActive && (
@@ -186,7 +196,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               
               {/* Dynamic Register CTA (Desktop). Signed-in accounts cannot register a new
                   student, and the account chip needs this space beside the centred links. */}
-              {!user && <button
+              {!user && registrationStatus === 'open' && <button
                 onClick={() => setCurrentView('register')}
                 className="cf-navbar-register hidden lg:flex relative overflow-hidden items-center gap-2 px-5 py-2 rounded-full font-bold group border border-cyan-400/40 shadow-[0_0_20px_rgba(0,136,255,0.3)]"
               >
@@ -328,7 +338,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                         </div>
 
                         <div className="border-t border-gray-100 pt-2 pb-1">
-                          {role !== 'student' && <button className="w-full text-left px-5 py-2.5 text-sm font-bold text-gray-700 hover:bg-orange-50" onClick={()=>{setUserDropdownOpen(false);setCurrentView('account');}}>Account security</button>}
+                          {role !== 'student' && role !== 'volunteer' && role !== 'coordinator' && <button className="w-full text-left px-5 py-2.5 text-sm font-bold text-gray-700 hover:bg-orange-50" onClick={()=>{setUserDropdownOpen(false);setCurrentView('account');}}>Account security</button>}
                           <button
                             onClick={() => {
                               setUserDropdownOpen(false);
@@ -388,11 +398,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                   return (
                     <button
                       key={item.id}
-                      onClick={() => {
-                        setCurrentView(item.id);
-                        if (item.id === 'admin') window.dispatchEvent(new Event('crossfire:open-student-records'));
-                        setMobileMenuOpen(false);
-                      }}
+                      onClick={() => navigateItem(item.id)}
                       className={`flex items-center gap-3 px-4 py-3 rounded-xl font-bold text-sm transition-all text-left ${
                         isActive 
                           ? 'bg-blue-600/30 text-cyan-300 border border-cyan-500/40 shadow-[0_0_15px_rgba(0,198,255,0.2)]' 
@@ -405,7 +411,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                   );
                 })}
 
-                <button
+                {registrationStatus === 'open' && <button
                   onClick={() => {
                     setCurrentView('register');
                     setMobileMenuOpen(false);
@@ -414,11 +420,11 @@ export const Navbar: React.FC<NavbarProps> = ({
                 >
                   <UserPlus className="w-4 h-4" />
                   <span>Register Free</span>
-                </button>
+                </button>}
 
 
 
-                {user && role !== 'student' && <button className="text-sm text-white font-bold py-2" onClick={()=>{setMobileMenuOpen(false);setCurrentView('account');}}>Account security</button>}
+                {user && role !== 'student' && role !== 'volunteer' && role !== 'coordinator' && <button className="text-sm text-white font-bold py-2" onClick={()=>{setMobileMenuOpen(false);setCurrentView('account');}}>Account security</button>}
                 {/* User Status / Quick Auth in Mobile Menu */}
                 <div className="pt-3 mt-2 border-t border-white/10 flex items-center justify-between">
                   {user ? (

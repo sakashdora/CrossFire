@@ -1,5 +1,6 @@
 import React, { useRef, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { CROSSFIRE_START_LABEL } from '../lib/countdown';
 import { Registration } from '../types';
 import { useNotifications } from '../hooks/useNotifications';
 import { StudentQRCode } from '../components/StudentQRCode';
@@ -290,10 +291,10 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
           </div>
           <div className="min-w-0">
             <span className="text-lg sm:text-xl font-black text-navy block leading-none">
-              09:30 AM
+              {CROSSFIRE_START_LABEL} IST
             </span>
             <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mt-1 block truncate">
-              Reporting at Gate 1
+              Programme starts
             </span>
           </div>
         </div>
@@ -550,18 +551,12 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
           </div>
 
           <div className="divide-y divide-gray-100 text-xs sm:text-sm">
-            <div className="py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-1">
-              <div className="flex items-center gap-2">
-                <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 shrink-0"></span>
-                <strong className="text-gray-900 text-sm">09:30 AM - 10:00 AM</strong>
-              </div>
-              <span className="text-gray-600 sm:text-right">Campus Entry, Security QR Badge Scanning & Welcome Desk at Gate 1</span>
-            </div>
+            <p className="py-3.5 text-gray-600">Keep your QR pass ready for check-in at the Gate 1 welcome desk.</p>
 
             <div className="py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-1">
               <div className="flex items-center gap-2">
                 <span className="w-2.5 h-2.5 rounded-full bg-blue-500 shrink-0"></span>
-                <strong className="text-navy text-sm">10:00 AM - 10:30 AM</strong>
+                <strong className="text-navy text-sm">{CROSSFIRE_START_LABEL} IST</strong>
               </div>
               <span className="text-navy font-bold sm:text-right">Opening Ceremony & Dignitary Addresses</span>
             </div>

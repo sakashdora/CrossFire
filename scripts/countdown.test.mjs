@@ -5,11 +5,12 @@ import ts from 'typescript';
 
 const source = await readFile(new URL('../src/lib/countdown.ts', import.meta.url), 'utf8');
 const { outputText } = ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.ES2020 } });
-const { CROSSFIRE_START, getCountdown } = await import(`data:text/javascript;base64,${Buffer.from(outputText).toString('base64')}`);
+const { CROSSFIRE_START, CROSSFIRE_START_LABEL, getCountdown } = await import(`data:text/javascript;base64,${Buffer.from(outputText).toString('base64')}`);
 const deadline = Date.parse(CROSSFIRE_START);
 
-test('the event starts at 09:30 IST, independently of browser timezone', () => {
-  assert.equal(new Date(deadline).toISOString(), '2026-11-15T04:00:00.000Z');
+test('the programme starts at 9:00 AM IST, independently of browser timezone', () => {
+  assert.equal(new Date(deadline).toISOString(), '2026-11-15T03:30:00.000Z');
+  assert.equal(CROSSFIRE_START_LABEL, '9:00 AM');
 });
 test('days, hours, minutes and seconds roll over together', () => {
   assert.deepEqual(getCountdown(CROSSFIRE_START, deadline - 86400000).values, [1, 0, 0, 0]);
