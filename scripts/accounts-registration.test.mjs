@@ -35,9 +35,9 @@ for (const [key,station,event] of [['gate','gate',null],['food','food',null],['r
 const legacyRequest = randomUUID();
 await db.query(`insert into crossfire_registration_requests(id,profile,events,status) values($1,$2,'[]','registered')`,[legacyRequest,JSON.stringify({student_name:'Legacy Student',email:'legacy@example.test',contact_number:'9111111111'})]);
 
-for (const name of ['20261030090000_vip_guest_role.sql','20261030090100_accounts_registration_qr.sql','20261030120000_least_privilege_review.sql','20261101090000_student_phone_length.sql','20261103091000_legacy_volunteer_assignments.sql','20261103092000_coordinator_role.sql','20261103093000_event_declarations.sql','20261114090000_fixed_crew_credentials.sql','20261115090000_participant_pass_lookup.sql','20261115110000_homepage_announcements.sql','20261115150000_manual_podium_entries.sql']) await db.exec(await migration(name));
+for (const name of ['20261030090000_vip_guest_role.sql','20261030090100_accounts_registration_qr.sql','20261030120000_least_privilege_review.sql','20261101090000_student_phone_length.sql','20261103091000_legacy_volunteer_assignments.sql','20261103092000_coordinator_role.sql','20261103093000_event_declarations.sql','20261114090000_fixed_crew_credentials.sql','20261115090000_participant_pass_lookup.sql','20261115110000_homepage_announcements.sql','20261115150000_manual_podium_entries.sql','20261115170000_open_result_filing.sql']) await db.exec(await migration(name));
 // Forward migrations must be safe to apply twice.
-for (const name of ['20261030090000_vip_guest_role.sql','20261030090100_accounts_registration_qr.sql','20261030120000_least_privilege_review.sql','20261101090000_student_phone_length.sql','20261103091000_legacy_volunteer_assignments.sql','20261103092000_coordinator_role.sql','20261103093000_event_declarations.sql','20261114090000_fixed_crew_credentials.sql','20261115090000_participant_pass_lookup.sql','20261115110000_homepage_announcements.sql','20261115150000_manual_podium_entries.sql']) await db.exec(await migration(name));
+for (const name of ['20261030090000_vip_guest_role.sql','20261030090100_accounts_registration_qr.sql','20261030120000_least_privilege_review.sql','20261101090000_student_phone_length.sql','20261103091000_legacy_volunteer_assignments.sql','20261103092000_coordinator_role.sql','20261103093000_event_declarations.sql','20261114090000_fixed_crew_credentials.sql','20261115090000_participant_pass_lookup.sql','20261115110000_homepage_announcements.sql','20261115150000_manual_podium_entries.sql','20261115170000_open_result_filing.sql']) await db.exec(await migration(name));
 
 async function as(actor, sql, args=[], aal) {
   await db.exec('reset role');
@@ -537,40 +537,75 @@ await test('admin provisions and manages coordinator access',async()=>{
   await denied(as('coord','select result_desk()'),/permission|sign in/i);
   await action('super','staff.access',{id:actors.coord,role:'coordinator',active:true});
 });
-await test('only reviewed event placements become public, with Champion independent of podium order',async()=>{
+await test('any coordinator files results for any event at any time; the website shows only what an admin approved',async()=>{
   const event=await eventId('Event 1');
-  const publicRows=async()=>(await as(null,'select * from published_event_awards()')).rows;
-  const change=(actor,version,op,picks=null,feedback=null)=>as(actor,'select result_action($1,$2,$3,$4,$5,$6)',[event,version,op,picks,actors.coord,feedback]);
-  const sheet=async()=>(await one('coord','select result_desk()')).events[0];
-  assert.equal(await sheet(),undefined);
-  await denied(change('coord',0,'save'),/not assigned/);
-  await change('admin',0,'assign');
-  const initial=await sheet();assert.equal(initial.id,event);assert.ok(initial.entries.length>=3);
+  const publicRows=async()=>(await as(null,'select * from published_event_awards()')).rows.filter(r=>r.event_name==='Event 1');
+  const change=(actor,version,op,picks=null,feedback=null,manual=null)=>as(actor,'select result_action($1,$2,$3,$4,$5,$6,$7)',[event,version,op,picks,null,feedback,manual?JSON.stringify(manual):null]);
+  const sheet=async(actor='coord')=>(await one(actor,'select result_desk()')).events.find(e=>e.id===event);
+  const version=async(actor='coord')=>(await sheet(actor)).version;
+  await provision('admin','coordtwo','coordinator');
+  // Not today, nobody assigned: coordinators can still open and file the event.
+  await db.query("update events set start_time=now()+interval '30 days',end_time=now()+interval '31 days' where id=$1",[event]);
+  const initial=await sheet();
+  assert.equal(initial.id,event);assert.equal(initial.coordinator,null);assert.equal(initial.mine,false);assert.equal(initial.state,'Draft');assert.ok(initial.entries.length>=3);
   const [a,b,c]=initial.entries.map(r=>r.id);
-  await change('coord',1,'save',[a,null,null,null]);
-  await denied(change('coord',1,'submit',[a,b,c,b]),/changed/);
-  await denied(change('coord',2,'submit',[a,a,c,b]),/different/);
-  await denied(change('coord',2,'submit',[a,b,c,randomUUID()]),/eligible/);
-  await denied(change('coord',2,'submit',[a,b,c,b]),/event day/);
-  await db.query("update events set start_time=now(),end_time=now()+interval '1 hour' where id=$1",[event]);
-  await change('coord',2,'submit',[a,b,c,b]);
+  assert.equal((await one('coordtwo','select result_desk()')).events.length,(await one('coord','select result_desk()')).events.length);
+  await change('coord',initial.version,'save',[a,null,null,null]);
+  assert.equal((await sheet()).updated_by,'Result coordinator');
+  // A second coordinator working from a stale screen is told to refresh; after refreshing they continue the draft.
+  await denied(change('coordtwo',initial.version,'save',[a,b,null,null]),/changed/);
+  await change('coordtwo',await version('coordtwo'),'save',[a,b,null,null]);
+  assert.equal((await sheet()).updated_by,'New coordtwo');
+  await denied(change('coord',await version(),'submit',[a,a,c,b]),/different/);
+  await denied(change('coord',await version(),'submit',[a,b,c,randomUUID()]),/eligible/);
+  await denied(change('coord',await version(),'submit',[a,b,null,null]),/first, second and third/);
+  await change('coord',await version(),'submit',[a,b,c,b]);
+  assert.equal((await sheet()).state,'In review');
   assert.equal((await publicRows()).length,0);
   await denied(as(null,'select * from event_declarations'),/permission/);
-  await denied(change('coord',3,'approve'),/role/);
-  await denied(change('coord',3,'save',[a,b,c,b]),/locked/);
-  await change('admin',3,'return',null,'Check the third place entry');
+  await denied(change('coord',await version(),'approve'),/role/);
+  // Changing a submitted result pulls it back to a draft, so an admin never approves something they did not see.
+  await change('coord',await version(),'save',[a,b,c,b]);
+  assert.equal((await sheet()).state,'Draft');
+  await denied(change('admin',await version(),'approve'),/submitted/);
+  await change('coord',await version(),'submit',[a,b,c,b]);
+  await change('admin',await version(),'return',null,'Check the third place entry');
   assert.equal((await sheet()).feedback,'Check the third place entry');
+  assert.equal((await sheet()).state,'Changes requested');
   assert.equal((await publicRows()).length,0);
-  await change('coord',4,'submit',[c,b,a,b]);
-  await change('super',5,'approve');
-  const [published]=await publicRows();
-  assert.equal(published.event_name,'Event 1');
-  assert.deepEqual(published.awards,[c,b,a,b].map(id=>{const e=initial.entries.find(r=>r.id===id);return `${e.name} — ${e.school}`;}));
-  await denied(change('admin',6,'approve'),/submitted/);
+  await change('coordtwo',await version('coordtwo'),'submit',[c,b,a,b]);
+  await change('super',await version(),'approve');
+  const label=id=>{const e=initial.entries.find(r=>r.id===id);return `${e.name} — ${e.school}`;};
+  assert.deepEqual((await publicRows())[0].awards,[c,b,a,b].map(label));
+  // After approval a coordinator may still update at any time; the website keeps the approved result until the update is approved.
+  await change('coord',await version(),'save',[b,c,a,null]);
+  let s=await sheet();
+  assert.equal(s.state,'Draft');assert.deepEqual(s.published,[c,b,a,b].map(label));
+  assert.deepEqual((await publicRows())[0].awards,[c,b,a,b].map(label));
+  await change('coord',await version(),'submit',[b,c,a,null]);
+  assert.deepEqual((await publicRows())[0].awards,[c,b,a,b].map(label));
+  await change('admin',await version(),'approve');
+  assert.deepEqual((await publicRows())[0].awards,[b,c,a,null].map(id=>id&&label(id)));
+  await denied(change('admin',await version(),'approve'),/submitted/);
+  // Students, other staff and deactivated coordinators cannot file.
+  for (const actor of ['gate','student1','judge',null]) await denied(change(actor,await version(),'save',[a,b,c,null]));
   await action('super','staff.access',{id:actors.coord,active:false,role:'coordinator'});
-  await action('admin','staff.access',{id:actors.coord,active:true,role:'coordinator'});
-  assert.equal(await sheet(),undefined);
+  await denied(as('coord','select result_desk()'),/permission|sign in/i);
+  await action('super','staff.access',{id:actors.coord,active:true,role:'coordinator'});
+  assert.equal((await sheet()).id,event);
   assert.equal((await publicRows()).length,1);
+});
+await test('coordinators see open events only, and cannot file an event that does not exist',async()=>{
+  const event=await eventId('Event 6');
+  const ids=async()=>(await one('coordtwo','select result_desk()')).events.map(e=>e.id);
+  assert.ok((await ids()).includes(event));
+  await db.query("update events set status='draft' where id=$1",[event]);
+  assert.ok(!(await ids()).includes(event));
+  await assert.rejects(as('coordtwo','select result_action($1,$2,$3,$4,$5,$6,$7)',[event,0,'save',[null,null,null,null],null,null,null]),/Event not found/);
+  // An admin still sees and manages every event.
+  assert.ok((await one('admin','select result_desk()')).events.some(e=>e.id===event));
+  await db.query("update events set status='open' where id=$1",[event]);
+  await assert.rejects(as('coordtwo','select result_action($1,$2,$3,$4,$5,$6,$7)',[randomUUID(),0,'save',[null,null,null,null],null,null,null]),/Event not found/);
 });
 // ---------------------------------------------------------------------------
 // Typed winners: offline registrations (name + college) alongside registered entries

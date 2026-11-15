@@ -51,3 +51,16 @@
 .result-hint { margin: 0 0 14px; padding: 10px 12px; border-radius: 8px; background: #eef3f8; color: #33536a !important; font-size: 15px }
 .result-badges { display: inline-flex; flex-wrap: wrap; justify-content: flex-end; gap: 6px }
 @media(max-width:650px) { .result-typed { grid-template-columns: minmax(0,1fr) } .result-slotbox { padding: 12px 12px 14px } }
+
+/* Event list: click an event and its winners form opens right under it */
+.result-list { display: grid; gap: 12px; margin: 0 0 20px }
+.result-item { display: grid; gap: 10px; min-width: 0 }
+.result-panel[hidden] { display: none }
+.result-panelcard { margin: 0 }
+.result-desk .result-item .result-event { width: 100% }
+.result-chevron { transition: transform .15s }
+.result-item.open .result-chevron { transform: rotate(180deg) }
+.result-mine { margin-left: 8px; font: 600 12px "Segoe UI",sans-serif; font-style: normal; letter-spacing: .4px; text-transform: uppercase; color: #a33d14; background: #fff0e6; border-radius: 4px; padding: 2px 7px; vertical-align: middle }
+.result-live { display: grid; gap: 3px; margin: 0 0 14px; padding: 12px 14px; background: #eef6f2; border: 1px solid #cde5d8; border-radius: 8px; color: #15553b; font-size: 15px }
+.result-saved { margin: 10px 0 0; font-size: 13px; color: #5b6870 !important }
+@media(prefers-reduced-motion: reduce) { .result-chevron { transition: none } }
