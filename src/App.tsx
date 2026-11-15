@@ -31,7 +31,8 @@ const LeaderboardPage = lazy(() => import('./pages/LeaderboardPage').then(module
 const RegistrationPage = lazy(() => import('./pages/RegistrationPage').then(module => ({ default: module.RegistrationPage })));
 const StudentActivation = lazy(() => import('./pages/StudentActivation').then(module => ({ default: module.StudentActivation })));
 const VipDashboard = lazy(() => import('./pages/VipDashboard').then(module => ({ default: module.VipDashboard })));
-const VIEWS = ['landing','register','events','dashboard','coordinator','judge','volunteer','admin','vip','leaderboard','account','activate'];
+const MyPassPage = lazy(() => import('./pages/MyPassPage').then(module => ({ default: module.MyPassPage })));
+const VIEWS = ['landing','register','events','dashboard','coordinator','judge','volunteer','admin','vip','leaderboard','account','activate','my-pass'];
 
 const ProtectedRoute = ({ children, allowedRoles }: { children: React.ReactNode, allowedRoles?: string[] }) => {
   const { user, role, isLoading, needsMfa, mustChangePassword } = useAuth();
@@ -217,7 +218,7 @@ const CrossFireApp: React.FC = () => {
       {/* Main View Router */}
       <main id="main-content" tabIndex={-1} className={`flex-grow min-h-[75vh] ${currentView !== 'landing' ? `pt-16 sm:pt-[72px] ${currentView === 'events' ? '' : 'pb-12'}` : ''}`}>
         <Suspense fallback={<div className="min-h-[60vh] grid place-items-center text-slate-500" role="status">Loading page…</div>}>
-        {currentView === 'landing' && registrationStatus === 'closed' && <EventDayPage onSelectEvent={handleSelectEvent} introActive={showIntro} onReplayIntro={handleReplayIntro} />}
+        {currentView === 'landing' && registrationStatus === 'closed' && <EventDayPage onSelectEvent={handleSelectEvent} introActive={showIntro} onReplayIntro={handleReplayIntro} onFindPass={() => setCurrentView('my-pass')} />}
         {currentView === 'landing' && registrationStatus !== 'closed' && (
           <LandingPage
             onSelectEvent={handleSelectEvent}
@@ -280,6 +281,7 @@ const CrossFireApp: React.FC = () => {
         {currentView === 'vip' && <ProtectedRoute allowedRoles={['vip_guest']}><VipDashboard /></ProtectedRoute>}
         {currentView === 'account' && <ProtectedRoute allowedRoles={['admin','super_admin','judge','vip_guest']}><AccountSecurity /></ProtectedRoute>}
         {currentView === 'activate' && <StudentActivation />}
+        {currentView === 'my-pass' && <MyPassPage onHome={() => setCurrentView('landing')} />}
         </Suspense>
       </main>
 

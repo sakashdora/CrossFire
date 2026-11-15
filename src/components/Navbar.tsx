@@ -13,7 +13,8 @@ import {
   X, 
   ChevronDown, 
   UserPlus,
-  CheckCheck
+  CheckCheck,
+  QrCode
 } from 'lucide-react';
 import { useNotifications } from '../hooks/useNotifications';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -101,6 +102,7 @@ export const Navbar: React.FC<NavbarProps> = ({
     { id: 'events', label: 'Events', icon: Calendar },
     ...(currentView === 'landing' && registrationStatus === 'closed' ? [{ id: 'schedule', label: 'Schedule', icon: null }] : []),
     { id: 'leaderboard', label: 'Leaderboard', icon: Trophy },
+    ...(!user ? [{ id: 'my-pass', label: 'My Pass', icon: QrCode }] : []),
     ...(management ? [{ id: 'admin', label: 'Registrations', icon: LayoutDashboard }] : [])
   ];
   function navigateItem(id: string) {

@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react';
-import { ArrowDown, ArrowUpRight, CalendarDays, Clock3, MapPin, Pause, Play, RotateCcw } from 'lucide-react';
+import { ArrowDown, ArrowUpRight, CalendarDays, Clock3, MapPin, Pause, Play, QrCode, RotateCcw } from 'lucide-react';
 import { HeroStarfield } from '../components/HeroStarfield';
 import { ArenaGallery } from '../components/ArenaGallery';
 import { useScrollReveal } from '../hooks/useScrollReveal';
@@ -18,9 +18,10 @@ interface EventDayProps {
   introActive: boolean;
   onReplayIntro: () => void;
   onSelectEvent: (event: EventItem) => void;
+  onFindPass: () => void;
 }
 
-export function EventDayPage({ introActive, onReplayIntro, onSelectEvent }: EventDayProps) {
+export function EventDayPage({ introActive, onReplayIntro, onSelectEvent, onFindPass }: EventDayProps) {
   const { events, error, isLoading } = useEvents();
   const [paused, setPaused] = useState(false);
   const pageRef = useRef<HTMLDivElement>(null);
@@ -49,7 +50,8 @@ export function EventDayPage({ introActive, onReplayIntro, onSelectEvent }: Even
         <button className="cf-button day-primary" onClick={showEventSchedule}>View Event Schedule <ArrowDown size={17} /></button>
         <a className="cf-button day-secondary" target="_blank" rel="noreferrer" href="https://www.google.com/maps/dir/?api=1&destination=Srusti+Academy+of+Graduate+Studies%2C+Bhubaneswar">Get Directions <ArrowUpRight size={17} /></a>
       </div>
-      <p className="day-pass">Already registered? Keep your QR pass ready.</p>
+      <button className="cf-button day-find" onClick={onFindPass}><QrCode size={18} aria-hidden="true" /> Participant? Find my pass</button>
+      <p className="day-pass">Already registered? Keep your QR pass ready. Lost your QR or ID? <button type="button" className="day-link" onClick={onFindPass}>Get your pass with your mail ID</button>.</p>
       {events.length > 0 && <p className="day-stats"><span>{events.length} arenas</span><span>₹{total.toLocaleString('en-IN')} in prizes</span></p>}
       <div className="day-controls">
         <button onClick={onReplayIntro}><RotateCcw size={13} /> Replay intro</button>

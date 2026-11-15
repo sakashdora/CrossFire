@@ -39,9 +39,9 @@ for (const [key,station,event] of [['gate','gate',null],['food','food',null],['r
 const legacyRequest = randomUUID();
 await db.query(`insert into crossfire_registration_requests(id,profile,events,status) values($1,$2,'[]','registered')`,[legacyRequest,JSON.stringify({student_name:'Legacy Student',email:'legacy@example.test',contact_number:'9111111111'})]);
 
-for (const name of ['20261030090000_vip_guest_role.sql','20261030090100_accounts_registration_qr.sql','20261030120000_least_privilege_review.sql','20261101090000_student_phone_length.sql','20261103091000_legacy_volunteer_assignments.sql','20261103092000_coordinator_role.sql','20261103093000_event_declarations.sql','20261114090000_fixed_crew_credentials.sql']) await db.exec(await migration(name));
+for (const name of ['20261030090000_vip_guest_role.sql','20261030090100_accounts_registration_qr.sql','20261030120000_least_privilege_review.sql','20261101090000_student_phone_length.sql','20261103091000_legacy_volunteer_assignments.sql','20261103092000_coordinator_role.sql','20261103093000_event_declarations.sql','20261114090000_fixed_crew_credentials.sql','20261115090000_participant_pass_lookup.sql']) await db.exec(await migration(name));
 // Forward migrations must be safe to apply twice.
-for (const name of ['20261030090000_vip_guest_role.sql','20261030090100_accounts_registration_qr.sql','20261030120000_least_privilege_review.sql','20261101090000_student_phone_length.sql','20261103091000_legacy_volunteer_assignments.sql','20261103092000_coordinator_role.sql','20261103093000_event_declarations.sql','20261114090000_fixed_crew_credentials.sql']) await db.exec(await migration(name));
+for (const name of ['20261030090000_vip_guest_role.sql','20261030090100_accounts_registration_qr.sql','20261030120000_least_privilege_review.sql','20261101090000_student_phone_length.sql','20261103091000_legacy_volunteer_assignments.sql','20261103092000_coordinator_role.sql','20261103093000_event_declarations.sql','20261114090000_fixed_crew_credentials.sql','20261115090000_participant_pass_lookup.sql']) await db.exec(await migration(name));
 
 async function as(actor, sql, args=[], aal) {
   await db.exec('reset role');
@@ -575,5 +575,55 @@ await test('only reviewed event placements become public, with Champion independ
   await action('admin','staff.access',{id:actors.coord,active:true,role:'coordinator'});
   assert.equal(await sheet(),undefined);
   assert.equal((await publicRows()).length,1);
+});
+// ---------------------------------------------------------------------------
+// Participant pass lookup (mail ID + registered mobile number)
+// ---------------------------------------------------------------------------
+const findPass = (email,phone,client='client-a') => as('service','select crossfire_participant_pass($1,$2,$3) as r',[email,phone,client]).then(r=>r.rows[0].r);
+await test('a participant gets their own pass back with their mail ID and registered mobile number',async()=>{
+  const {rows:[mine]} = await db.query("select pass_code,first_name from users where lower(email)='student1@example.test'");
+  const r = await findPass('student1@example.test','9000000101');
+  assert.equal(r.found,true);
+  assert.equal(r.pass.pass_id,mine.pass_code);
+  assert.match(r.pass.student_id,/^CFS-/);
+  assert.equal(r.pass.email,'student1@example.test');
+  assert.ok(Array.isArray(r.pass.events) && r.pass.events.length>0 && r.pass.events[0].event_id && r.pass.events[0].name);
+  assert.ok('checked_in_at' in r.pass && 'food_redeemed_at' in r.pass);
+  // Case, spacing and a country code do not matter; the registered WhatsApp number also works.
+  assert.equal((await findPass('  Student1@Example.TEST ','+91 90000 00101','client-b')).found,true);
+  assert.equal((await findPass('student1@example.test','9000000101','client-c')).pass.pass_id,mine.pass_code);
+});
+await test('wrong details return the same quiet miss and never reveal whether the email exists',async()=>{
+  assert.deepEqual(await findPass('student1@example.test','9000000999','m1'),{found:false});
+  assert.deepEqual(await findPass('nobody-registered@example.test','9000000101','m2'),{found:false});
+  // Another student's number does not unlock this email.
+  assert.deepEqual(await findPass('student1@example.test','9111111112','m3'),{found:false});
+});
+await test('badly formed input is rejected and a suspended student is not matched',async()=>{
+  for (const [e,p] of [['not-an-email','9000000101'],['student1@example.test','123'],['student1@example.test','abcdefghij'],['','']]) await assert.rejects(findPass(e,p),/registered with/);
+  const id=await addUser('lookupb','student');
+  await db.query("update users set contact_number='9111111112',whatsapp_number='9111111112' where id=$1",[id]);
+  assert.equal((await findPass('lookupb@example.test','9111111112','s0')).found,true);
+  await db.query('update users set active=false where id=$1',[id]);
+  assert.deepEqual(await findPass('lookupb@example.test','9111111112','s1'),{found:false});
+  await db.query('update users set active=true where id=$1',[id]);
+  assert.equal((await findPass('lookupb@example.test','9111111112','s2')).found,true);
+});
+await test('guessing is capped per email, counted even for wrong guesses, and expires with the window',async()=>{
+  const email='lookupc@example.test';
+  const cid=await addUser('lookupc','student');
+  await db.query("update users set contact_number='9222222223',whatsapp_number='9222222223' where id=$1",[cid]);
+  for (let i=0;i<6;i++) assert.deepEqual(await findPass(email,'900000'+String(1000+i),'g'+i),{found:false});
+  // The seventh attempt is blocked, even with the correct number.
+  await assert.rejects(findPass(email,'9222222223','g9'),/Too many attempts/);
+  await assert.rejects(findPass(email,'9222222223','g10'),/Too many attempts/);
+  // Other students are unaffected, and the block lifts after the window.
+  assert.equal((await findPass('student1@example.test','9000000101','other')).found,true);
+  await db.query("update crossfire_rate_limits set started_at=now()-interval '16 minutes' where key like 'pass:email:%'");
+  assert.equal((await findPass(email,'9222222223','g11')).found,true);
+});
+await test('only the server can call the lookup, never a browser, student or staff member',async()=>{
+  for (const actor of [null,'student1','admin','super','gate']) await denied(as(actor,'select crossfire_participant_pass($1,$2,$3)',['student1@example.test','9000000101','x']));
+  await assert.rejects(as('service','select * from crossfire_rate_limits limit 1').then(()=>as('admin','select * from crossfire_rate_limits')),/permission denied/);
 });
 console.log(`\n${count} account, registration and QR checks passed in a disposable local database.`);

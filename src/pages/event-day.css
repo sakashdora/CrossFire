@@ -133,3 +133,9 @@
   .day-rooms tbody th { padding-block: 3px; }
   .day-guide-footer { flex-direction: column; align-items: start; }
 }
+
+/* Participant pass lookup entry on the home page */
+.day-find { margin-top: 14px; min-height: 48px; gap: 10px; padding: 0 22px; border-radius: 7px; font-size: 15px; font-weight: 700; color: #fff; background: #ff753e; border: 1px solid #ff753e; box-shadow: 0 8px 22px rgba(255,117,62,.3); cursor: pointer }
+.day-find:hover { background: #ff8758 }
+.day-link { background: none; border: 0; padding: 0; color: #ffb08c; font: inherit; text-decoration: underline; text-underline-offset: 3px; cursor: pointer }
+@media (max-width: 720px) { .day-find { width: 100%; min-height: 52px } }
