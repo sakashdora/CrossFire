@@ -25,6 +25,13 @@ export const liveOperationsClient: OperationsClient = {
     return data as OpsSnapshot;
   },
   async act(action, payload) {
+    if (action === 'announcement.send' && payload.target === 'homepage') {
+      const { error } = await supabase.rpc('crossfire_publish_homepage_announcement', {
+        p_id: payload.id, p_title: payload.title, p_message: payload.message,
+      });
+      if (error) throw new Error(message(error));
+      return;
+    }
     const { error } = await supabase.rpc('crossfire_ops_action', { p_action: action, p_payload: payload });
     if (error) throw new Error(message(error));
     if (action === 'event.status') window.dispatchEvent(new Event('crossfire_events_changed'));

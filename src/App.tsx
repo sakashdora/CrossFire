@@ -9,6 +9,7 @@ import { PasswordChangeRequired } from './components/PasswordChangeRequired';
 import { dashboardFor, ROLE_LABELS } from './lib/roles';
 import { CinematicIntro } from './components/CinematicIntro';
 import { RegistrationLiveNotice } from './components/RegistrationLiveNotice';
+import { HomepageAnnouncements } from './components/HomepageAnnouncements';
 import { useRegistrationNotice } from './hooks/useRegistrationNotice';
 import { isStudentLoginHash } from './lib/studentAccess';
 import { LandingPage } from './pages/LandingPage';
@@ -218,6 +219,7 @@ const CrossFireApp: React.FC = () => {
       {/* Main View Router */}
       <main id="main-content" tabIndex={-1} className={`flex-grow min-h-[75vh] ${currentView !== 'landing' ? `pt-16 sm:pt-[72px] ${currentView === 'events' ? '' : 'pb-12'}` : ''}`}>
         <Suspense fallback={<div className="min-h-[60vh] grid place-items-center text-slate-500" role="status">Loading page…</div>}>
+        {currentView === 'landing' && <HomepageAnnouncements />}
         {currentView === 'landing' && registrationStatus === 'closed' && <EventDayPage onSelectEvent={handleSelectEvent} introActive={showIntro} onReplayIntro={handleReplayIntro} onFindPass={() => setCurrentView('my-pass')} />}
         {currentView === 'landing' && registrationStatus !== 'closed' && (
           <LandingPage

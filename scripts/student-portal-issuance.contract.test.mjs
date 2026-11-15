@@ -10,6 +10,7 @@ import { test } from 'node:test';
 // the baseline is then applied (the cutover), and a new-cohort student registers.
 const BASELINE = '20261101090000_student_phone_length.sql';
 const db = new PGlite();
+await db.exec(await readFile(new URL('./fixtures/supabase-vault.sql', import.meta.url), 'utf8'));
 await db.exec(`create role anon; create role authenticated; create role service_role; create schema auth;
 create table auth.users(id uuid primary key,email text,email_confirmed_at timestamptz,encrypted_password text,banned_until timestamptz,raw_user_meta_data jsonb default '{}',raw_app_meta_data jsonb default '{}');
 create table auth.sessions(id uuid primary key default gen_random_uuid(),user_id uuid not null,created_at timestamptz not null default now());

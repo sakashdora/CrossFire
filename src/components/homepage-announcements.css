@@ -1,0 +1,92 @@
+.cf-announcements {
+  margin-top: 72px;
+  color: #fff9ee;
+  background: linear-gradient(100deg, #191b19, #0a2022 76%, #0a2427);
+  border-block: 1px solid #375054;
+}
+/* The banner now occupies the space beneath the fixed navigation. */
+.cf-announcements + .crossfire-landing .cf-hero { padding-top: 27px; }
+.cf-announcements + .crossfire-landing .day-hero { padding-top: clamp(30px, calc(8.4vw - 72px), 64px); }
+.cf-notice-inner {
+  width: min(1120px, 90%);
+  margin: auto;
+  display: flex;
+  align-items: center;
+  gap: 17px;
+  padding: 13px 0;
+}
+.cf-notice-icon {
+  width: 44px;
+  height: 44px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  color: #ff964e;
+  background: #30231c;
+  border: 1px solid #775035;
+  border-radius: 12px;
+}
+.cf-notice-copy { min-width: 0; flex: 1; }
+.cf-notice-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; font-size: 11px; }
+.cf-notice-meta strong { color: #ffa565; text-transform: uppercase; letter-spacing: .12em; }
+.cf-notice-meta time { color: #bdd0ce; border-left: 1px solid #526363; padding-left: 12px; }
+.cf-notice-copy p { margin: 4px 0 0; font-size: clamp(16px, 1.3vw, 20px); font-weight: 600; line-height: 1.35; overflow-wrap: anywhere; }
+.cf-notice-all, .cf-updates-more {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 15px;
+  border: 1px solid #547375;
+  border-radius: 7px;
+  background: #112a2a;
+  color: #fff9ee;
+  font-size: 14px;
+  font-weight: 600;
+}
+.cf-announcements button:hover { background: #243c3e; }
+.cf-announcements button:focus-visible { outline: 3px solid #87eeeb; outline-offset: 3px; }
+.cf-updates-panel {
+  position: fixed;
+  inset: 0;
+  width: min(460px, 100%);
+  height: 100dvh;
+  max-height: none;
+  max-width: 100%;
+  margin: 0 0 0 auto;
+  padding: 0 0 22px;
+  background: #071b1e;
+  color: #fff9ee;
+  border: 0;
+  border-left: 1px solid #396568;
+  overscroll-behavior: contain;
+}
+.cf-updates-panel::backdrop { background: #001012b8; }
+.cf-updates-panel header { display: flex; align-items: center; justify-content: space-between; padding: 25px 28px 20px; border-bottom: 1px solid #315254; }
+.cf-updates-panel h2 { font-size: 28px; font-weight: 700; letter-spacing: -.035em; }
+.cf-updates-panel header button { width: 44px; height: 44px; display: grid; place-items: center; border: 1px solid #476265; border-radius: 50%; }
+.cf-updates-panel ol { list-style: none; margin: 0; padding: 0 28px; }
+.cf-updates-panel li { position: relative; padding: 20px 0 20px 18px; border-bottom: 1px solid #294446; overflow-wrap: anywhere; }
+.cf-updates-panel li::before { content: ''; position: absolute; top: 30px; left: 0; width: 6px; height: 6px; border-radius: 50%; background: #689391; }
+.cf-updates-panel li:first-child::before { background: #ff9650; }
+.cf-updates-panel time { color: #b4c5c4; font-size: 12px; }
+.cf-updates-panel li:first-child time { color: #ffa565; }
+.cf-updates-panel h3 { margin: 6px 0; font-size: 20px; font-weight: 650; line-height: 1.24; }
+.cf-updates-panel li p { white-space: pre-line; color: #ccd8d5; font-size: 15px; line-height: 1.5; }
+.cf-updates-more, .cf-updates-panel > p { margin: 16px 28px 0; }
+@media (max-width: 639px) {
+  .cf-announcements { margin-top: 64px; }
+  .cf-announcements + .crossfire-landing .day-hero { padding-top: 26px; }
+  .cf-announcements + .crossfire-landing .cf-hero { padding-top: 22px; }
+  .cf-notice-inner { width: 100%; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 5px; padding: 8px 16px 13px; }
+  .cf-notice-copy { display: contents; }
+  .cf-notice-icon { display: none; }
+  .cf-notice-meta { grid-area: 1 / 1; font-size: 10.5px; gap: 2px 8px; }
+  .cf-notice-meta time { padding-left: 8px; }
+  .cf-notice-copy p { grid-row: 2; grid-column: 1 / -1; margin: 0; }
+  .cf-notice-all { grid-area: 1 / 2; min-height: 34px; border: 0; background: transparent; color: #a8e7e3; padding: 0 3px; font-size: 12px; gap: 3px; }
+  .cf-updates-panel { width: 100%; height: auto; max-height: 88dvh; margin: auto 0 0; padding-bottom: max(16px, env(safe-area-inset-bottom)); border: 1px solid #396568; border-radius: 18px 18px 0 0; }
+  .cf-updates-panel header { padding: 18px 22px; }
+  .cf-updates-panel ol { padding-inline: 22px; }
+}

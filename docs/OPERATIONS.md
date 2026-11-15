@@ -101,7 +101,8 @@ Invited or confirmed guests can decline; an admin may invite a declined guest ag
 - Provisioning compensates only a newly created Auth account if profile creation definitely failed. An uncertain commit is read back before cleanup; an unverifiable commit is left for admin review.
 - Guest/crew edit forms include the last update time to reject stale edits. Staff access changes also detect stale UI edits. A transaction advisory lock coordinates guest assignments with station/access edits.
 - QR codes identify a pass; authenticated staff authority and current server state determine the action. They are not cryptographic identity proof.
-- Announcements create in-app notifications. Notification polling works without Supabase Realtime publication setup; read status is persisted through RPCs. No SMS, WhatsApp, or email delivery is claimed.
+- In **Announcements → Compose announcement**, admins and super admins can select **Public homepage**. The title appears below the navigation, and **All updates** opens the full messages in publication order, newest first. The homepage stays clear until the first public notice. Visitors receive live updates and the page checks again every 30 seconds if the live connection is interrupted.
+- Student, volunteer, judge and event audiences receive messages in their own notification inboxes. Their messages and read status stay private.
 - The active operations screens never substitute browser sample data for a failed live request.
 
 ## Verification and deployment

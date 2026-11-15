@@ -12,11 +12,7 @@ create table auth.sessions(id uuid primary key default gen_random_uuid(),user_id
 create function auth.uid() returns uuid language sql stable as $$select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid$$;
 create function auth.jwt() returns jsonb language sql stable as $$select coalesce(nullif(current_setting('request.jwt.claims',true),''),'{}')::jsonb$$;
 grant usage on schema public,auth to anon,authenticated,service_role; grant execute on function auth.uid(),auth.jwt() to anon,authenticated,service_role;`);
-// Stand-in for Supabase Vault (same names and signatures). Only the database owner can reach it, as in production.
-await db.exec(`create schema vault;
-create table vault.secrets(id uuid primary key default gen_random_uuid(),name text unique,description text not null default '',secret text not null,key_id uuid,created_at timestamptz not null default now(),updated_at timestamptz not null default now());
-create view vault.decrypted_secrets as select id,name,description,secret,secret as decrypted_secret,key_id,created_at,updated_at from vault.secrets;
-create function vault.create_secret(new_secret text,new_name text default null,new_description text default '',new_key_id uuid default null) returns uuid language sql as $$insert into vault.secrets(name,description,secret,key_id) values(new_name,coalesce(new_description,''),new_secret,new_key_id) returning id$$;`);
+await db.exec(await readFile(new URL('./fixtures/supabase-vault.sql', import.meta.url), 'utf8'));
 await db.exec((await readFile(new URL('../supabase/schema.sql',import.meta.url),'utf8')).split('-- 13. SEED:')[0].replace('create extension if not exists pgcrypto;',''));
 const migration = name => readFile(new URL('../supabase/migrations/'+name,import.meta.url),'utf8');
 for (const name of ['20261019_access_containment.sql','20261016_operations.sql','20261019_production_security.sql','20261019_public_event_access.sql','20261019_rpc_privileges.sql','20261020_registration_intake.sql','20261020_student_invitations.sql','20261029_live_ops_and_access.sql','20261029160000_direct_registration.sql']) await db.exec(await migration(name));
@@ -39,9 +35,9 @@ for (const [key,station,event] of [['gate','gate',null],['food','food',null],['r
 const legacyRequest = randomUUID();
 await db.query(`insert into crossfire_registration_requests(id,profile,events,status) values($1,$2,'[]','registered')`,[legacyRequest,JSON.stringify({student_name:'Legacy Student',email:'legacy@example.test',contact_number:'9111111111'})]);
 
-for (const name of ['20261030090000_vip_guest_role.sql','20261030090100_accounts_registration_qr.sql','20261030120000_least_privilege_review.sql','20261101090000_student_phone_length.sql','20261103091000_legacy_volunteer_assignments.sql','20261103092000_coordinator_role.sql','20261103093000_event_declarations.sql','20261114090000_fixed_crew_credentials.sql','20261115090000_participant_pass_lookup.sql']) await db.exec(await migration(name));
+for (const name of ['20261030090000_vip_guest_role.sql','20261030090100_accounts_registration_qr.sql','20261030120000_least_privilege_review.sql','20261101090000_student_phone_length.sql','20261103091000_legacy_volunteer_assignments.sql','20261103092000_coordinator_role.sql','20261103093000_event_declarations.sql','20261114090000_fixed_crew_credentials.sql','20261115090000_participant_pass_lookup.sql','20261115110000_homepage_announcements.sql']) await db.exec(await migration(name));
 // Forward migrations must be safe to apply twice.
-for (const name of ['20261030090000_vip_guest_role.sql','20261030090100_accounts_registration_qr.sql','20261030120000_least_privilege_review.sql','20261101090000_student_phone_length.sql','20261103091000_legacy_volunteer_assignments.sql','20261103092000_coordinator_role.sql','20261103093000_event_declarations.sql','20261114090000_fixed_crew_credentials.sql','20261115090000_participant_pass_lookup.sql']) await db.exec(await migration(name));
+for (const name of ['20261030090000_vip_guest_role.sql','20261030090100_accounts_registration_qr.sql','20261030120000_least_privilege_review.sql','20261101090000_student_phone_length.sql','20261103091000_legacy_volunteer_assignments.sql','20261103092000_coordinator_role.sql','20261103093000_event_declarations.sql','20261114090000_fixed_crew_credentials.sql','20261115090000_participant_pass_lookup.sql','20261115110000_homepage_announcements.sql']) await db.exec(await migration(name));
 
 async function as(actor, sql, args=[], aal) {
   await db.exec('reset role');
@@ -625,5 +621,25 @@ await test('guessing is capped per email, counted even for wrong guesses, and ex
 await test('only the server can call the lookup, never a browser, student or staff member',async()=>{
   for (const actor of [null,'student1','admin','super','gate']) await denied(as(actor,'select crossfire_participant_pass($1,$2,$3)',['student1@example.test','9000000101','x']));
   await assert.rejects(as('service','select * from crossfire_rate_limits limit 1').then(()=>as('admin','select * from crossfire_rate_limits')),/permission denied/);
+});
+await test('public homepage notices are explicit, role-checked, ordered and safe to retry', async () => {
+  const feed = async actor => (await as(actor, 'select title from crossfire_homepage_announcements order by sequence desc')).rows.map(row => row.title);
+  const publish = (actor, id, title, body = 'Public event update') =>
+    as(actor, 'select crossfire_publish_homepage_announcement($1,$2,$3)', [id,title,body]);
+  assert.deepEqual(await feed(null), []);
+  await action('admin','announcement.send',{target:'volunteers',title:'Crew briefing',message:'Private fixture'});
+  assert.deepEqual(await feed(null), []);
+  for (const actor of [null,'gate','student1','judge','coord']) await denied(publish(actor,randomUUID(),'Denied'));
+  await assert.rejects(as('admin',"insert into crossfire_homepage_announcements(id,title,message) values(gen_random_uuid(),'Direct','Write')"), /permission denied/);
+  await assert.rejects(publish('admin',randomUUID(),'   '), /Enter a title/);
+  const id = randomUUID();
+  await publish('admin',id,'First notice');
+  await publish('admin',id,'First notice');
+  await assert.rejects(publish('admin',id,'Different text'), /already published/);
+  await publish('super',randomUUID(),'Second notice');
+  assert.deepEqual(await feed(null), ['Second notice','First notice']);
+  assert.deepEqual(await feed('student1'), await feed(null));
+  assert.equal((await db.query("select count(*)::int n from audit_logs where entity_id=$1 and action='announcement.published'",[id])).rows[0].n, 1);
+  assert.equal((await db.query("select count(*)::int n from notifications where title='First notice'")).rows[0].n, 0);
 });
 console.log(`\n${count} account, registration and QR checks passed in a disposable local database.`);
