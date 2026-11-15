@@ -30,3 +30,15 @@
 .ops-modal .ops-login-copied{min-height:18px;margin:0;font-size:12px;color:#17603a}
 .ops-table-wrap td .ops-actions{margin-top:0}
 @media(max-width:500px){.ops-modal footer{flex-wrap:wrap}.ops-modal footer button{flex:1 1 140px;min-height:44px}}
+
+/* Live attendance counts on the admin Student desk */
+.ops-stats { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 12px; margin-bottom: 18px }
+.ops-stats > div { display: grid; gap: 2px; padding: 14px 16px; background: #f6f9f6; border: 1px solid #dce5d5; border-radius: 10px }
+.ops-stats b { font-size: 32px; line-height: 1; color: #0b314a }
+.ops-stats span { font-weight: 700 }
+.ops-stats small { color: #5b6b76 }
+.ops-live { display: inline-flex; align-items: center; gap: 6px; margin-right: 12px; color: #15553b; font-size: 12px; font-weight: 700; letter-spacing: .4px; text-transform: uppercase }
+.ops-live i { width: 8px; height: 8px; border-radius: 50%; background: #1fa971 }
+@media (prefers-reduced-motion: no-preference) { .ops-live i { animation: ops-live-pulse 1.8s ease-in-out infinite } }
+@keyframes ops-live-pulse { 50% { opacity: .35 } }
+@media(max-width:600px) { .ops-stats { gap: 8px } .ops-stats > div { padding: 10px 11px } .ops-stats b { font-size: 26px } .ops-stats small { display: none } }

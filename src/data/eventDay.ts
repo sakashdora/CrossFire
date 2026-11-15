@@ -15,3 +15,11 @@ export function showEventSchedule() {
   schedule?.focus({ preventScroll: true });
   schedule?.scrollIntoView({ block: 'start', behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth' });
 }
+
+// Where to send a student, from the organiser's room board (the same rooms the public schedule shows).
+// Falls back to the venue saved on the event when the board does not list it.
+export function roomFor(slug: string | undefined, fallback = ''): string {
+  const rows = ROOM_SCHEDULE.filter(row => row.slug === slug);
+  if (!rows.length) return fallback;
+  return rows.map(row => `${rows.length > 1 ? row.name + ': ' : ''}${row.venue}${row.floor ? ', ' + row.floor : ''}`).join(' · ');
+}

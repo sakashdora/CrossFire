@@ -88,7 +88,7 @@ export function ResultsDesk({ manager=false, initialEventId='' }: { manager?: bo
         return <button type="button" key={event.id} className={'result-event'+(event.id===selected.id?' on':'')} aria-pressed={event.id===selected.id} onClick={()=>setEvent(event.id)}>
           <span className="result-event-top"><strong>{event.name}</strong><span className="cs-pill state">{event.state}</span></span>
           {info && <><span className="result-event-line"><Clock size={14} aria-hidden="true"/>{timeRange(info)}<PhasePill event={info} now={now}/></span>
-          <span className="result-event-line"><MapPin size={14} aria-hidden="true"/>{info.venue||'Venue to be announced'}</span></>}
+          <span className="result-event-line where"><MapPin size={14} aria-hidden="true"/><span>{info.venue||'Venue to be announced'}</span></span></>}
         </button>;})}</div>
       <EventSheet key={selected.id+'-'+selected.version} event={selected} manager={false} staff={desk.staff} reload={load}/>
     </> : <section className="vd-card"><h2>No event assigned yet</h2><p>An admin will assign your event soon. Today’s full schedule is below.</p></section>)}

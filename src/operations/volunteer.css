@@ -123,3 +123,57 @@
   .cs-pill { grid-column: 2; justify-self: start; margin-top: 4px }
   .ops-skeleton { padding: 22px 16px }
 }
+
+/* ---- Scan result: details, next action, where to send the student ---- */
+.pr { display: grid; gap: 14px; max-width: 720px; margin: 0 auto; font: 16px/1.45 "Segoe UI", sans-serif; color: #102a43 }
+.pr-state { display: flex; align-items: center; gap: 12px; padding: 16px 18px; border-radius: 12px; border: 1px solid }
+.pr-state svg { flex: none }
+.pr-state strong { display: block; font-size: 20px }
+.pr-state span { font-size: 15px }
+.pr-state.ok { background: #def4e9; color: #15553b; border-color: #b9e3cf }
+.pr-state.wait { background: #fff0ce; color: #754400; border-color: #f1d58b }
+.pr-state.bad { background: #fde8e4; color: #8a2a12; border-color: #f3c3b8 }
+.pr-who, .pr-events { background: #fff; border: 1px solid #d5dfe0; border-radius: 12px; padding: 20px }
+.pr-who h2 { font: 36px/1.1 DutyBarlow,sans-serif; margin: 0 }
+.pr-who p { margin: 4px 0 0; color: #506474 }
+.pr-chips { list-style: none; display: flex; flex-wrap: wrap; gap: 8px; margin: 14px 0 0; padding: 0 }
+.pr-chips li { display: inline-flex; align-items: center; gap: 6px; background: #eef3f4; border-radius: 20px; padding: 5px 12px; font-size: 14px; font-weight: 600 }
+.pr-chips code { font-size: 13px; overflow-wrap: anywhere }
+.pr-chips li.veg { background: #def4e9; color: #15553b }
+.pr-chips li.nonveg { background: #fde8e4; color: #8a2a12 }
+.pr-do { display: grid; gap: 10px }
+.pr .pr-big { display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; min-height: 76px; border: 0; border-radius: 12px; background: #ff753e; color: #fff; font: 650 21px "Segoe UI",sans-serif; box-shadow: 0 6px 16px rgba(255,117,62,.28) }
+.pr .pr-big:hover:enabled { background: #ff8758 }
+.pr .pr-big:disabled { background: #cfd8dc; color: #5b6b75; box-shadow: none }
+.pr-warn { display: flex; align-items: flex-start; gap: 8px; margin: 0; padding: 12px 14px; background: #fff7e3; border: 1px solid #f1d58b; border-radius: 10px; color: #6b4a00 }
+.pr-warn svg { flex: none; margin-top: 2px }
+.pr-note { margin: 0; color: #506474 }
+.pr-next { display: grid; gap: 6px; padding: 18px 20px; border-radius: 12px; background: #082e4c; color: #fff }
+.pr-next strong { font: 30px/1.1 DutyBarlow,sans-serif }
+.pr-next span { display: flex; align-items: center; flex-wrap: wrap; gap: 7px; color: #d4e2ec }
+.pr-next svg { flex: none; color: #ffb08c }
+.pr-label { margin: 0; font: 15px DutyBarlow,sans-serif; letter-spacing: 2px; text-transform: uppercase; color: #7e93a3 }
+.pr-next .pr-label { color: #aec3d3 }
+.pr-events ul { list-style: none; margin: 6px 0 0; padding: 0 }
+.pr-events li { display: grid; gap: 4px; padding: 14px 0; border-top: 1px solid #e2e8e9 }
+.pr-events li:first-child { border-top: 0 }
+.pr-event-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap }
+.pr-event-head strong { font-size: 19px }
+.pr-tag { font-size: 13px; font-weight: 650; border-radius: 20px; padding: 4px 11px; background: #eceeee; color: #5b6870; white-space: nowrap }
+.pr-tag.ok { background: #def4e9; color: #15553b }
+.pr-tag.bad { background: #fde8e4; color: #8a2a12 }
+.pr-line { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; color: #506474; font-size: 15px }
+.pr-line svg { flex: none; color: #dd602c }
+.pr .pr-act { display: inline-flex; align-items: center; justify-content: center; gap: 6px; justify-self: start; margin-top: 6px; min-height: 48px; padding: 0 18px; border: 2px solid #ff753e; background: #fff; color: #a33d14; border-radius: 10px; font-weight: 650 }
+.pr-foot { display: flex; gap: 10px }
+.pr .pr-scan { flex: 1; display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 56px; border-radius: 12px; border: 0; background: #082e4c; color: #fff; font: 650 17px "Segoe UI",sans-serif }
+.pr .pr-clear { display: inline-flex; align-items: center; gap: 6px; min-height: 56px; padding: 0 20px; border-radius: 12px; border: 1px solid #c6d3d6; background: #fff; color: #102a43; font-weight: 650 }
+.pr-loading { gap: 14px }
+@media(max-width:730px) {
+  .pr-who, .pr-events { padding: 16px }
+  .pr-who h2 { font-size: 32px }
+  .pr .pr-big { min-height: 80px; font-size: 22px }
+}
+.pr-line.where, .pr-next .where, .result-event-line.where { flex-wrap: nowrap; align-items: flex-start }
+.pr-line.where svg, .pr-next .where svg, .result-event-line.where svg { margin-top: 3px }
+.pr-line.where > span, .pr-next .where > span, .result-event-line.where > span { min-width: 0; overflow-wrap: anywhere }

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { MapPin } from 'lucide-react';
 import { useOptionalEvents } from '../context/EventsContext';
 import { clock, sessionLabel } from '../lib/eventTime';
+import { roomFor } from '../data/eventDay';
 
 export { clock, sessionLabel, timeRange } from '../lib/eventTime';
 
@@ -49,7 +50,7 @@ export function useScheduleEvents(fallback: ScheduleEvent[] = []): ScheduleEvent
     const base: ScheduleEvent[] = fallback.length
       ? fallback
       : (shared || []).map(event => ({ id: event.id, name: event.name, slug: event.slug, venue: event.venue_location, start_time: event.start_time, end_time: event.end_time, status: event.status }));
-    return base.map(event => ({ ...event, end_time: event.end_time ?? byId.get(event.id)?.end_time ?? null, venue: event.venue || byId.get(event.id)?.venue_location || '' }))
+    return base.map(event => ({ ...event, end_time: event.end_time ?? byId.get(event.id)?.end_time ?? null, venue: roomFor(event.slug ?? byId.get(event.id)?.slug, event.venue || byId.get(event.id)?.venue_location || '') }))
       .sort((a, b) => Date.parse(a.start_time) - Date.parse(b.start_time));
   }, [shared, fallback]);
 }
