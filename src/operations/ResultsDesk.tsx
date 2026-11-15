@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Clock, MapPin, RefreshCw } from 'lucide-react';
 import { supabase } from '../lib/supabase';
-import { PhasePill, Schedule, clock, dayLabel, useNow, useScheduleEvents } from './schedule';
+import { PhasePill, Schedule, dayLabel, timeRange, useNow, useScheduleEvents } from './schedule';
 import './volunteer.css';
 import './results.css';
 
@@ -87,7 +87,7 @@ export function ResultsDesk({ manager=false, initialEventId='' }: { manager?: bo
         const info=infoFor(event.id);
         return <button type="button" key={event.id} className={'result-event'+(event.id===selected.id?' on':'')} aria-pressed={event.id===selected.id} onClick={()=>setEvent(event.id)}>
           <span className="result-event-top"><strong>{event.name}</strong><span className="cs-pill state">{event.state}</span></span>
-          {info && <><span className="result-event-line"><Clock size={14} aria-hidden="true"/>{clock(info.start_time)}{info.end_time?` to ${clock(info.end_time)}`:''}<PhasePill event={info} now={now}/></span>
+          {info && <><span className="result-event-line"><Clock size={14} aria-hidden="true"/>{timeRange(info)}<PhasePill event={info} now={now}/></span>
           <span className="result-event-line"><MapPin size={14} aria-hidden="true"/>{info.venue||'Venue to be announced'}</span></>}
         </button>;})}</div>
       <EventSheet key={selected.id+'-'+selected.version} event={selected} manager={false} staff={desk.staff} reload={load}/>

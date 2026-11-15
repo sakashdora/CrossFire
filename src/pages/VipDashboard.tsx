@@ -3,6 +3,7 @@ import { QRCodeSVG } from 'qrcode.react';
 import { CalendarDays, Download, RefreshCw, Star } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { downloadQrPng } from '../lib/qrDownload';
+import { sessionLabel } from '../lib/eventTime';
 
 interface VipInvitation { pass_code: string; name: string; designation: string; organization: string; category: string; status: string; arrival_time: string; dietary_preference: string; arrived_at: string | null; departed_at: string | null; meal_redeemed_at: string | null; escort: string | null }
 interface VipSnapshot { profile: { name: string; email: string; contact_number: string }; invitation: VipInvitation | null; events: { id: string; name: string; venue: string; start_time: string; end_time: string; status: string }[]; fetched_at: string }
@@ -47,7 +48,7 @@ export function VipDashboard() {
       </section>}
     <section className="p-5 sm:p-6 bg-white rounded-2xl border">
       <div className="flex items-center justify-between mb-4"><h2 className="font-black text-navy flex items-center gap-2"><CalendarDays size={18} /> Event schedule</h2><button className="text-xs inline-flex items-center gap-1 text-slate-500" onClick={() => void load()} disabled={loading}><RefreshCw size={13} /> {loading ? 'Refreshing…' : 'Refresh'}</button></div>
-      {data.events.length ? <ul className="divide-y">{data.events.map(event => <li key={event.id} className="py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-1"><div><strong className="text-navy">{event.name}</strong><p className="text-xs text-slate-500">{event.venue}</p></div><span className="text-xs text-slate-600">{event.name === 'Dance' && new Date(event.end_time).getTime() - new Date(event.start_time).getTime() === 86399000 ? '15 Nov · Time to be announced' : time(event.start_time)} · {event.status.split('_').join(' ')}</span></li>)}</ul> : <p className="text-sm text-slate-500">The schedule will be published soon.</p>}
+      {data.events.length ? <ul className="divide-y">{data.events.map(event => <li key={event.id} className="py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-1"><div><strong className="text-navy">{event.name}</strong><p className="text-xs text-slate-500">{event.venue}</p></div><span className="text-xs text-slate-600">{sessionLabel(event) ? `15 Nov · ${sessionLabel(event)}` : time(event.start_time)} · {event.status.split('_').join(' ')}</span></li>)}</ul> : <p className="text-sm text-slate-500">The schedule will be published soon.</p>}
       <p className="text-xs text-slate-500 mt-4">Show your guest pass at the VIP desk. The desk confirms your invitation against the live record. Updated {time(data.fetched_at)}.</p>
     </section>
   </div>;

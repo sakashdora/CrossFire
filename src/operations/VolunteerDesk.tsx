@@ -1,6 +1,6 @@
 import { ArrowRight, Clock, MapPin, QrCode, RefreshCw } from 'lucide-react';
 import { STATIONS, type OpsEvent, type OpsVolunteer } from './model';
-import { Schedule, clock, useScheduleEvents, type ScheduleEvent } from './schedule';
+import { Schedule, sessionLabel, clock, useScheduleEvents, type ScheduleEvent } from './schedule';
 import './volunteer.css';
 
 type Props = {
@@ -45,7 +45,7 @@ export function VolunteerDesk({ name, duty, events, busy, lookupBusy, scan, look
         <p className="vd-label">Your station</p>
         <h2>{duty ? STATIONS[duty.station] : 'Awaiting assignment'}</h2>
         <p className="vd-meta"><Clock size={15} aria-hidden="true" />{shift || 'Shift details will appear here'}</p>
-        {assigned && <p className="vd-meta"><MapPin size={15} aria-hidden="true" />{assigned.name} · {assigned.venue || 'Venue to be announced'} · starts {clock(assigned.start_time)}</p>}
+        {assigned && <p className="vd-meta"><MapPin size={15} aria-hidden="true" />{assigned.name} · {assigned.venue || 'Venue to be announced'} · {sessionLabel(assigned)?.toLowerCase() ?? `starts ${clock(assigned.start_time)}`}</p>}
       </div>
       {duty && <button className={'vd-toggle' + (onDuty ? '' : ' go')} disabled={busy || lookupBusy} onClick={changeDuty}>{onDuty ? 'Take a break' : 'Go on duty'}</button>}
     </section>
