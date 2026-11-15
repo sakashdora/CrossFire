@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { ArrowRight, ArrowUpRight, CalendarDays, ChevronDown, Download, FileText, Gift, MapPin, Minus, Pause, Play, Plus, RotateCcw, Trophy, Users } from 'lucide-react';
 import { CountdownTimer } from '../components/CountdownTimer';
 import { CROSSFIRE_START, CROSSFIRE_START_LABEL } from '../lib/countdown';
+import { TIMETABLE, slotIso, slotRange } from '../data/eventDay';
 import { ArenaGallery } from '../components/ArenaGallery';
 import { useScrollReveal } from '../hooks/useScrollReveal';
 import { HeroStarfield } from '../components/HeroStarfield';
@@ -13,7 +14,7 @@ import './landing-motion.css';
 import './landing-hero.css';
 
 interface LandingPageProps { onSelectEvent: (event: EventItem) => void; setCurrentView: (view: string) => void; introActive: boolean; onReplayIntro: () => void; }
-const SCHEDULE = [[CROSSFIRE_START.slice(11, 16), 'Opening ceremony'], ['10:30', 'Quiz'], ['11:30', 'Ramp Walk'], ['12:30', 'Lunch & refreshments'], ['13:30', 'Debate'], ['14:30', 'Reels screening & poster judging'], ['15:00', 'Treasure Hunt'], ['16:00', 'Awards ceremony']];
+const SCHEDULE = TIMETABLE;
 const FAQS = [
   { question: 'Who can participate?', answer: 'Class 12 students from CBSE, ICSE and CHSE boards across Odisha. Bring your school or college ID, or an authorization letter, on the day.' },
   { question: 'Is registration free?', answer: 'Yes. Entry to all competitions is free, with complimentary lunch and refreshments for registered participants. Check the schedule when choosing your events, as some competition times overlap.' },
@@ -98,7 +99,7 @@ export function LandingPage({ onSelectEvent, setCurrentView, introActive, onRepl
       </div>
     </section>
     <ArenaGallery onSelectEvent={onSelectEvent} />
-    <section className="cf-schedule" aria-labelledby="schedule-title"><div className="cf-schedule-inner" data-reveal><div className="cf-date-block"><p className="cf-kicker"><span>02 / The running order</span></p><h2 id="schedule-title"><time dateTime="2026-11-15">15 <br />Nov</time></h2><p className="cf-date-location">Sunday · Srusti campus</p><p className="cf-day-tagline">One day. All in.</p></div><div className="cf-timetable"><table><caption className="sr-only">Event schedule for November 15, 2026. All times are Indian Standard Time.</caption><tbody>{SCHEDULE.map(([time, title]) => <tr key={time}><th scope="row"><time dateTime={`2026-11-15T${time}:00+05:30`}>{time}</time></th><td>{title}</td></tr>)}</tbody></table><p>All times IST. Quiz and Ramp Walk overlap. Plan your events accordingly.</p></div></div></section>
+    <section className="cf-schedule" aria-labelledby="schedule-title"><div className="cf-schedule-inner" data-reveal><div className="cf-date-block"><p className="cf-kicker"><span>02 / The running order</span></p><h2 id="schedule-title"><time dateTime="2026-11-15">15 <br />Nov</time></h2><p className="cf-date-location">Sunday · Srusti campus</p><p className="cf-day-tagline">One day. All in.</p></div><div className="cf-timetable"><table><caption className="sr-only">Event schedule for November 15, 2026. All times are Indian Standard Time.</caption><tbody>{SCHEDULE.map(slot => <tr key={slot.id}><th scope="row"><time dateTime={slotIso(slot.start)}>{slotRange(slot)}</time></th><td>{slot.name}{slot.venue ? ` · ${[slot.venue, slot.floor].filter(Boolean).join(', ')}` : ''}</td></tr>)}</tbody></table><p>All times IST. Some events run at the same time, so plan your events accordingly.</p></div></div></section>
     <section className="cf-before-arrival" aria-labelledby="faq-title"><div className="cf-faq-grid" data-reveal><div><p className="cf-kicker"><span>03</span> / Before you arrive</p><h2 id="faq-title">Ready for <br />the arena?</h2></div><div className="cf-faqs">{FAQS.map((faq, index) => <div className="cf-faq" key={faq.question}><h3><button onClick={() => setOpenFaq(openFaq === index ? null : index)} aria-expanded={openFaq === index} aria-controls={`faq-answer-${index}`} id={`faq-question-${index}`}>{faq.question}{openFaq === index ? <Minus size={20} /> : <Plus size={20} />}</button></h3><div id={`faq-answer-${index}`} role="region" aria-labelledby={`faq-question-${index}`} hidden={openFaq !== index}><p>{faq.answer}</p></div></div>)}</div></div>
       {registrationOpen && <div className="cf-ticket" data-reveal><div className="cf-ticket-copy"><p className="cf-kicker"><span>Your next big moment</span></p><h2>Be there.</h2><p>CrossFire 2026 · 15 November · Bhubaneswar</p></div><div className="cf-ticket-action"><button className="cf-button cf-button-orange" onClick={() => setCurrentView('register')}>Register Free <ArrowRight size={21} /></button><strong>₹0 entry fee</strong><span>CF / 2026 / {String(events.length).padStart(2, '0')}</span></div></div>}
     </section>

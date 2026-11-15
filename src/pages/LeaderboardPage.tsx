@@ -111,7 +111,7 @@ export const LeaderboardPage: React.FC = () => {
             <div className="bg-gray-50 p-4 rounded-2xl border border-gray-100">
               <span className="text-[10px] uppercase font-bold text-gray-400 block">Festival Schedule</span>
               <span className="text-xs font-black text-navy mt-1 block">Sunday, Nov 15, 2026</span>
-              <span className="text-[10px] text-gray-500 mt-0.5 block">Programme starts at {CROSSFIRE_START_LABEL} IST</span>
+              <span className="text-[10px] text-gray-500 mt-0.5 block">Entry from {CROSSFIRE_START_LABEL} IST</span>
             </div>
             <div className="bg-gray-50 p-4 rounded-2xl border border-gray-100">
               <span className="text-[10px] uppercase font-bold text-gray-400 block">Official Results</span>

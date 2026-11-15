@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Clock, MapPin, RefreshCw } from 'lucide-react';
 import { supabase } from '../lib/supabase';
-import { PhasePill, Schedule, dayLabel, timeRange, useNow, useScheduleEvents } from './schedule';
+import { PhasePill, Schedule, dayLabel, slotsOf, timeRange, useNow, useScheduleEvents } from './schedule';
 import './volunteer.css';
 import './results.css';
 
@@ -76,7 +76,6 @@ export function ResultsDesk({ manager=false, initialEventId='' }: { manager?: bo
     <EventSheet key={selected.id+'-'+selected.version} event={selected} manager={manager} staff={desk.staff} reload={load}/></> : <p role="status">{desk?'No events assigned. Contact an administrator.':error?'':'Loading result sheets…'}</p>}
     <button className="result-refresh" onClick={()=>void load()}>Refresh desk</button>
   </div>;
-  const infoFor=(id:string)=>schedule.find(item=>item.id===id);
   return <div className="vd result-desk coordinator">
     <header className="vd-hello"><div><p className="vd-label">Results desk</p><h1>My events</h1></div><span className="cs-clock">{dayLabel(now)}</span></header>
     {notice && <p role="status" className="result-notice">{notice}</p>}
@@ -84,11 +83,12 @@ export function ResultsDesk({ manager=false, initialEventId='' }: { manager?: bo
     {!desk && !error && <div className="ops-skeleton-inline" role="status"><span className="sr-only">Loading your events…</span><div className="sk sk-hero"/><div className="sk sk-card"/></div>}
     {desk && (selected ? <>
       <div className="result-events" role="group" aria-label="My assigned events">{desk.events.map(event=>{
-        const info=infoFor(event.id);
+        const slots=slotsOf(schedule,event.id);
         return <button type="button" key={event.id} className={'result-event'+(event.id===selected.id?' on':'')} aria-pressed={event.id===selected.id} onClick={()=>setEvent(event.id)}>
           <span className="result-event-top"><strong>{event.name}</strong><span className="cs-pill state">{event.state}</span></span>
-          {info && <><span className="result-event-line"><Clock size={14} aria-hidden="true"/>{timeRange(info)}<PhasePill event={info} now={now}/></span>
-          <span className="result-event-line where"><MapPin size={14} aria-hidden="true"/><span>{info.venue||'Venue to be announced'}</span></span></>}
+          {slots.map(slot=><span className="result-slot" key={slot.id}>{slots.length>1&&<span className="result-slotname">{slot.name}</span>}
+            <span className="result-event-line"><Clock size={14} aria-hidden="true"/>{timeRange(slot)}<PhasePill event={slot} now={now}/></span>
+            <span className="result-event-line where"><MapPin size={14} aria-hidden="true"/><span>{slot.venue||'Venue to be announced'}</span></span></span>)}
         </button>;})}</div>
       <EventSheet key={selected.id+'-'+selected.version} event={selected} manager={false} staff={desk.staff} reload={load}/>
     </> : <section className="vd-card"><h2>No event assigned yet</h2><p>An admin will assign your event soon. Today’s full schedule is below.</p></section>)}

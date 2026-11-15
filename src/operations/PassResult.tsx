@@ -1,6 +1,6 @@
 import { Check, Clock, MapPin, QrCode, TriangleAlert, Utensils, X } from 'lucide-react';
 import { formatTime, type OpsEvent, type OpsStudent } from './model';
-import { PhasePill, clock, eventPhase, timeRange, useNow, useScheduleEvents, type ScheduleEvent } from './schedule';
+import { PhasePill, clock, eventPhase, slotsOf, timeRange, useNow, useScheduleEvents, type ScheduleEvent } from './schedule';
 import './volunteer.css';
 
 type Props = {
@@ -26,9 +26,12 @@ export function PassResult({ student, events, busy, justArrived, canGate, canFoo
   const first = student.name.trim().split(/\s+/)[0] || 'the student';
   const arrived = Boolean(student.checked_in_at);
   const live = student.active;
-  const entries = student.registrations.map(reg => ({ reg, info: schedule.find(event => event.id === reg.event_id) }))
-    .sort((a, b) => Date.parse(a.info?.start_time || '') - Date.parse(b.info?.start_time || ''));
-  const next = entries.find(({ reg, info }) => reg.status !== 'disqualified' && !reg.room_reported_at && (!info || eventPhase(info, now).phase !== 'done'));
+  // An event can have more than one slot (Quiz: written round and final), each with its own room and time.
+  const entries = student.registrations.map(reg => ({ reg, slots: slotsOf(schedule, reg.event_id) }))
+    .sort((a, b) => Date.parse(a.slots[0]?.start_time || '') - Date.parse(b.slots[0]?.start_time || ''));
+  const pending = (slots: ScheduleEvent[]) => slots.find(slot => eventPhase(slot, now).phase !== 'done');
+  const next = entries.find(({ reg, slots }) => reg.status !== 'disqualified' && !reg.room_reported_at && (slots.length === 0 || pending(slots)));
+  const nextSlot = next ? pending(next.slots) ?? next.slots[0] : undefined;
   return <section className="pr" aria-label={`Pass details for ${student.name}`}>
     <header className={'pr-state ' + (!live ? 'bad' : arrived ? 'ok' : 'wait')} role="status">
       {!live ? <TriangleAlert size={22} aria-hidden="true" /> : arrived ? <Check size={22} aria-hidden="true" /> : <QrCode size={22} aria-hidden="true" />}
@@ -54,18 +57,21 @@ export function PassResult({ student, events, busy, justArrived, canGate, canFoo
 
     {live && arrived && next && <div className="pr-next">
       <p className="pr-label">{justArrived ? `Welcome ${first}! Guide them to` : 'Next for this student'}</p>
-      <strong>{next.reg.name}</strong>
-      <span className="where"><MapPin size={16} aria-hidden="true" /><span>{next.info?.venue || 'Venue to be announced'}</span></span>
-      {next.info && <span><Clock size={16} aria-hidden="true" />{timeRange(next.info)}<PhasePill event={next.info} now={now} /></span>}
+      <strong>{next.reg.name}{nextSlot && nextSlot.name !== next.reg.name ? ` · ${nextSlot.name}` : ''}</strong>
+      <span className="where"><MapPin size={16} aria-hidden="true" /><span>{nextSlot?.venue || 'Venue to be announced'}</span></span>
+      {nextSlot && <span><Clock size={16} aria-hidden="true" />{timeRange(nextSlot)}<PhasePill event={nextSlot} now={now} /></span>}
     </div>}
 
     <div className="pr-events">
       <p className="pr-label">Registered events</p>
-      {entries.length ? <ul>{entries.map(({ reg, info }) => <li key={reg.id}>
+      {entries.length ? <ul>{entries.map(({ reg, slots }) => <li key={reg.id}>
         <div className="pr-event-head"><strong>{reg.name}</strong>
           {reg.status === 'disqualified' ? <span className="pr-tag bad">Disqualified</span> : reg.room_reported_at ? <span className="pr-tag ok">Participated · {clock(reg.room_reported_at)}</span> : <span className="pr-tag">Not yet participated</span>}</div>
-        {info && <><span className="pr-line where"><MapPin size={14} aria-hidden="true" /><span>{info.venue || 'Venue to be announced'}</span></span>
-          <span className="pr-line"><Clock size={14} aria-hidden="true" />{timeRange(info)}<PhasePill event={info} now={now} /></span></>}
+        {slots.map(slot => <div className="pr-slot" key={slot.id}>
+          {slots.length > 1 && <span className="pr-slotname">{slot.name}</span>}
+          <span className="pr-line where"><MapPin size={14} aria-hidden="true" /><span>{slot.venue || 'Venue to be announced'}</span></span>
+          <span className="pr-line"><Clock size={14} aria-hidden="true" />{timeRange(slot)}<PhasePill event={slot} now={now} /></span>
+        </div>)}
         {live && arrived && !reg.room_reported_at && reg.status !== 'disqualified' && canRoom(reg.event_id) && <button className="pr-act" disabled={busy} onClick={() => markPresent(reg.id, reg.name)}><Check size={16} aria-hidden="true" /> Mark participated</button>}
       </li>)}</ul> : <p className="pr-note">No event registrations on this pass.</p>}
     </div>

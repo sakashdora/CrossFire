@@ -1,6 +1,6 @@
 import { ArrowRight, Clock, MapPin, QrCode, RefreshCw } from 'lucide-react';
 import { STATIONS, type OpsEvent, type OpsVolunteer } from './model';
-import { Schedule, sessionLabel, clock, useScheduleEvents, type ScheduleEvent } from './schedule';
+import { Schedule, sessionLabel, clock, slotsOf, useScheduleEvents, type ScheduleEvent } from './schedule';
 import './volunteer.css';
 
 type Props = {
@@ -31,7 +31,7 @@ export function VolunteerDesk({ name, duty, events, busy, lookupBusy, scan, look
   const [title, instructions] = duty ? stationTasks[duty.station] : ['Waiting for your station', 'An admin will assign your station and shift. You can already see today’s schedule below.'];
   const shift = duty?.shift.replace(/ Shift \(/, ' shift · ').replace(/ \(/, ' · ').replace(/\)$/, '').replace(/\b0(?=\d:)/g, '').replace(' - ', ' – ');
   const schedule = useScheduleEvents(events as ScheduleEvent[]);
-  const assigned = schedule.find(event => event.id === duty?.event_id);
+  const assigned = slotsOf(schedule, duty?.event_id)[0];
   const first = name.trim().split(/\s+/)[0] || 'there';
   const scanLabel = duty?.station === 'guest' ? 'Scan guest pass' : 'Scan student pass';
   return <div className="vd vd2">

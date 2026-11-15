@@ -37,3 +37,6 @@
   .result-row { flex-direction: column; align-items: stretch; gap: 6px }
   .result-refresh { width: 100% }
 }
+.result-slot { display: grid; gap: 4px }
+.result-slot + .result-slot { margin-top: 4px; padding-top: 8px; border-top: 1px dashed #d5dfe0 }
+.result-slotname { font-size: 14px; font-weight: 650; color: #102a43 }

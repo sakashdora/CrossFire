@@ -1,18 +1,16 @@
 import { useState, type FormEvent } from 'react';
 import { ArrowLeft, Check, Clock, MapPin, QrCode, ShieldCheck } from 'lucide-react';
 import { StudentQRCode } from '../components/StudentQRCode';
-import { useEvents } from '../context/EventsContext';
-import { roomFor } from '../data/eventDay';
 import { findMyPass, type ParticipantPass } from '../lib/participantPass';
-import { eventPhase, sessionLabel, timeRange, useNow } from '../operations/schedule';
+import { PhasePill, slotsOf, timeRange, useNow, useScheduleEvents } from '../operations/schedule';
+import '../operations/volunteer.css';
 
 const when = (value: string | null) => value ? new Intl.DateTimeFormat('en-IN', { timeZone: 'Asia/Kolkata', day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit', hour12: true }).format(new Date(value)) : '';
-const pill = (phase: string) => ({ live: 'bg-emerald-100 text-emerald-800', soon: 'bg-amber-100 text-amber-800', done: 'bg-slate-100 text-slate-600' }[phase] || 'bg-sky-100 text-sky-800');
 
 // For participants who did not keep their student ID or QR: get the pass back with the
 // mail ID and mobile number used at registration. Nothing is saved on this device.
 export function MyPassPage({ onHome }: { onHome: () => void }) {
-  const { events } = useEvents();
+  const schedule = useScheduleEvents();
   const now = useNow();
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
@@ -75,14 +73,15 @@ export function MyPassPage({ onHome }: { onHome: () => void }) {
     <div className="rounded-2xl border bg-white p-6 shadow-sm">
       <h2 className="text-lg font-black text-navy">Your events</h2>
       {pass.events.length ? <ul className="mt-2 divide-y">{pass.events.map(entry => {
-        const event = events.find(item => item.id === entry.event_id);
-        const info = event ? { id: event.id, name: event.name, slug: event.slug, venue: event.venue_location, start_time: event.start_time, end_time: event.end_time, status: event.status } : null;
-        const phase = info ? eventPhase(info, now) : null;
+        const slots = slotsOf(schedule, entry.event_id);
         return <li key={entry.event_id} className="py-3">
           <div className="flex flex-wrap items-center justify-between gap-2"><strong className="text-base">{entry.name}</strong>
             {entry.reported_at ? <span className="rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-semibold text-emerald-800">Participated · {when(entry.reported_at)}</span> : null}</div>
-          <p className="mt-1 flex items-start gap-1.5 text-sm text-slate-600"><MapPin size={15} className="mt-0.5 shrink-0 text-orange-600" aria-hidden="true" />{roomFor(entry.slug, info?.venue)}</p>
-          {info && <p className="mt-1 flex flex-wrap items-center gap-1.5 text-sm text-slate-600"><Clock size={15} className="shrink-0 text-orange-600" aria-hidden="true" />{timeRange(info)}{phase && phase.label && !sessionLabel(info) && <span className={'rounded-full px-2.5 py-0.5 text-xs font-semibold ' + pill(phase.phase)}>{phase.label}</span>}</p>}
+          {slots.map(slot => <div key={slot.id} className="mt-1.5">
+            {slots.length > 1 && <p className="text-sm font-semibold text-slate-800">{slot.name}</p>}
+            <p className="flex items-start gap-1.5 text-sm text-slate-600"><MapPin size={15} className="mt-0.5 shrink-0 text-orange-600" aria-hidden="true" />{slot.venue || 'Venue to be announced'}</p>
+            <p className="mt-0.5 flex flex-wrap items-center gap-1.5 text-sm text-slate-600"><Clock size={15} className="shrink-0 text-orange-600" aria-hidden="true" />{timeRange(slot)}<PhasePill event={slot} now={now} /></p>
+          </div>)}
         </li>;
       })}</ul> : <p className="mt-2 text-sm text-slate-600">No events found on your registration.</p>}
     </div>

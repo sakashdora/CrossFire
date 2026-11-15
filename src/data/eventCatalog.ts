@@ -1,4 +1,5 @@
 import { EventItem } from '../types';
+import { TIMETABLE, slotClock } from './eventDay';
 
 export const EVENT_METADATA = {
   name: 'CROSSFIRE 2026',
@@ -49,16 +50,7 @@ export const EVENT_METADATA = {
     'No Entry Fee for any event (100% Free Entry & Hospitality).',
     'The decision of the Judges will be final & binding.'
   ],
-  schedule: [
-    { time: '9:00 AM', activity: 'Opening Ceremony' },
-    { time: '10:30 AM', activity: 'Quiz Event Starts (Written Round)' },
-    { time: '11:30 AM', activity: 'Ramp Walk Event' },
-    { time: '12:30 PM', activity: 'Lunch Break & Refreshments' },
-    { time: '01:30 PM', activity: 'Debate Event' },
-    { time: '02:30 PM', activity: 'Reels Screening & Poster Making Judging' },
-    { time: '03:00 PM', activity: 'Treasure Hunt Event' },
-    { time: '04:00 PM', activity: 'Results Announcement & Valedictory Ceremony' }
-  ]
+  schedule: TIMETABLE.map(slot => ({ time: slotClock(slot.start), activity: slot.name })),
 };
 
 export const EVENT_CATALOG: EventItem[] = [
@@ -91,7 +83,7 @@ export const EVENT_CATALOG: EventItem[] = [
       ]
     },
     start_time: '2026-11-15T10:30:00+05:30',
-    end_time: '2026-11-15T12:00:00+05:30',
+    end_time: '2026-11-15T16:15:00+05:30',
     registration_deadline: '2026-11-14T23:59:59+05:30',
     venue_location: 'Srusti Campus - Main Auditorium A',
     status: 'open'
@@ -120,8 +112,8 @@ export const EVENT_CATALOG: EventItem[] = [
         { name: "Rebuttal Strength", weight: 30, max: 30, description: "Refutation of opposing arguments and speed of thought" }
       ]
     },
-    start_time: '2026-11-15T13:30:00+05:30',
-    end_time: '2026-11-15T14:30:00+05:30',
+    start_time: '2026-11-15T11:00:00+05:30',
+    end_time: '2026-11-15T12:00:00+05:30',
     registration_deadline: '2026-11-14T23:59:59+05:30',
     venue_location: 'Srusti Campus - Management Seminar Hall B',
     status: 'open'
@@ -150,8 +142,8 @@ export const EVENT_CATALOG: EventItem[] = [
         { name: "Creativity & Innovation", weight: 30, max: 30, description: "Originality of concept and creative finesse" }
       ]
     },
-    start_time: '2026-11-15T10:00:00+05:30',
-    end_time: '2026-11-15T14:30:00+05:30',
+    start_time: '2026-11-15T11:00:00+05:30',
+    end_time: '2026-11-15T12:00:00+05:30',
     registration_deadline: '2026-11-14T23:59:59+05:30',
     venue_location: 'Srusti Campus - Creative Art Studio Block C',
     status: 'open'
@@ -182,8 +174,8 @@ export const EVENT_CATALOG: EventItem[] = [
         { name: "Bonus Checkpoint Points", weight: 10, max: 10, description: "Bonus points for first 3 completing teams" }
       ]
     },
-    start_time: '2026-11-15T15:00:00+05:30',
-    end_time: '2026-11-15T16:00:00+05:30',
+    start_time: '2026-11-15T12:30:00+05:30',
+    end_time: '2026-11-15T14:00:00+05:30',
     registration_deadline: '2026-11-14T23:59:59+05:30',
     venue_location: 'Srusti Campus - Central Campus Quadrangle',
     status: 'open'
@@ -212,8 +204,8 @@ export const EVENT_CATALOG: EventItem[] = [
         { name: "Personality & Expression", weight: 40, max: 40, description: "Charisma, aura, authenticity, and spontaneous charm" }
       ]
     },
-    start_time: '2026-11-15T11:30:00+05:30',
-    end_time: '2026-11-15T12:30:00+05:30',
+    start_time: '2026-11-15T14:30:00+05:30',
+    end_time: '2026-11-15T15:15:00+05:30',
     registration_deadline: '2026-11-14T23:59:59+05:30',
     venue_location: 'Srusti Campus - Central Open Air Amphitheatre',
     status: 'open'
@@ -242,8 +234,8 @@ export const EVENT_CATALOG: EventItem[] = [
         { name: "Execution", weight: 30, max: 30, description: "Editing cuts, rhythm, color grading, and audio sync" }
       ]
     },
-    start_time: '2026-11-15T10:00:00+05:30',
-    end_time: '2026-11-15T14:30:00+05:30',
+    start_time: '2026-11-15T12:00:00+05:30',
+    end_time: '2026-11-15T13:00:00+05:30',
     registration_deadline: '2026-11-14T18:00:00+05:30',
     venue_location: 'Srusti Campus - Media Lab & Studio Block',
     status: 'open'

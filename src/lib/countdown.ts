@@ -1,4 +1,5 @@
-export const CROSSFIRE_START = '2026-11-15T09:00:00+05:30';
+// Event entry opens at 10:15 AM IST (see TIMETABLE in data/eventDay.ts).
+export const CROSSFIRE_START = '2026-11-15T10:15:00+05:30';
 export const CROSSFIRE_START_LABEL = new Intl.DateTimeFormat('en-US', {
   timeZone: 'Asia/Kolkata', hour: 'numeric', minute: '2-digit', hour12: true,
 }).format(new Date(CROSSFIRE_START));

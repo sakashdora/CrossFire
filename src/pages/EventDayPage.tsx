@@ -5,7 +5,7 @@ import { ArenaGallery } from '../components/ArenaGallery';
 import { useScrollReveal } from '../hooks/useScrollReveal';
 import { CROSSFIRE_START, CROSSFIRE_START_LABEL } from '../lib/countdown';
 import { useEvents } from '../context/EventsContext';
-import { ROOM_SCHEDULE, showEventSchedule } from '../data/eventDay';
+import { ROOM_SCHEDULE, TIMETABLE, showEventSchedule, slotClock } from '../data/eventDay';
 import type { EventItem } from '../types';
 import './event-day.css';
 
@@ -43,7 +43,7 @@ export function EventDayPage({ introActive, onReplayIntro, onSelectEvent, onFind
       <p className="day-welcome">See you at CrossFire 2026.</p>
       <dl className="day-arrival">
         <div><CalendarDays aria-hidden="true" /><dt>Event day</dt><dd><time dateTime="2026-11-15">Sunday, <span className="day-date">15 November 2026</span></time></dd></div>
-        <div><Clock3 aria-hidden="true" /><dt>Program starts</dt><dd><time dateTime={CROSSFIRE_START}>{CROSSFIRE_START_LABEL} IST</time></dd></div>
+        <div><Clock3 aria-hidden="true" /><dt>Entry time</dt><dd><time dateTime={CROSSFIRE_START}>{CROSSFIRE_START_LABEL} IST</time></dd></div>
         <div><MapPin aria-hidden="true" /><dt>Venue</dt><dd>Srusti Campus<small>Bhubaneswar, Odisha</small></dd></div>
       </dl>
       <div className="day-actions">
@@ -76,11 +76,11 @@ export function EventDayPage({ introActive, onReplayIntro, onSelectEvent, onFind
       <div className="day-wrap">
         <div className="day-guide-heading">
           <div><p className="day-label">Sunday · 15 November 2026</p><h2 id="day-guide-title">Event <em>schedule.</em></h2></div>
-          <div className="day-programme"><span><b>12:30 PM</b> Lunch &amp; refreshments</span><span><b>4:00 PM</b> Awards ceremony</span><small>All times IST</small></div>
+          <div className="day-programme">{TIMETABLE.filter(slot => slot.kind !== 'event').map(slot => <span key={slot.id}><b>{slotClock(slot.start)}</b> {slot.name}</span>)}<small>All times IST</small></div>
         </div>
         <table className="day-rooms">
           <caption className="sr-only">Competition venues and sessions. Select an event name for its rules and prizes when available.</caption>
-          <thead><tr><th scope="col">Event</th><th scope="col">Venue</th><th scope="col">Session</th></tr></thead>
+          <thead><tr><th scope="col">Event</th><th scope="col">Venue</th><th scope="col">Time</th></tr></thead>
           <tbody>{ROOM_SCHEDULE.map(row => {
             const event = events.find(item => item.slug === row.slug);
             return <tr key={row.name}>

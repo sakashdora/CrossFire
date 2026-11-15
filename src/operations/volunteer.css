@@ -177,3 +177,8 @@
 .pr-line.where, .pr-next .where, .result-event-line.where { flex-wrap: nowrap; align-items: flex-start }
 .pr-line.where svg, .pr-next .where svg, .result-event-line.where svg { margin-top: 3px }
 .pr-line.where > span, .pr-next .where > span, .result-event-line.where > span { min-width: 0; overflow-wrap: anywhere }
+.pr-slot { display: grid; gap: 4px; padding-top: 2px }
+.pr-slotname { font-size: 14px; font-weight: 650; color: #102a43 }
+.pr-slot + .pr-slot { margin-top: 6px; padding-top: 8px; border-top: 1px dashed #e2e8e9 }
+.cs-event.break, .cs-event.entry, .cs-event.ceremony { background: #f7fafa; border-radius: 8px }
+.cs-event.break .cs-what strong, .cs-event.entry .cs-what strong, .cs-event.ceremony .cs-what strong { color: #0b314a }

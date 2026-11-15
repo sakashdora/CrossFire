@@ -8,9 +8,9 @@ const { outputText } = ts.transpileModule(source, { compilerOptions: { module: t
 const { CROSSFIRE_START, CROSSFIRE_START_LABEL, getCountdown } = await import(`data:text/javascript;base64,${Buffer.from(outputText).toString('base64')}`);
 const deadline = Date.parse(CROSSFIRE_START);
 
-test('the programme starts at 9:00 AM IST, independently of browser timezone', () => {
-  assert.equal(new Date(deadline).toISOString(), '2026-11-15T03:30:00.000Z');
-  assert.equal(CROSSFIRE_START_LABEL, '9:00 AM');
+test('entry opens at 10:15 AM IST, independently of browser timezone', () => {
+  assert.equal(new Date(deadline).toISOString(), '2026-11-15T04:45:00.000Z');
+  assert.equal(CROSSFIRE_START_LABEL, '10:15 AM');
 });
 test('days, hours, minutes and seconds roll over together', () => {
   assert.deepEqual(getCountdown(CROSSFIRE_START, deadline - 86400000).values, [1, 0, 0, 0]);

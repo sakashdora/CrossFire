@@ -7,6 +7,9 @@ import { StudentQRCode } from '../components/StudentQRCode';
 import { useEvents } from '../context/EventsContext';
 import { AddCompetitionDialog } from '../components/AddCompetitionDialog';
 import { competitionChoices, MAX_COMPETITIONS } from '../lib/competitionChoices';
+import { TIMETABLE, slotClock, slotRange } from '../data/eventDay';
+
+const LUNCH = TIMETABLE.find(slot => slot.id === 'lunch') ?? TIMETABLE[0];
 import { 
   Trophy, 
   Upload, 
@@ -294,7 +297,7 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
               {CROSSFIRE_START_LABEL} IST
             </span>
             <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mt-1 block truncate">
-              Programme starts
+              Entry time
             </span>
           </div>
         </div>
@@ -553,69 +556,13 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
           <div className="divide-y divide-gray-100 text-xs sm:text-sm">
             <p className="py-3.5 text-gray-600">Keep your QR pass ready for check-in at the Gate 1 welcome desk.</p>
 
-            <div className="py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+            {TIMETABLE.map(slot => <div key={slot.id} className={'py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-1' + (slot.kind === 'ceremony' ? ' bg-orange-50/80 p-3 rounded-2xl' : '')}>
               <div className="flex items-center gap-2">
-                <span className="w-2.5 h-2.5 rounded-full bg-blue-500 shrink-0"></span>
-                <strong className="text-navy text-sm">{CROSSFIRE_START_LABEL} IST</strong>
+                {slot.kind === 'ceremony' ? <Trophy className="w-4 h-4 text-orange-500 shrink-0" /> : <span className={'w-2.5 h-2.5 rounded-full shrink-0 ' + (slot.kind === 'event' ? 'bg-orange-500' : slot.kind === 'break' ? 'bg-emerald-500' : 'bg-blue-500')}></span>}
+                <strong className={(slot.kind === 'event' ? 'text-orange-600' : slot.kind === 'break' ? 'text-emerald-800' : 'text-navy') + ' text-sm'}>{slotRange(slot)}</strong>
               </div>
-              <span className="text-navy font-bold sm:text-right">Opening Ceremony & Dignitary Addresses</span>
-            </div>
-
-            <div className="py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-1">
-              <div className="flex items-center gap-2">
-                <span className="w-2.5 h-2.5 rounded-full bg-orange-500 shrink-0"></span>
-                <strong className="text-orange-600 text-sm">10:30 AM - 12:00 PM</strong>
-              </div>
-              <span className="text-navy font-bold sm:text-right">Quiz (Written Preliminary & Final Buzzer Round) — Auditorium A</span>
-            </div>
-
-            <div className="py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-1">
-              <div className="flex items-center gap-2">
-                <span className="w-2.5 h-2.5 rounded-full bg-purple-500 shrink-0"></span>
-                <strong className="text-navy text-sm">11:30 AM - 12:30 PM</strong>
-              </div>
-              <span className="text-navy font-bold sm:text-right">Ramp Walk (Fashion & Personality Runway) — Open Amphitheatre</span>
-            </div>
-
-            <div className="py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-1 bg-emerald-50/60 p-3 rounded-2xl">
-              <div className="flex items-center gap-2">
-                <Utensils className="w-4 h-4 text-emerald-600 shrink-0" />
-                <strong className="text-emerald-800 text-sm">12:30 PM - 01:30 PM</strong>
-              </div>
-              <span className="text-emerald-800 font-black sm:text-right">Complimentary Hot Buffet Lunch for Students & Escorting Teachers (Dining Courtyard)</span>
-            </div>
-
-            <div className="py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-1">
-              <div className="flex items-center gap-2">
-                <span className="w-2.5 h-2.5 rounded-full bg-blue-500 shrink-0"></span>
-                <strong className="text-navy text-sm">01:30 PM - 02:30 PM</strong>
-              </div>
-              <span className="text-navy font-bold sm:text-right">Debate (Topic Released via WhatsApp/SMS) — Seminar Hall B</span>
-            </div>
-
-            <div className="py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-1">
-              <div className="flex items-center gap-2">
-                <span className="w-2.5 h-2.5 rounded-full bg-pink-500 shrink-0"></span>
-                <strong className="text-navy text-sm">02:30 PM - 03:00 PM</strong>
-              </div>
-              <span className="text-navy font-bold sm:text-right">Reels Screening & Poster Making Judging — Media Lab Block</span>
-            </div>
-
-            <div className="py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-1">
-              <div className="flex items-center gap-2">
-                <span className="w-2.5 h-2.5 rounded-full bg-amber-500 shrink-0"></span>
-                <strong className="text-navy text-sm">03:00 PM - 04:00 PM</strong>
-              </div>
-              <span className="text-navy font-bold sm:text-right">Treasure Hunt (Campus Clue Solving) — Central Quad</span>
-            </div>
-
-            <div className="py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-1 bg-orange-50/80 p-3 rounded-2xl">
-              <div className="flex items-center gap-2">
-                <Trophy className="w-4 h-4 text-orange-500 shrink-0" />
-                <strong className="text-orange-600 text-sm">04:00 PM - 05:00 PM</strong>
-              </div>
-              <span className="text-orange-700 font-black sm:text-right">Grand Valedictory, ₹{events.reduce((total, event) => total + event.prize_pool, 0).toLocaleString('en-IN')} Cash Handover & College Champions Trophy</span>
-            </div>
+              <span className="text-navy font-bold sm:text-right">{slot.name}{slot.venue ? ` — ${[slot.venue, slot.floor].filter(Boolean).join(', ')}` : ''}</span>
+            </div>)}
           </div>
         </div>
       )}
@@ -925,7 +872,7 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
                 {user?.food_preference || 'Veg'} Buffet Lunch
               </h3>
               <p className="text-xs text-gray-500 mt-1">
-                Scan this voucher at the Dining Courtyard counter between 12:30 PM and 01:30 PM.
+                Scan this voucher at the Dining Courtyard counter between {slotClock(LUNCH.start)} and {slotClock(LUNCH.end || LUNCH.start)}.
               </p>
             </div>
 
