@@ -40,3 +40,14 @@
 .result-slot { display: grid; gap: 4px }
 .result-slot + .result-slot { margin-top: 4px; padding-top: 8px; border-top: 1px dashed #d5dfe0 }
 .result-slotname { font-size: 14px; font-weight: 650; color: #102a43 }
+
+/* Winner entry: a registered participant or a typed name and college per award */
+.result-desk input { border: 1px solid #b9c8ce; border-radius: 6px; background: #fff; padding: 10px 12px; min-height: 48px; font: inherit; font-size: 16px; color: #102a43; width: 100% }
+.result-desk input:focus, .result-desk select:focus { outline: 2px solid #ff753e; outline-offset: 1px }
+.result-slotbox { display: grid; gap: 10px; margin: 0 0 12px; padding: 14px 16px 16px; border: 1px solid #d5dfe0; border-radius: 10px; background: #fbfcfc; min-width: 0 }
+.result-slotbox legend { padding: 0 6px; font: 24px/1.1 DutyBarlow,sans-serif; color: #102a43 }
+.result-slotbox select { width: 100%; min-width: 0; min-height: 48px; font-size: 16px }
+.result-typed { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); gap: 10px }
+.result-hint { margin: 0 0 14px; padding: 10px 12px; border-radius: 8px; background: #eef3f8; color: #33536a !important; font-size: 15px }
+.result-badges { display: inline-flex; flex-wrap: wrap; justify-content: flex-end; gap: 6px }
+@media(max-width:650px) { .result-typed { grid-template-columns: minmax(0,1fr) } .result-slotbox { padding: 12px 12px 14px } }

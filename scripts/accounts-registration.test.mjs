@@ -35,9 +35,9 @@ for (const [key,station,event] of [['gate','gate',null],['food','food',null],['r
 const legacyRequest = randomUUID();
 await db.query(`insert into crossfire_registration_requests(id,profile,events,status) values($1,$2,'[]','registered')`,[legacyRequest,JSON.stringify({student_name:'Legacy Student',email:'legacy@example.test',contact_number:'9111111111'})]);
 
-for (const name of ['20261030090000_vip_guest_role.sql','20261030090100_accounts_registration_qr.sql','20261030120000_least_privilege_review.sql','20261101090000_student_phone_length.sql','20261103091000_legacy_volunteer_assignments.sql','20261103092000_coordinator_role.sql','20261103093000_event_declarations.sql','20261114090000_fixed_crew_credentials.sql','20261115090000_participant_pass_lookup.sql','20261115110000_homepage_announcements.sql']) await db.exec(await migration(name));
+for (const name of ['20261030090000_vip_guest_role.sql','20261030090100_accounts_registration_qr.sql','20261030120000_least_privilege_review.sql','20261101090000_student_phone_length.sql','20261103091000_legacy_volunteer_assignments.sql','20261103092000_coordinator_role.sql','20261103093000_event_declarations.sql','20261114090000_fixed_crew_credentials.sql','20261115090000_participant_pass_lookup.sql','20261115110000_homepage_announcements.sql','20261115150000_manual_podium_entries.sql']) await db.exec(await migration(name));
 // Forward migrations must be safe to apply twice.
-for (const name of ['20261030090000_vip_guest_role.sql','20261030090100_accounts_registration_qr.sql','20261030120000_least_privilege_review.sql','20261101090000_student_phone_length.sql','20261103091000_legacy_volunteer_assignments.sql','20261103092000_coordinator_role.sql','20261103093000_event_declarations.sql','20261114090000_fixed_crew_credentials.sql','20261115090000_participant_pass_lookup.sql','20261115110000_homepage_announcements.sql']) await db.exec(await migration(name));
+for (const name of ['20261030090000_vip_guest_role.sql','20261030090100_accounts_registration_qr.sql','20261030120000_least_privilege_review.sql','20261101090000_student_phone_length.sql','20261103091000_legacy_volunteer_assignments.sql','20261103092000_coordinator_role.sql','20261103093000_event_declarations.sql','20261114090000_fixed_crew_credentials.sql','20261115090000_participant_pass_lookup.sql','20261115110000_homepage_announcements.sql','20261115150000_manual_podium_entries.sql']) await db.exec(await migration(name));
 
 async function as(actor, sql, args=[], aal) {
   await db.exec('reset role');
@@ -565,12 +565,99 @@ await test('only reviewed event placements become public, with Champion independ
   await change('super',5,'approve');
   const [published]=await publicRows();
   assert.equal(published.event_name,'Event 1');
-  assert.deepEqual(published.awards,[c,b,a,b].map(id=>initial.entries.find(r=>r.id===id).name));
+  assert.deepEqual(published.awards,[c,b,a,b].map(id=>{const e=initial.entries.find(r=>r.id===id);return `${e.name} — ${e.school}`;}));
   await denied(change('admin',6,'approve'),/submitted/);
   await action('super','staff.access',{id:actors.coord,active:false,role:'coordinator'});
   await action('admin','staff.access',{id:actors.coord,active:true,role:'coordinator'});
   assert.equal(await sheet(),undefined);
   assert.equal((await publicRows()).length,1);
+});
+// ---------------------------------------------------------------------------
+// Typed winners: offline registrations (name + college) alongside registered entries
+// ---------------------------------------------------------------------------
+await test('a coordinator declares winners by typing name and college, mixed with registered entries',async()=>{
+  const event=await eventId('Event 2');
+  const change=(actor,version,op,picks=null,manual=null,feedback=null)=>as(actor,'select result_action($1,$2,$3,$4,$5,$6,$7)',[event,version,op,picks,actors.coord,feedback,manual?JSON.stringify(manual):null]);
+  const sheet=async()=>(await one('coord','select result_desk()')).events.find(e=>e.id===event);
+  await db.query("update events set start_time=now(),end_time=now()+interval '1 hour' where id=$1",[event]);
+  await change('admin',0,'assign');
+  let d=await sheet();assert.deepEqual(d.manual,[null,null,null,null]);
+  const none=[null,null,null,null];
+  // Nobody is registered online for these winners: every slot is typed.
+  const typed=[{name:'  Meera   Das ',school:'Utkal Public School'},{name:'Biswa Rout',school:'DAV College'},{name:'Sunita Nayak',school:'Sai International'},null];
+  await change('coord',d.version,'save',none,typed);
+  d=await sheet();
+  assert.deepEqual(d.manual.slice(0,3),[{name:'Meera Das',school:'Utkal Public School'},{name:'Biswa Rout',school:'DAV College'},{name:'Sunita Nayak',school:'Sai International'}]);
+  assert.equal(d.manual[3],null);
+  // Champion is optional: first, second and third are enough to submit.
+  await change('coord',d.version,'submit',none,typed);
+  d=await sheet();assert.equal(d.state,'In review');
+  await change('super',d.version,'approve');
+  const awards=(await as(null,'select * from published_event_awards()')).rows.find(r=>r.event_name==='Event 2').awards;
+  assert.deepEqual(awards,['Meera Das — Utkal Public School','Biswa Rout — DAV College','Sunita Nayak — Sai International',null]);
+  // A registered entry and typed entries can sit side by side on another event.
+  const event3=await eventId('Event 3');
+  await db.query("update events set start_time=now(),end_time=now()+interval '1 hour' where id=$1",[event3]);
+  const change3=(actor,version,op,picks=null,manual=null)=>as(actor,'select result_action($1,$2,$3,$4,$5,$6,$7)',[event3,version,op,picks,actors.coord,null,manual?JSON.stringify(manual):null]);
+  await change3('admin',0,'assign');
+  let d3=(await one('coord','select result_desk()')).events.find(e=>e.id===event3);
+  const [reg]=d3.entries;
+  await change3('coord',d3.version,'submit',[reg.id,null,null,null],[null,{name:'Offline Student',school:'Rural High School'},{name:'Another Student',school:'Town College'},{name:'Meera Das',school:'Utkal Public School'}]);
+  d3=(await one('coord','select result_desk()')).events.find(e=>e.id===event3);
+  await change3('super',d3.version,'approve');
+  const awards3=(await as(null,'select * from published_event_awards()')).rows.find(r=>r.event_name==='Event 3').awards;
+  assert.deepEqual(awards3,[`${reg.name} — ${reg.school}`,'Offline Student — Rural High School','Another Student — Town College','Meera Das — Utkal Public School']);
+});
+await test('typed winners are validated: both fields, no duplicates, one source per slot, no markup',async()=>{
+  const event=await eventId('Event 4');
+  await db.query("update events set start_time=now(),end_time=now()+interval '1 hour' where id=$1",[event]);
+  const change=(actor,version,op,picks,manual)=>as(actor,'select result_action($1,$2,$3,$4,$5,$6,$7)',[event,version,op,picks,actors.coord,null,manual===null?null:JSON.stringify(manual)]);
+  await change('admin',0,'assign',null,null);
+  const sheet=async()=>(await one('coord','select result_desk()')).events.find(e=>e.id===event);
+  const d=await sheet();
+  const none=[null,null,null,null];
+  const ok=[{name:'Asha One',school:'School A'},{name:'Bela Two',school:'School B'},{name:'Chitra Three',school:'School C'},null];
+  // A draft may keep a half-typed row; submitting may not.
+  await change('coord',d.version,'save',none,[{name:'Half Typed',school:''},null,null,null]);
+  const saved=await sheet();
+  assert.equal(saved.manual[0].name,'Half Typed');
+  const version=saved.version;
+  await assert.rejects(change('coord',version,'submit',none,[{name:'Half Typed',school:''},ok[1],ok[2],null]),/both the participant name and the college/);
+  await assert.rejects(change('coord',version,'submit',none,[{name:'',school:'College only'},ok[1],ok[2],null]),/both the participant name and the college/);
+  // First, second and third are required; typed duplicates (any case or spacing) are refused.
+  await assert.rejects(change('coord',version,'submit',none,[ok[0],ok[1],null,null]),/first, second and third/);
+  await assert.rejects(change('coord',version,'submit',none,[ok[0],{name:'asha  one',school:'SCHOOL a'},ok[2],null]),/different entries/);
+  // One source per slot, and a typed name may not repeat a registered podium entry.
+  if (saved.entries.length) {
+    const e=saved.entries[0];
+    await assert.rejects(change('coord',version,'save',[e.id,null,null,null],[ok[0],null,null,null]),/either a registered entry or a typed name/);
+    await assert.rejects(change('coord',version,'submit',[e.id,null,null,null],[null,{name:e.name,school:e.school},ok[2],null]),/different entries/);
+  }
+  // Shape, size and markup limits.
+  await assert.rejects(change('coord',version,'save',none,[ok[0],ok[1]]),/Invalid typed winners/);
+  await assert.rejects(change('coord',version,'save',none,['text',null,null,null]),/Invalid typed winners/);
+  await assert.rejects(change('coord',version,'save',none,[{name:'x'.repeat(101),school:'S'},null,null,null]),/limited to 100/);
+  await assert.rejects(change('coord',version,'save',none,[{name:'<script>alert(1)</script>',school:'S'},null,null,null]),/angle brackets/);
+  // Only the assigned coordinator may enter results.
+  for (const actor of ['gate','student1','judge',null]) await denied(change(actor,version,'save',none,[ok[0],ok[1],ok[2],null]));
+  // The old six-argument call still works (older screens during an update).
+  await as('coord','select result_action($1,$2,$3,$4,$5,$6)',[event,version,'save',none,actors.coord,null]);
+});
+await test('simultaneous events are independent: saving one never disturbs another',async()=>{
+  const [e5,e6]=[await eventId('Event 5'),await eventId('Event 6')];
+  const call=(event,version,op,picks,manual)=>as('coord','select result_action($1,$2,$3,$4,$5,$6,$7)',[event,version,op,picks,actors.coord,null,JSON.stringify(manual)]);
+  for (const e of [e5,e6]) await as('admin','select result_action($1,$2,$3,$4,$5,$6)',[e,0,'assign',null,actors.coord,null]);
+  const desk=async()=>(await one('coord','select result_desk()')).events;
+  const v=Object.fromEntries((await desk()).map(e=>[e.id,e.version]));
+  const none=[null,null,null,null];
+  await call(e5,v[e5],'save',none,[{name:'Five One',school:'S5'},null,null,null]);
+  await call(e6,v[e6],'save',none,[{name:'Six One',school:'S6'},null,null,null]);
+  const after=Object.fromEntries((await desk()).map(e=>[e.id,e]));
+  assert.equal(after[e5].manual[0].name,'Five One');
+  assert.equal(after[e6].manual[0].name,'Six One');
+  // A stale version on one event is refused without touching the other.
+  await assert.rejects(call(e5,v[e5],'save',none,[{name:'Stale',school:'S'},null,null,null]),/changed/);
+  assert.equal((await desk()).find(e=>e.id===e6).manual[0].name,'Six One');
 });
 // ---------------------------------------------------------------------------
 // Participant pass lookup (mail ID + registered mobile number)
