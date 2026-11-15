@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { Clock, MapPin, RefreshCw } from 'lucide-react';
 import { supabase } from '../lib/supabase';
+import { PhasePill, Schedule, clock, dayLabel, useNow, useScheduleEvents } from './schedule';
 import './volunteer.css';
 import './results.css';
 
@@ -28,9 +30,14 @@ function EventSheet({ event, staff, manager, reload }: { event: ResultEvent; sta
   }
   const step = event.state === 'Published' ? 2 : event.state === 'In review' ? 1 : 0;
   return <>
-    <section className="vd-assignment"><div><p className="vd-label">Event result sheet</p><h2>{event.name}</h2></div><b className="vd-status">{event.state}</b></section>
+    {manager && <section className="vd-assignment"><div><p className="vd-label">Event result sheet</p><h2>{event.name}</h2></div><b className="vd-status">{event.state}</b></section>}
     <div className="vd-grid"><section className="vd-card"><h2>{manager ? 'Award review' : 'Event declaration'}</h2>
-      <p>{editable ? 'Select registered entries for each award.' : event.state === 'Published' ? 'These awards appear on the public leaderboard.' : event.state === 'In review' ? 'Submitted for administrator review.' : 'Waiting for the coordinator to submit.'}</p>
+      <p className={manager ? undefined : 'result-next'}>{manager ? (editable ? 'Select registered entries for each award.' : event.state === 'Published' ? 'These awards appear on the public leaderboard.' : event.state === 'In review' ? 'Submitted for administrator review.' : 'Waiting for the coordinator to submit.')
+        : event.state === 'Published' ? 'Done. These awards are on the public leaderboard.'
+        : event.state === 'In review' ? 'Submitted. An admin will review your result next.'
+        : event.state === 'Changes requested' ? 'An admin asked for changes. Update the winners, then submit again.'
+        : event.event_day ? 'Choose the winners, then tap Submit for review.'
+        : `You can pick winners now and save a draft. Submitting opens on event day (${event.day}).`}</p>
       {event.feedback && <p className="result-feedback"><b>Reviewer feedback</b><br/>{event.feedback}</p>}
       {awards.map((label,i)=><div className="result-row" key={label}><label htmlFor={'award-'+i}>{label}</label>{editable ?
         <select id={'award-'+i} disabled={busy} value={picks[i] || ''} onChange={e=>setPicks(picks.map((v,k)=>k===i ? e.target.value || null : v))}>
@@ -49,6 +56,8 @@ export function ResultsDesk({ manager=false, initialEventId='' }: { manager?: bo
   const [eventId,setEvent]=useState(initialEventId);
   const [error,setError]=useState('');
   const [notice,setNotice]=useState('');
+  const schedule=useScheduleEvents();
+  const now=useNow();
 
   const sequence=useRef(0);
   const load=useCallback(async(savedMessage='')=>{
@@ -61,11 +70,30 @@ export function ResultsDesk({ manager=false, initialEventId='' }: { manager?: bo
   },[manager]);
   useEffect(()=>{void load();return()=>{sequence.current++}},[load]);
   const selected=desk?.events.find(e=>e.id===eventId)||desk?.events[0];
-  return <div className="vd result-desk"><p className="vd-label">CrossFire 2026 &nbsp; / &nbsp; Event day</p><h1>{manager?'Review event results':'Declare event results'}</h1>
+  if (manager) return <div className="vd result-desk"><p className="vd-label">CrossFire 2026 &nbsp; / &nbsp; Event day</p><h1>Review event results</h1>
     {notice && <p role="status">{notice}</p>}{error && <p role="alert">{error}</p>}
     {selected && desk ? <><label className="result-picker">Event <select value={selected.id} onChange={e=>setEvent(e.target.value)}>{desk.events.map(e=><option key={e.id} value={e.id}>{e.name} · {e.state}</option>)}</select></label>
     <EventSheet key={selected.id+'-'+selected.version} event={selected} manager={manager} staff={desk.staff} reload={load}/></> : <p role="status">{desk?'No events assigned. Contact an administrator.':error?'':'Loading result sheets…'}</p>}
     <button className="result-refresh" onClick={()=>void load()}>Refresh desk</button>
+  </div>;
+  const infoFor=(id:string)=>schedule.find(item=>item.id===id);
+  return <div className="vd result-desk coordinator">
+    <header className="vd-hello"><div><p className="vd-label">Results desk</p><h1>My events</h1></div><span className="cs-clock">{dayLabel(now)}</span></header>
+    {notice && <p role="status" className="result-notice">{notice}</p>}
+    {error && <p role="alert" className="result-error">{error} <button type="button" onClick={()=>void load()}><RefreshCw size={15} aria-hidden="true"/> Try again</button></p>}
+    {!desk && !error && <div className="ops-skeleton-inline" role="status"><span className="sr-only">Loading your events…</span><div className="sk sk-hero"/><div className="sk sk-card"/></div>}
+    {desk && (selected ? <>
+      <div className="result-events" role="group" aria-label="My assigned events">{desk.events.map(event=>{
+        const info=infoFor(event.id);
+        return <button type="button" key={event.id} className={'result-event'+(event.id===selected.id?' on':'')} aria-pressed={event.id===selected.id} onClick={()=>setEvent(event.id)}>
+          <span className="result-event-top"><strong>{event.name}</strong><span className="cs-pill state">{event.state}</span></span>
+          {info && <><span className="result-event-line"><Clock size={14} aria-hidden="true"/>{clock(info.start_time)}{info.end_time?` to ${clock(info.end_time)}`:''}<PhasePill event={info} now={now}/></span>
+          <span className="result-event-line"><MapPin size={14} aria-hidden="true"/>{info.venue||'Venue to be announced'}</span></>}
+        </button>;})}</div>
+      <EventSheet key={selected.id+'-'+selected.version} event={selected} manager={false} staff={desk.staff} reload={load}/>
+    </> : <section className="vd-card"><h2>No event assigned yet</h2><p>An admin will assign your event soon. Today’s full schedule is below.</p></section>)}
+    {desk && <Schedule events={schedule} highlight={desk.events.map(event=>event.id)}/>}
+    <button className="result-refresh" onClick={()=>void load()}><RefreshCw size={15} aria-hidden="true"/> Refresh desk</button>
   </div>;
 }
 

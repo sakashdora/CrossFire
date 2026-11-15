@@ -83,3 +83,5 @@ export const EventsProvider:React.FC<{children:React.ReactNode}>=({children})=>{
   }}>{children}</EventsContext.Provider>;
 };
 export function useEvents(){const value=useContext(EventsContext);if(!value)throw new Error('useEvents must be used within EventsProvider');return value;}
+// For screens that can also run without the provider (previews); they simply get no shared events.
+export function useOptionalEvents(){return useContext(EventsContext);}

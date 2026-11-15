@@ -52,3 +52,74 @@
   .vd-card { padding: 19px }
   .vd-viewfinder { min-height: 105px }
 }
+
+/* ---- Crew desks: simple, scan-first layout ---- */
+.vd-hello { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 16px }
+.vd-hello h1 { font-size: clamp(32px,6vw,46px); margin: 4px 0 0 }
+.vd-main { display: grid; gap: 20px; min-width: 0; align-content: start }
+.vd-assignment h2 { font-size: clamp(28px,5vw,38px) }
+.vd-assignment > div { min-width: 0 }
+.vd-meta { display: flex; align-items: center; gap: 7px; margin: 4px 0 0; color: #c9d8e4; font-size: 15px; line-height: 1.35 }
+.vd-meta svg { flex: none }
+.vd .vd-toggle { flex: none; min-width: 150px; min-height: 52px; padding: 0 20px; border-radius: 10px; border: 2px solid #fff; background: transparent; color: #fff; font-size: 16px }
+.vd .vd-toggle.go { background: #ff753e; border-color: #ff753e }
+.vd .vd-toggle:disabled { opacity: .55 }
+.vd-scan .vd-heading h2 { font-size: 30px }
+.vd .vd-scanbtn { display: flex; align-items: center; justify-content: center; gap: 12px; width: 100%; min-height: 84px; margin: 16px 0 6px; border-radius: 12px; font: 650 21px "Segoe UI",sans-serif; color: #fff; background: #ff753e; border: 0; box-shadow: 0 6px 16px rgba(255,117,62,.28); transition: transform .12s, background .12s }
+.vd .vd-scanbtn:hover:enabled { background: #ff8758 }
+.vd .vd-scanbtn:active:enabled { transform: scale(.985) }
+.vd .vd-scanbtn:disabled { background: #cfd8dc; color: #5b6b75; box-shadow: none; cursor: not-allowed }
+.vd-lock { margin: 8px 0 0; padding: 10px 12px; background: #fff7e3; border: 1px solid #f1d58b; border-radius: 8px; color: #6b4a00 !important; font-size: 15px }
+.vd-lookup { margin-top: 18px; padding-top: 16px; border-top: 1px solid #e2e8e9 }
+.vd-lookup label { display: grid; gap: 6px; font-size: 14px; color: #506474 }
+.vd-lookup input { font-size: 16px; min-height: 48px; text-transform: uppercase }
+.vd-lookup button { min-height: 48px; padding: 0 18px }
+.vd .vd-refresh { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; background: transparent; border: 1px solid #c6d3d6; border-radius: 10px }
+.vd-card h3 { margin: 0 0 4px }
+.vd-card .vd-report { display: flex; align-items: center; gap: 6px; margin: 8px 0 0; font-size: 17px }
+
+/* Shared event schedule (volunteer and coordinator) */
+.cs-card { background: #fff; border: 1px solid #d5dfe0; border-radius: 12px; padding: 22px 24px }
+.cs-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; margin-bottom: 8px }
+.vd .cs-head h2 { font-size: 28px; margin: 0 }
+.cs-clock { font-size: 14px; font-weight: 650; color: #33536a; background: #e8eff4; border-radius: 20px; padding: 4px 12px; white-space: nowrap }
+.cs-list { list-style: none; margin: 0; padding: 0 }
+.cs-event { display: grid; grid-template-columns: 96px minmax(0,1fr) auto; align-items: center; gap: 4px 14px; padding: 14px 10px; border-top: 1px solid #e2e8e9 }
+.cs-event:first-child { border-top: 0 }
+.cs-event time b { display: block; font: 24px/1.1 DutyBarlow,sans-serif; color: #0b314a }
+.cs-event time small { display: block; font-size: 13px; color: #5a6f7d }
+.cs-what { min-width: 0 }
+.cs-what strong { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; font-size: 18px; color: #102a43 }
+.cs-what em { font: 600 12px "Segoe UI",sans-serif; font-style: normal; letter-spacing: .4px; text-transform: uppercase; color: #a33d14; background: #fff0e6; border-radius: 4px; padding: 2px 7px }
+.cs-what > span { display: flex; align-items: center; gap: 5px; margin-top: 3px; font-size: 15px; color: #506474 }
+.cs-what svg { flex: none; color: #dd602c }
+.cs-pill { justify-self: end; font-size: 13px; font-weight: 650; border-radius: 20px; padding: 5px 12px; white-space: nowrap; background: #e8eff4; color: #33536a }
+.cs-pill.live { background: #def4e9; color: #15553b }
+.cs-pill.soon { background: #fff0ce; color: #754400 }
+.cs-pill.done { background: #eceeee; color: #5b6870 }
+.cs-event.done { opacity: .72 }
+.cs-event.mine { background: #fff8f3; border-left: 4px solid #ff753e; border-radius: 8px }
+.cs-empty { color: #506474; margin: 8px 0 0 }
+
+/* Loading skeleton: shows the page shape instantly instead of a blank screen */
+.ops-skeleton { min-height: 100dvh; padding: 38px 26px; max-width: 1130px; margin: auto; display: grid; gap: 16px; align-content: start }
+.sk { border-radius: 12px; background: #e6ecec; min-height: 24px }
+.sk-title { width: 44%; height: 46px }
+.sk-hero { height: 132px; background: #cdd9de }
+.sk-card { height: 190px }
+@media (prefers-reduced-motion: no-preference) {
+  .sk { background: linear-gradient(90deg,#e6ecec 25%,#f4f7f7 37%,#e6ecec 63%); background-size: 400% 100%; animation: sk-shimmer 1.4s ease infinite }
+  .sk-hero { background: linear-gradient(90deg,#cdd9de 25%,#dfe8ec 37%,#cdd9de 63%); background-size: 400% 100% }
+}
+@keyframes sk-shimmer { from { background-position: 100% 0 } to { background-position: 0 0 } }
+
+@media(max-width:730px) {
+  .vd-hello h1 { font-size: 34px }
+  .vd-assignment { flex-direction: column; align-items: stretch }
+  .vd .vd-toggle { width: 100% }
+  .vd .vd-scanbtn { min-height: 92px; font-size: 22px }
+  .cs-card { padding: 18px 16px }
+  .cs-event { grid-template-columns: 78px minmax(0,1fr); padding: 14px 8px }
+  .cs-pill { grid-column: 2; justify-self: start; margin-top: 4px }
+  .ops-skeleton { padding: 22px 16px }
+}

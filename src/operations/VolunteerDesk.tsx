@@ -1,9 +1,10 @@
-import { useState } from 'react';
-import { ArrowRight, QrCode, Scan } from 'lucide-react';
-import { STATIONS, formatTime, type OpsEvent, type OpsVolunteer } from './model';
+import { ArrowRight, Clock, MapPin, QrCode, RefreshCw } from 'lucide-react';
+import { STATIONS, type OpsEvent, type OpsVolunteer } from './model';
+import { Schedule, clock, useScheduleEvents, type ScheduleEvent } from './schedule';
 import './volunteer.css';
 
 type Props = {
+  name: string;
   duty?: OpsVolunteer;
   events: OpsEvent[];
   busy: boolean;
@@ -17,57 +18,73 @@ type Props = {
 };
 
 const stationTasks = {
-  gate: ['Check in a student', 'Scan the student’s pass, then review their details before check-in.'],
-  food: ['Issue a student meal', 'Scan the student’s pass to check their meal preference and redemption status.'],
-  event: ['Record room attendance', 'Scan a student’s pass or open the room list to record attendance.'],
-  guest: ['Welcome a guest', 'Scan a guest pass or open your assigned guests to record an arrival.'],
-  support: ['Station support', 'Report an issue at your station or follow up on a previous report.'],
+  gate: ['Check in students', 'Scan the student’s QR pass, check the details, then tap Check in.'],
+  food: ['Give out meals', 'Scan the pass to see the meal type, then tap Issue meal. One meal per student.'],
+  event: ['Mark students present', 'Scan the pass to confirm the student is in your event room.'],
+  guest: ['Welcome guests', 'Scan the guest’s pass to see their details and record their arrival.'],
+  support: ['Support desk', 'Help wherever you are needed. Report any problem so an admin can act.'],
 };
 
-export function VolunteerDesk({ duty, events, busy, lookupBusy, scan, lookup, changeDuty, report, openDesk, refresh }: Props) {
-  const [manual, setManual] = useState(false);
+export function VolunteerDesk({ name, duty, events, busy, lookupBusy, scan, lookup, changeDuty, report, openDesk, refresh }: Props) {
   const onDuty = duty?.attendance_status === 'Present / On Duty';
-  const usesPass = duty && duty.station !== 'support';
-  const [title, instructions] = duty ? stationTasks[duty.station] : ['Awaiting duty assignment', 'Ask an admin to assign your station and shift.'];
+  const usesPass = Boolean(duty && duty.station !== 'support');
+  const [title, instructions] = duty ? stationTasks[duty.station] : ['Waiting for your station', 'An admin will assign your station and shift. You can already see today’s schedule below.'];
   const shift = duty?.shift.replace(/ Shift \(/, ' shift · ').replace(/ \(/, ' · ').replace(/\)$/, '').replace(/\b0(?=\d:)/g, '').replace(' - ', ' – ');
-  const assignedEvent = events.find(event => event.id === duty?.event_id);
-  return <div className="vd">
-    <p className="vd-label">Event operations &nbsp; / &nbsp; Volunteer</p>
-    <h1>My duty desk</h1>
-    <section className="vd-assignment">
-      <div><p className="vd-label">Assigned station</p><h2>{duty ? STATIONS[duty.station] : 'Awaiting assignment'}</h2><p>{shift || 'Shift details will appear here.'}{assignedEvent && <> · {assignedEvent.name}</>}</p></div>
+  const schedule = useScheduleEvents(events as ScheduleEvent[]);
+  const assigned = schedule.find(event => event.id === duty?.event_id);
+  const first = name.trim().split(/\s+/)[0] || 'there';
+  const scanLabel = duty?.station === 'guest' ? 'Scan guest pass' : 'Scan student pass';
+  return <div className="vd vd2">
+    <header className="vd-hello">
+      <div><p className="vd-label">Volunteer desk</p><h1>Hi, {first}</h1></div>
       <span className={'vd-status' + (onDuty ? ' active' : '')}>{onDuty ? 'On duty' : duty?.attendance_status || 'Unassigned'}</span>
+    </header>
+
+    <section className="vd-assignment">
+      <div>
+        <p className="vd-label">Your station</p>
+        <h2>{duty ? STATIONS[duty.station] : 'Awaiting assignment'}</h2>
+        <p className="vd-meta"><Clock size={15} aria-hidden="true" />{shift || 'Shift details will appear here'}</p>
+        {assigned && <p className="vd-meta"><MapPin size={15} aria-hidden="true" />{assigned.name} · {assigned.venue || 'Venue to be announced'} · starts {clock(assigned.start_time)}</p>}
+      </div>
+      {duty && <button className={'vd-toggle' + (onDuty ? '' : ' go')} disabled={busy || lookupBusy} onClick={changeDuty}>{onDuty ? 'Take a break' : 'Go on duty'}</button>}
     </section>
+
     <div className="vd-grid">
-      <section className="vd-card">
-        <div className="vd-heading"><span>01</span><h2>{title}</h2></div>
-        <p>{usesPass && !onDuty ? 'Go on duty to use your station’s pass lookup.' : instructions}</p>
-        {usesPass && <>
-          <div className="vd-viewfinder" aria-hidden="true"><Scan /><QrCode /></div>
-          <button className="vd-primary" disabled={!onDuty || busy || lookupBusy} onClick={scan}>{lookupBusy ? 'Looking up pass…' : duty.station === 'guest' ? 'Scan guest pass' : 'Scan student pass'}</button>
-          <button className="vd-manual" disabled={!onDuty || busy || lookupBusy} aria-expanded={manual && onDuty} onClick={() => setManual(!manual)}>Enter pass ID</button>
-          {manual && onDuty && <form className="vd-lookup" onSubmit={event => { event.preventDefault(); lookup(String(new FormData(event.currentTarget).get('pass'))); }}>
-            <label>Pass ID<input autoFocus required name="pass" autoComplete="off" placeholder={duty.station === 'guest' ? 'CFG-…' : 'CF26-…'} /></label>
-            <button disabled={busy || lookupBusy}>Find pass</button>
-          </form>}
-          {(duty.station === 'event' || duty.station === 'guest') && <button className="vd-secondary" disabled={!onDuty} onClick={() => openDesk(duty.station === 'guest' ? 'guests' : 'students')}>{duty.station === 'guest' ? 'View assigned guests' : 'View room participants'}</button>}
-        </>}
-        {duty?.station === 'support' && <button className="vd-secondary" onClick={() => openDesk('incidents')}>View incidents</button>}
-      </section>
-      <div className="vd-side">
+      <div className="vd-main">
+        <section className="vd-card vd-scan">
+          <div className="vd-heading"><span>1</span><h2>{title}</h2></div>
+          <p>{instructions}</p>
+          {usesPass && <>
+            <button className="vd-primary vd-scanbtn" disabled={!onDuty || busy || lookupBusy} onClick={scan}><QrCode size={26} aria-hidden="true" />{lookupBusy ? 'Looking up pass…' : scanLabel}</button>
+            {!onDuty && <p className="vd-lock" role="status">You are not on duty yet. Tap <b>Go on duty</b> above to start scanning.</p>}
+            <form className="vd-lookup" onSubmit={event => { event.preventDefault(); const form = event.currentTarget; const value = String(new FormData(form).get('pass') || '').trim(); if (value) lookup(value); }}>
+              <label>No camera? Type the pass ID<input name="pass" required autoComplete="off" autoCapitalize="characters" spellCheck={false} disabled={!onDuty} placeholder={duty?.station === 'guest' ? 'CFG-…' : 'CF26-…'} /></label>
+              <button disabled={!onDuty || busy || lookupBusy}>Find pass</button>
+            </form>
+            {(duty?.station === 'event' || duty?.station === 'guest') && <button className="vd-secondary" disabled={!onDuty} onClick={() => openDesk(duty.station === 'guest' ? 'guests' : 'students')}>{duty.station === 'guest' ? 'View my assigned guests' : 'View students in my room'}</button>}
+          </>}
+          {duty && !usesPass && <button className="vd-secondary" onClick={() => openDesk('incidents')}>View my reports</button>}
+        </section>
+
+        <Schedule events={schedule} highlight={duty?.event_id ? [duty.event_id] : []} />
+      </div>
+
+      <aside className="vd-side">
         <section className="vd-card">
-          <div className="vd-heading"><span>02</span><h2>Shift details</h2></div>
+          <div className="vd-heading"><span>2</span><h2>My shift</h2></div>
           <dl><div><dt>Walkie channel</dt><dd>{duty?.walkie_channel || 'Not assigned'}</dd></div>
           <div><dt>Volunteer kit</dt><dd>{duty?.kit_issued ? 'Issued' : 'Not issued'}</dd></div></dl>
           {duty?.notes && <p className="vd-notes">{duty.notes}</p>}
-          {duty && <button className="vd-wide" disabled={busy || lookupBusy} onClick={changeDuty}>{onDuty ? 'Start break' : 'Go on duty'}</button>}
         </section>
-        <section className="vd-card"><h3>{duty?.station === 'gate' ? 'Need help at the gate?' : 'Need help at your station?'}</h3>
-          <button className="vd-report" onClick={report}>Report an incident <ArrowRight size={16} /></button>
+        <section className="vd-card">
+          <h3>Something wrong?</h3>
+          <p>Tell an admin right away. It takes a few seconds.</p>
+          <button className="vd-report" onClick={report}>Report a problem <ArrowRight size={16} aria-hidden="true" /></button>
+          <button className="vd-secondary" onClick={() => openDesk('incidents')}>View my reports</button>
         </section>
-      </div>
+        <button className="vd-refresh" disabled={busy || lookupBusy} onClick={refresh}><RefreshCw size={16} aria-hidden="true" /> Refresh desk</button>
+      </aside>
     </div>
-    <div className="vd-tools"><details><summary>Event schedule</summary>{events.length ? events.map(event => <div className="vd-event" key={event.id}><strong>{event.name}</strong><span>{event.venue} · {formatTime(event.start_time)} · {event.status.split('_').join(' ')}</span></div>) : <p>No events scheduled.</p>}</details>
-    <button onClick={() => openDesk('incidents')}>View incidents</button><button disabled={busy || lookupBusy} onClick={refresh}>Refresh desk</button></div>
   </div>;
 }

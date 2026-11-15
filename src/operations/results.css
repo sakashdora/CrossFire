@@ -11,3 +11,29 @@
 .result-track{list-style:none;padding:0;margin:16px 0 0}.result-track li{border-left:2px solid #d4dfe1;padding:0 0 18px 16px;position:relative}.result-track li:before{content:'';position:absolute;left:-6px;top:6px;background:#b8c7cb;border-radius:50%;width:10px;height:10px}.result-track li.reached:before{background:#e96734}.result-track small{display:block;color:#526877}
 .result-refresh{margin-top:16px}.result-public .vd-card{margin-top:12px}.result-public h2{margin-bottom:10px}
 @media(max-width:650px){.result-desk{padding:18px 14px}.result-row label,.result-row strong{min-width:80px}.result-picker select{max-width:74vw}}
+
+/* Coordinator desk */
+.result-desk.coordinator .vd-assignment { margin-top: 4px }
+.result-events { display: grid; grid-template-columns: repeat(auto-fit,minmax(260px,1fr)); gap: 12px; margin: 0 0 16px }
+.result-desk .result-event { display: grid; gap: 7px; text-align: left; padding: 14px 16px; border: 2px solid #d5dfe0; border-radius: 12px; background: #fff; min-height: 0; justify-items: stretch }
+.result-desk .result-event.on { border-color: #ff753e; background: #fff8f3 }
+.result-event-top { display: flex; align-items: center; justify-content: space-between; gap: 10px }
+.result-event-top strong { font: 24px/1.1 DutyBarlow,sans-serif }
+.result-event-line { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; font-size: 15px; font-weight: 500; color: #506474 }
+.result-event-line svg { flex: none; color: #dd602c }
+.result-event-line .cs-pill { margin-left: auto }
+.cs-pill.state { background: #fff0ce; color: #754400 }
+.result-next { padding: 12px 14px; background: #eef6f2; border: 1px solid #cde5d8; border-radius: 8px; color: #15553b !important; font-weight: 600 }
+.result-notice { padding: 12px 14px; background: #def4e9; color: #15553b; border-radius: 8px; font-weight: 600 }
+.result-error { padding: 12px 14px; background: #fde8e4; color: #8a2a12; border-radius: 8px; display: flex; flex-wrap: wrap; align-items: center; gap: 10px }
+.result-error button { display: inline-flex; align-items: center; gap: 6px }
+.result-desk.coordinator .cs-card { margin-top: 20px }
+.result-refresh { display: inline-flex; align-items: center; justify-content: center; gap: 8px }
+.ops-skeleton-inline { display: grid; gap: 16px }
+.result-desk.coordinator .vd-grid { margin-top: 0 }
+@media(max-width:650px) {
+  .result-events { grid-template-columns: minmax(0,1fr) }
+  .result-actions button { flex: 1 1 100% }
+  .result-row { flex-direction: column; align-items: stretch; gap: 6px }
+  .result-refresh { width: 100% }
+}
