@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { X, ShieldCheck, GraduationCap, ExternalLink } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { IS_SHOWCASE_MODE } from '../lib/supabase';
 import { dashboardFor } from '../lib/roles';
 import { PUBLIC_STUDENT_SIGNIN } from '../lib/studentAccess';
 
@@ -41,12 +42,17 @@ export const AuthModal: React.FC<{ isOpen: boolean; onClose: () => void; student
         {value ? <ShieldCheck size={18}/> : <GraduationCap size={18}/>} {value ? 'Staff, Judge & VIP' : 'Student Login'}
       </button>)}</div>}
       {!showStudent && <p className="mb-4 text-xs font-black tracking-wide text-navy flex items-center gap-2"><ShieldCheck size={18}/> Staff, Judge &amp; VIP sign-in</p>}
+      {IS_SHOWCASE_MODE && (
+        <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-900 font-medium">
+          <strong className="font-bold">Showcase Mode:</strong> Backend authentication services are temporarily paused. Portal sign-ins are inactive in this showcase build.
+        </div>
+      )}
       <p className="text-sm text-slate-600 mb-5">{staff ? 'Use the ID (email) and password given to you by the organisers. Volunteers and coordinators keep the password they were given. Judges, VIP guests and admins choose their own password at first sign-in. Super admins also verify an authenticator.' : 'Use the student ID and temporary password emailed by the organisers. Returning students can also use their registered email.'}</p>
       <form onSubmit={submit} className="space-y-4">
         <label className="block text-sm font-semibold">{staff ? 'Email' : 'Student ID or registered email'}<input className={field + ' mt-1'} type={staff ? 'email' : 'text'} autoComplete="username" required maxLength={254} value={email} onChange={event=>setEmail(event.target.value)}/></label>
         <label className="block text-sm font-semibold">Password<input className={field + ' mt-1'} type="password" autoComplete="current-password" required maxLength={200} value={password} onChange={event=>setPassword(event.target.value)}/></label>
         {error && <p role="alert" className="text-sm text-red-700 bg-red-50 p-3 rounded-xl">{error}</p>}
-        <button disabled={busy} className="w-full bg-orange-500 text-white rounded-xl font-bold py-3 disabled:opacity-50">{busy ? 'Signing in…' : 'Sign in'}</button>
+        <button disabled={busy || IS_SHOWCASE_MODE} className="w-full bg-orange-500 text-white rounded-xl font-bold py-3 disabled:opacity-50">{busy ? 'Signing in…' : IS_SHOWCASE_MODE ? 'Sign-in Paused in Showcase Mode' : 'Sign in'}</button>
       </form>
       <p className="mt-4 text-xs text-slate-600">Forgot your password? {staff ? 'Ask your CrossFire administrator to reset your access.' : 'Contact the CrossFire organisers. They can send a secure password reset link to your registered email.'}</p>
       <div className="mt-6 pt-5 border-t text-center text-xs text-slate-600 space-y-3">

@@ -1,4 +1,4 @@
-import { supabase, isSupabaseConfigured } from './supabase';
+import { supabase, isSupabaseConfigured, IS_SHOWCASE_MODE } from './supabase';
 
 export interface RegistrationRequestInput {
   student_name: string;
@@ -40,7 +40,9 @@ export class RegistrationError extends Error {
 // Reusing the same request ID with the same details is safe: the server returns
 // the saved receipt instead of creating a second account.
 export async function registerStudent(requestId: string, profile: RegistrationRequestInput): Promise<RegistrationReceipt> {
-  if (!isSupabaseConfigured) throw new RegistrationError('Registration is temporarily unavailable. Please contact the college organisers.');
+  if (IS_SHOWCASE_MODE || !isSupabaseConfigured) {
+    throw new RegistrationError('Online registration intake is temporarily paused in showcase mode. Please use the official Google Form backup or contact the event coordinators.');
+  }
   const { data, error } = await supabase.functions.invoke('register-student', { body: { request_id: requestId, profile } });
   if (error) {
     let detail: { error?: string; field?: string } = {};

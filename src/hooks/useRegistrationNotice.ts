@@ -8,6 +8,7 @@ import {
 } from '../lib/registrationNotice';
 
 const memory = createNoticeMemory(() => window.sessionStorage);
+const IS_SHOWCASE_MODE = import.meta.env.VITE_SHOWCASE_MODE !== 'false';
 
 interface Options {
   view: string;
@@ -39,7 +40,7 @@ export function useRegistrationNotice({ view, introActive, authModalOpen }: Opti
     return () => document.removeEventListener('visibilitychange', onVisibility);
   }, []);
 
-  const conditionsMet = noticeConditionsMet({
+  const conditionsMet = !IS_SHOWCASE_MODE && noticeConditionsMet({
     view, authStatus, registrationStatus, documentVisible, introActive, authModalOpen,
     awaitingFreshStatus: checkCountOnReturn !== null && registrationCheckCount <= checkCountOnReturn,
   });
@@ -59,38 +60,45 @@ export function useRegistrationNotice({ view, introActive, authModalOpen }: Opti
   const cancelledOnView = useRef<string | null>(null);
   useEffect(() => {
     if (!conditionsMet || suppressed || requested) return;
-    let fired = false;
     cancelledOnView.current = null;
     const timer = window.setTimeout(() => {
-      fired = true;
-      if (!latest.current.conditionsMet || latest.current.suppressed || document.hidden) return;
-      if (memory.hasSeen() || isEditableElement(document.activeElement as HTMLElement | null) || document.querySelector('dialog[open]')) {
+      // Don't interrupt while the visitor is actively typing.
+      if (isEditableElement(document.activeElement)) {
         setSuppressed(true);
         return;
       }
-      setRequested(true);
+      if (latest.current.conditionsMet && !latest.current.suppressed) setRequested(true);
     }, REGISTRATION_NOTICE_DELAY_MS);
     return () => {
       window.clearTimeout(timer);
-      if (!fired) cancelledOnView.current = latest.current.view;
+      // If we unmount because the visitor moved to another view before the delay
+      // completed, don't try again on later views during this page load.
+      if (latest.current.view !== view) cancelledOnView.current = view;
     };
-  }, [conditionsMet, suppressed, requested]);
+  }, [conditionsMet, suppressed, requested, view]);
 
-  // Leaving the page while the prompt is pending cancels it for this visit.
-  const previousView = useRef(view);
-  useEffect(() => {
-    if (previousView.current !== view) {
-      if (cancelledOnView.current === view) setSuppressed(true);
-      cancelledOnView.current = null;
-      previousView.current = view;
-    }
-  }, [view]);
+  const dismiss = useCallback(() => {
+    setRequested(false);
+    setSuppressed(true);
+    memory.markSeen();
+  }, []);
 
-  const onOpened = useCallback(() => { memory.markSeen(); setSuppressed(true); }, []);
-  const onOpenFailed = useCallback(() => { setSuppressed(true); setRequested(false); }, []);
-  const dismiss = useCallback(() => { memory.markSeen(); setSuppressed(true); setRequested(false); }, []);
-  /** Re-checks the latest conditions before acting on a button. */
+  const onOpened = useCallback(() => {
+    memory.markSeen();
+  }, []);
+
+  const onOpenFailed = useCallback(() => {
+    setRequested(false);
+    setSuppressed(true);
+  }, []);
+
   const isCurrent = useCallback(() => latest.current.conditionsMet, []);
 
-  return { show: requested && conditionsMet, onOpened, onOpenFailed, dismiss, isCurrent };
+  return {
+    show: requested && conditionsMet && !suppressed,
+    dismiss,
+    onOpened,
+    onOpenFailed,
+    isCurrent,
+  };
 }

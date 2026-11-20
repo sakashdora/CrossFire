@@ -1,71 +1,95 @@
-# CrossFire 2026
+# CrossFire 2026 — Interactive Frontend Showcase
 
-Responsive event registration and college operations portal, built with React, TypeScript, Vite and Supabase. Production website: https://cross-fire-three.vercel.app/.
+Official platform for **CROSSFIRE 2026** — State-Level Talent Hunt for +2 Final Year students at Srusti Academy of Graduate Studies, Bhubaneswar, Odisha.
 
-## Release status — 20 October 2026
+> **Status — Static Frontend Showcase Mode**  
+> This project is currently operating in **showcase mode**. All backend runtime dependencies, database connections, and external API requests have been safely suspended. The frontend functions as a self-contained, high-fidelity static showcase ready for **Netlify** deployment. All backend source code, migrations, and edge functions are 100% preserved in version control for future restoration.
 
-The reviewed operations/security/intake/invitation database updates and `provision-staff` / `invite-student` Edge functions are deployed to the confirmed CrossFire Supabase project. The updated frontend is prepared locally; publication to Vercel is pending account access. Students submit directly to a private review queue without email verification. Managers can configure official email invitations for reviewed students; actual delivery requires the college sender setup. See [the release checklist](docs/SECURITY_RELEASE.md) for verified results and remaining launch requirements.
+---
 
-## Workflows
+## Showcase Experience Highlights
 
-Roles (identical in the database `user_role` enum, SQL, Edge functions and TypeScript): `super_admin`, `admin`, `student`, `volunteer`, `vip_guest`, `judge`.
+- **Hero & Cinematic Intro:** Visual brand identity, interactive starfield, countdown timer, and media downloads.
+- **7 Competition Arenas:** Quiz, Debate, Dance, Poster Making, Treasure Hunt, Ramp Walk, and Reels with a combined **₹56,000** prize pool.
+- **Rules & Rubrics:** Official judging rubrics, criteria weighting, rules, and room schedules loaded from static catalog data.
+- **Showcase Mode Announcement:** Polished dismissible banner and dedicated showcase section informing visitors that backend services are paused, featuring direct partnership CTAs to [True Inspires](https://true-inspires.vercel.app/) and project inquiry dispatch.
+- **Contextual Safety:** Forms, pass lookups, and administrative portals display helpful showcase notices without endless spinners or console errors.
 
-- **Students** register on `#register` while the super admin keeps registration open. The `register-student` Edge function reserves the request in SQL, creates one Supabase Auth login with the student's chosen password, then commits the profile, every event entry and an unpredictable `CF26-…` QR pass in one transaction. Retrying with the same details returns the same receipt; a second registration for the same email is rejected. The success screen shows the details and QR pass (download/print). Students sign in later with email and password, including after registration closes.
-- **Closing registration** (super admin, **System settings**) blocks new accounts and new event entries in SQL, including direct API calls. Sign-in, dashboards and passes are unaffected.
-- **Staff, judge and VIP guest logins** are created only by admins (volunteer, judge, VIP guest) or super admins (also admin and super admin) through `provision-staff`. For judge, VIP guest, admin and super admin logins the initial password works once: the database blocks every request until the person chooses their own password. Volunteer and coordinator logins are different: the admin sets the ID (email) and password, shares them from Staff access, and can view or re-issue them there (the password is encrypted in Supabase Vault, `crossfire_staff_credentials` holds only a reference, and only admin-only RPCs read it, each view audited); the crew member never has to reset it and has no password-change page. VIP guest logins are created from the guest card and see only their own invitation, guest pass and the public schedule.
-- Super admins also verify an authenticator (AAL2). Database roles, active state and duty assignments govern every operation; deactivation or a role change ends the account's refresh sessions and applies to its next request.
-- **QR scans** resolve one pass on the server (`crossfire_ops_lookup_pass`). Gate and meal volunteers receive no student roster; an on-duty event-room volunteer sees only that room's participants. Gate check-in, meal and room attendance are recorded once each in `crossfire_checkins` with the operator and time; a duplicate scan is reported as already checked in. Admins can issue a new QR pass, which revokes the old one.
-- Only a super admin can permanently delete a student (`crossfire_delete_student`, confirmed by pass ID) or an account-less intake record. Both are audited.
-- Staff screens poll `crossfire_live_revision()` every 3 seconds and reload only when data changed.
-- Judges see assigned candidates, submit validated rubric scores and lock their own evaluation. Public standings include completed events only.
-- Guest arrival follows invitation → confirmation → arrival → optional meal → departure → archive. Actions persist with audit records.
-- Password recovery for students uses the official email invitation ("Send password reset link" in **Student records**), which requires the configured sender. See [Student invitations](docs/STUDENT_INVITATIONS.md).
+---
 
-The application has no demo route, simulated staff sessions or browser-only data fallback. Static event descriptions and assets are published content; live availability, registrations, scores and operational records come from Supabase.
+## Quickstart & Local Development
 
-## Development
+### Prerequisites
+- Node.js 20+ or 22+
+- npm (uses committed `package-lock.json`)
 
-### Dance addition (12 November 2026)
-
-- Dance is a solo Group A event with ₹3,000 / ₹2,000 / ₹1,000 prizes. The existing two-per-group limit is unchanged; existing students are not automatically enrolled or moved.
-- The matching poster is `public/images/dance-poster-v2.png`. Event cards reuse its central artwork. Counts and prize labels read the event data, so the seven-event total becomes ₹56,000 once Dance is added.
-- `supabase/migrations/20261112090000_dance_event.sql` inserts only Dance and does nothing if its slug already exists. It does not update existing events, registrations, profiles, passes, authentication or registration settings. Test this migration on an isolated database; do not replay historical migrations on production.
-- The event uses 15 November day bounds internally, not an announced performance slot. Stage and judging criteria remain pending. The existing default nominal capacity is 100 with the existing overflow handling; no new hard cap was introduced. Registration closes at the standard 14 November 23:59:59 IST deadline and still respects the global registration switch. Judging requires an approved rubric before scores can be submitted.
-- Release the matching frontend and apply only the Dance migration to the confirmed target. A local frontend shows the events in its configured database. Use isolated data for registration tests; do not submit test students to production.
-- Verification: `npm run test:portal-contracts`, `npm run test:student-dashboard`, `npm run test:student-access`, `npm run build`, and `npm run security:bundle`. Local browser checks with synthetic data covered 1440px and 390px views; screenshots are under ignored `artifacts/dance-review/`.
-
-Use Node.js 22 or 24 and the committed npm lockfile. Copy `.env.example` to `.env` and supply this project's public Supabase anon/publishable key. Server credentials must never use a `VITE_` prefix.
-
-```powershell
+### Commands
+```bash
+# Install dependencies
 npm ci
-npm run dev -- --host 127.0.0.1 --port 3001
-npm run test:security
+
+# Start local showcase server (port 3000)
+npm run dev
+
+# Run unit & timetable tests
+npm run test:timetable
+npm run test:registration-notice
+
+# Build production static bundle (dist/)
 npm run build
+
+# Verify production bundle security (0 secrets, 0 maps)
 npm run security:bundle
-npm run preview -- --host 127.0.0.1 --port 4180 --strictPort
+
+# Preview production build locally
+npm run preview
 ```
 
-The production preview uses the same security headers defined in `vercel.json`. `VITE_EMAIL_AUTH_READY` is no longer read by the app; the one-time-code registration path was retired in favour of `register-student`. Deployment order and migration steps are in [the release checklist](docs/SECURITY_RELEASE.md#29-october-2026-accounts-registration-and-qr-release).
+---
 
-## Structure
+## Deployment & Documentation Guides
 
-| Location | Responsibility |
-| --- | --- |
-| `src/context` | Real authentication, event and own-registration state |
-| `src/operations` | Admin and volunteer workflows, typed clients, responsive screens |
-| `src/pages/JudgePanel.tsx` | Assigned judge roster and persistent scoring |
-| `src/pages/AccountSecurity.tsx` | Authenticated staff password updates |
-| `supabase/migrations` | Ordered, tested database changes |
-| `supabase/functions/register-student` | Public student registration: one Auth login, profile, entries and pass |
-| `supabase/functions/provision-staff` | Server-only staff, judge and VIP guest account provisioning |
-| `src/pages/VipDashboard.tsx` | VIP guest invitation, pass and schedule |
-| `src/components/PasswordChangeRequired.tsx` | First sign-in password change for provisioned accounts |
-| `supabase/functions/invite-student` | Reviewed student accounts and official email delivery |
-| `src/pages/StudentActivation.tsx` | Private setup-link verification and student password setup |
-| `scripts/*.test.mjs` | Disposable SQL and Edge-handler tests |
-| `docs/OPERATIONS.md` | Wireframes, role matrix and operational pipeline |
-| `docs/SECURITY_RELEASE.md` | Deployment, recovery and verification evidence |
+Comprehensive documentation is provided across dedicated guides:
 
-Do not rerun the legacy `supabase/schema.sql` on the shared production project. It is a historical baseline for disposable local tests. The release preparer applies the reviewed migrations in order within a transaction. Obsolete credential-seeding, auto-confirm and permissive-view setup scripts were removed. Removing files does not remove credentials from Git history; any previously exposed credentials still require rotation.
+| Document | Purpose |
+| :--- | :--- |
+| **[STATIC_MIGRATION_PLAN.md](STATIC_MIGRATION_PLAN.md)** | Full architectural audit, migration plan, risk assessment, and rollback criteria. |
+| **[NETLIFY_DEPLOYMENT.md](NETLIFY_DEPLOYMENT.md)** | Step-by-step instructions for deploying to Netlify (Web UI, Netlify CLI, Drag & Drop), routing rules, and domain management. |
+| **[BACKEND_RESTORE_GUIDE.md](BACKEND_RESTORE_GUIDE.md)** | Step-by-step guide to restore live Supabase database connections, deploy Edge Functions, configure secrets, and re-enable live registrations. |
+| **[SECURITY_CLEANUP_CHECKLIST.md](SECURITY_CLEANUP_CHECKLIST.md)** | Complete inventory of environment variables, secrets rotation guidance, and Vercel/Netlify operator checklists. |
 
-Browser HTML and JavaScript remain inspectable. Security is enforced through verified identity, MFA, server-side permissions, private secrets and database policies—not by attempting to hide frontend code.
+---
+
+## Project Structure
+
+```
+CrossFire/
+├── dist/                      # Static production output generated by vite build
+├── docs/                      # Historical architectural & operational documentation
+├── public/                    # Static assets (logos, brochures, posters, fonts)
+├── scripts/                   # Verification test scripts, timetable & bundle security scanners
+├── src/
+│   ├── components/            # UI components (Navbar, Footer, ShowcaseAnnouncement, etc.)
+│   ├── context/               # AuthContext & EventsContext (hydrated with static catalog)
+│   ├── data/                  # Static EVENT_CATALOG, eventDay timetable, metadata
+│   ├── hooks/                 # UI hooks (useScrollReveal, useLeaderboard, useNotifications)
+│   ├── lib/                   # Utilities, security helpers, Supabase client
+│   ├── operations/            # Preserved administrative desks and models
+│   └── pages/                 # Route views (LandingPage, EventsDiscoveryPage, RegistrationPage, etc.)
+├── supabase/
+│   ├── functions/             # Preserved Supabase Edge Functions (5 functions)
+│   ├── migrations/            # Preserved PostgreSQL database migrations (19 migrations)
+│   └── schema.sql             # Preserved baseline database schema
+├── netlify.toml               # Netlify build, SPA routing, and security headers configuration
+├── vercel.json                # Preserved Vercel configuration (for safe rollback until verified)
+├── vite.config.ts             # Vite build pipeline and chunking strategy
+└── package.json               # Package configuration and verification scripts
+```
+
+---
+
+## Safety & Rollback Guarantee
+
+- **Backend Source Code:** Retained in version control. Nothing in `supabase/` or `scripts/` was destroyed.
+- **Rollback:** To return to the main branch or restore live backend connectivity at any time, see [BACKEND_RESTORE_GUIDE.md](BACKEND_RESTORE_GUIDE.md).
+- **Vercel Retirement:** The existing Vercel deployment will remain active until the Netlify site is verified and explicit user authorization is granted.

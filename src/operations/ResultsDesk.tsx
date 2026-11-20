@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ChevronDown, Clock, MapPin, RefreshCw } from 'lucide-react';
-import { supabase } from '../lib/supabase';
+import { supabase, IS_SHOWCASE_MODE, isSupabaseConfigured } from '../lib/supabase';
 import { PhasePill, Schedule, dayLabel, slotsOf, timeRange, useNow, useScheduleEvents } from './schedule';
 import './volunteer.css';
 import './results.css';
@@ -183,7 +183,13 @@ export function ResultsDesk({ manager=false, initialEventId='' }: { manager?: bo
 type Published = { event_name: string; awards: (string | null)[] };
 export function PublishedAwards() {
   const [rows,setRows]=useState<Published[]>([]);const [error,setError]=useState(false);
-  useEffect(()=>{let active=true,sequence=0;const load=async()=>{const id=++sequence;const {data,error}=await supabase.rpc('published_event_awards');if(active&&sequence===id){setError(!!error);if(!error)setRows(data||[])}};
+  useEffect(()=>{
+    if (!isSupabaseConfigured || IS_SHOWCASE_MODE) {
+      setRows([]);
+      setError(false);
+      return;
+    }
+    let active=true,sequence=0;const load=async()=>{const id=++sequence;const {data,error}=await supabase.rpc('published_event_awards');if(active&&sequence===id){setError(!!error);if(!error)setRows(data||[])}};
     void load();const tick=()=>{if(!document.hidden)void load()};const timer=window.setInterval(tick,15000);window.addEventListener('focus',tick);return()=>{active=false;clearInterval(timer);window.removeEventListener('focus',tick)}},[]);
   return <section className="vd result-public"><p className="vd-label">Approved results</p><h2>Event awards</h2>
     {error && <p role="alert">Event awards could not be refreshed.</p>}{!error && !rows.length && <p>Awaiting approved event awards.</p>}

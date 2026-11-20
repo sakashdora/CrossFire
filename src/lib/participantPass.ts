@@ -1,4 +1,4 @@
-import { supabase, isSupabaseConfigured } from './supabase';
+import { supabase, isSupabaseConfigured, IS_SHOWCASE_MODE } from './supabase';
 
 // A participant's own pass and registration, returned by the participant-pass function
 // after they give the mail ID and mobile number they registered with.
@@ -25,7 +25,9 @@ export interface ParticipantPass {
 const unavailable = 'We could not look up your pass right now. Check your connection and try again, or ask the help desk.';
 
 export async function findMyPass(email: string, phone: string): Promise<ParticipantPass> {
-  if (!isSupabaseConfigured) throw new Error(unavailable);
+  if (IS_SHOWCASE_MODE || !isSupabaseConfigured) {
+    throw new Error('Participant pass lookup is temporarily paused while the website operates in showcase mode.');
+  }
   const { data, error } = await supabase.functions.invoke('participant-pass', { body: { email: email.trim(), phone: phone.trim() } });
   if (error) {
     let detail = '';

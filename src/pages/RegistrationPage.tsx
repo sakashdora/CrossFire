@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { IS_SHOWCASE_MODE } from '../lib/supabase';
 import { CourseStream, FoodPreference, EventItem, SchoolBoard } from '../types';
 import { escapeHtml } from '../lib/security';
 import { registerStudent, RegistrationError, type RegistrationReceipt } from '../lib/registrationRequests';
@@ -438,6 +439,29 @@ export const RegistrationPage: React.FC<RegistrationPageProps> = ({
       ) : (
         /* Main Registration Form */
         <form onSubmit={handleSubmit} noValidate className="space-y-6">
+          {IS_SHOWCASE_MODE && (
+            <div className="p-4 sm:p-5 bg-gradient-to-r from-amber-50 via-orange-50/50 to-amber-50 border border-amber-200/80 rounded-2xl mb-6 shadow-sm">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="flex items-start sm:items-center gap-3">
+                  <span className="px-2.5 py-1 rounded-full bg-amber-500 text-white text-[10px] font-black uppercase tracking-wider shrink-0">
+                    Showcase Mode
+                  </span>
+                  <p className="text-xs sm:text-sm font-medium text-amber-950">
+                    Backend services are temporarily paused. Live student registrations through this form are paused, but you can explore all form fields or submit via our official Google Form backup.
+                  </p>
+                </div>
+                <a
+                  href="https://docs.google.com/forms/d/e/1FAIpQLSfIPctLilosmqJukeZze--Z9MKpcazZ3zJRq1pstA59bcfWzA/viewform"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-orange-500 hover:bg-orange-600 text-white font-bold text-xs shrink-0 shadow transition-transform hover:scale-105"
+                >
+                  <span>Official Google Form</span>
+                  <ExternalLink className="w-3.5 h-3.5" />
+                </a>
+              </div>
+            </div>
+          )}
           {registrationStatus === 'error' && (
             <div role="status" className="p-4 sm:p-5 bg-white border border-amber-200 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <p className="text-sm font-bold text-navy">Registration status could not be checked. Please try again.</p>
@@ -888,12 +912,19 @@ export const RegistrationPage: React.FC<RegistrationPageProps> = ({
           {(eventsError || eventsLoading) && <p role="status" className="p-3 mb-3 text-sm text-slate-600">{eventsError || 'Loading available competitions…'}</p>}
           {errorMessage && <p role="alert" className="p-3 mb-3 rounded-xl bg-red-50 border border-red-200 text-sm font-bold text-red-800">{errorMessage}</p>}
           <button
-            type="submit"
-            disabled={isSubmitting || eventsLoading || Boolean(eventsError) || !isRegistrationOpen}
-            className="w-full py-4 px-6 bg-orange-500 hover:bg-orange-600 text-white font-black text-base rounded-2xl shadow-xl shadow-orange-500/25 hover:shadow-orange-500/40 hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2.5 disabled:opacity-50"
+            type={IS_SHOWCASE_MODE ? "button" : "submit"}
+            onClick={IS_SHOWCASE_MODE ? () => window.open('https://docs.google.com/forms/d/e/1FAIpQLSfIPctLilosmqJukeZze--Z9MKpcazZ3zJRq1pstA59bcfWzA/viewform', '_blank') : undefined}
+            disabled={!IS_SHOWCASE_MODE && (isSubmitting || eventsLoading || Boolean(eventsError) || !isRegistrationOpen)}
+            className="w-full py-4 px-6 bg-orange-500 hover:bg-orange-600 text-white font-black text-base rounded-2xl shadow-xl shadow-orange-500/25 hover:shadow-orange-500/40 hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2.5 disabled:opacity-50 cursor-pointer"
           >
             {isSubmitting ? (
               <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+            ) : IS_SHOWCASE_MODE ? (
+              <>
+                <ExternalLink className="w-5 h-5" />
+                <span>Submit via Google Form (Showcase Mode)</span>
+                <ArrowRight className="w-5 h-5 ml-1" />
+              </>
             ) : (
               <>
                 <Send className="w-5 h-5" />

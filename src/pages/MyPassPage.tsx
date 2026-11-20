@@ -2,6 +2,7 @@ import { useState, type FormEvent } from 'react';
 import { ArrowLeft, Check, Clock, MapPin, QrCode, ShieldCheck } from 'lucide-react';
 import { StudentQRCode } from '../components/StudentQRCode';
 import { findMyPass, type ParticipantPass } from '../lib/participantPass';
+import { IS_SHOWCASE_MODE } from '../lib/supabase';
 import { PhasePill, slotsOf, timeRange, useNow, useScheduleEvents } from '../operations/schedule';
 import '../operations/volunteer.css';
 
@@ -35,6 +36,11 @@ export function MyPassPage({ onHome }: { onHome: () => void }) {
       <QrCode className="text-orange-500 mb-3" size={32} aria-hidden="true" />
       <p className="text-xs font-bold uppercase tracking-widest text-orange-600">Participants</p>
       <h1 id="my-pass-title" className="text-2xl sm:text-3xl font-black mt-1 text-navy">Find my pass</h1>
+      {IS_SHOWCASE_MODE && (
+        <div className="mt-3 p-3.5 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-900 font-medium">
+          <strong className="font-bold">Showcase Mode Notice:</strong> Backend database services are temporarily paused. Live participant pass lookup is paused, but you can explore the lookup interface below.
+        </div>
+      )}
       <p className="text-sm text-slate-600 mt-3">Forgot your student ID or QR? Enter the mail ID and mobile number you registered with to see your QR pass and your details.</p>
       <form onSubmit={submit} className="mt-6 space-y-4" noValidate={false}>
         <label className="block text-sm font-semibold">Mail ID (email)
@@ -42,7 +48,7 @@ export function MyPassPage({ onHome }: { onHome: () => void }) {
         <label className="block text-sm font-semibold">Mobile number
           <input className={field} type="tel" inputMode="numeric" autoComplete="tel" required minLength={10} maxLength={16} pattern="[0-9+ ()\-]{10,16}" value={phone} onChange={e => setPhone(e.target.value)} placeholder="10-digit number" disabled={busy} /></label>
         {error && <p role="alert" className="rounded-xl bg-red-50 p-3 text-sm text-red-800">{error}</p>}
-        <button disabled={busy} className="w-full rounded-xl bg-orange-500 py-3.5 text-base font-bold text-white shadow hover:bg-orange-600 disabled:opacity-60">{busy ? 'Finding your pass…' : 'Show my pass'}</button>
+        <button disabled={busy || IS_SHOWCASE_MODE} className="w-full rounded-xl bg-orange-500 py-3.5 text-base font-bold text-white shadow hover:bg-orange-600 disabled:opacity-60">{busy ? 'Finding your pass…' : IS_SHOWCASE_MODE ? 'Lookup Paused (Showcase Mode)' : 'Show my pass'}</button>
       </form>
       <p className="mt-5 flex items-start gap-2 text-xs text-slate-500"><ShieldCheck size={15} className="mt-0.5 shrink-0" aria-hidden="true" /> Your details are shown only on this screen and are not saved on this device. Use the same mail ID and mobile number as your registration (your WhatsApp number works too).</p>
       <p className="mt-3 text-xs text-slate-500">Still stuck? Ask at the help desk and a volunteer will find you by name.</p>

@@ -12,5 +12,7 @@ assert.throws(()=>validatePublicEnvironment({...env,VITE_DATABASE_PASSWORD:'do-n
 assert.throws(()=>validatePublicEnvironment({...env,VITE_SUPABASE_URL:'http://example.test'}));
 assert.throws(()=>validatePublicEnvironment({...env,VITE_EMAIL_AUTH_READY:'yes'}));
 validatePublicEnvironment({...env,VITE_STUDENT_SIGNIN_PUBLIC:'false'});
+validatePublicEnvironment({VITE_SHOWCASE_MODE:'true'});
+assert.throws(()=>validatePublicEnvironment({VITE_SHOWCASE_MODE:'invalid'}));
 assert.throws(()=>validatePublicEnvironment({...env,VITE_STUDENT_SIGNIN_PUBLIC:'1'}));
-console.log('11 build environment checks passed: public keys and flags accepted; privileged keys, unexpected public variables, wrong projects and invalid flags rejected.');
+console.log('13 build environment checks passed: public keys and flags accepted; privileged keys, unexpected public variables, wrong projects and invalid flags rejected.');

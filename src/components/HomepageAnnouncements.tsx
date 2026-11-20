@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { ChevronRight, Megaphone, X } from 'lucide-react';
-import { isSupabaseConfigured, supabase } from '../lib/supabase';
+import { isSupabaseConfigured, supabase, IS_SHOWCASE_MODE } from '../lib/supabase';
 import './homepage-announcements.css';
 
 const table = 'crossfire_homepage_announcements';
@@ -56,7 +56,7 @@ export function HomepageAnnouncements() {
   const [open, setOpen] = useState(false);
   const dialog = useRef<HTMLDialogElement>(null);
   useEffect(() => {
-    if (!isSupabaseConfigured) return;
+    if (!isSupabaseConfigured || IS_SHOWCASE_MODE) return;
     let active = true;
     let revision = 0;
     const refresh = async () => {

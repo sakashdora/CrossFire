@@ -10,6 +10,7 @@ import { dashboardFor, ROLE_LABELS } from './lib/roles';
 import { CinematicIntro } from './components/CinematicIntro';
 import { RegistrationLiveNotice } from './components/RegistrationLiveNotice';
 import { HomepageAnnouncements } from './components/HomepageAnnouncements';
+import { ShowcaseBanner } from './components/ShowcaseAnnouncement';
 import { useRegistrationNotice } from './hooks/useRegistrationNotice';
 import { isStudentLoginHash } from './lib/studentAccess';
 import { LandingPage } from './pages/LandingPage';
@@ -50,12 +51,12 @@ const ProtectedRoute = ({ children, allowedRoles }: { children: React.ReactNode,
   if (!user) {
     return (
       <div className="max-w-md mx-auto mt-20 p-8 bg-white rounded-3xl shadow-xl text-center border border-gray-100">
-        <ShieldAlert className="w-16 h-16 text-red-500 mx-auto mb-4" />
-        <h2 className="text-2xl font-black text-navy mb-2">Access Denied</h2>
-        <p className="text-gray-600 text-sm mb-6">You must be signed in to view this portal.</p>
+        <ShieldAlert className="w-16 h-16 text-amber-500 mx-auto mb-4" />
+        <h2 className="text-2xl font-black text-navy mb-2">Showcase Mode Notice</h2>
+        <p className="text-gray-600 text-sm mb-6">Backend services and authenticated administrative portals are temporarily paused in showcase mode. You can explore the public competition arenas and website experience.</p>
         <button 
           onClick={() => window.location.hash = 'landing'} 
-          className="px-6 py-2.5 bg-navy hover:bg-navy-light text-white font-bold rounded-xl transition-colors"
+          className="px-6 py-2.5 bg-navy hover:bg-navy-light text-white font-bold rounded-xl transition-colors cursor-pointer"
         >
           Return to Home
         </button>
@@ -207,6 +208,9 @@ const CrossFireApp: React.FC = () => {
       {showIntro && (
         <CinematicIntro onComplete={handleIntroComplete} />
       )}
+
+      {/* Showcase Announcement Banner */}
+      <ShowcaseBanner />
 
       {/* Top Navbar */}
       <Navbar 

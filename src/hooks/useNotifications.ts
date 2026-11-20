@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { supabase, isSupabaseConfigured } from '../lib/supabase';
+import { supabase, isSupabaseConfigured, IS_SHOWCASE_MODE } from '../lib/supabase';
 import type { NotificationItem } from '../types';
 import { useAuth } from '../context/AuthContext';
 
@@ -8,9 +8,10 @@ export const useNotifications = () => {
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [error, setError] = useState('');
   const sequence = useRef(0);
+
   const fetchNotifications = useCallback(async () => {
     const revision = ++sequence.current;
-    if (!user || needsMfa || !isSupabaseConfigured) {
+    if (!user || needsMfa || !isSupabaseConfigured || IS_SHOWCASE_MODE) {
       setNotifications([]);
       setError('');
       return;
@@ -36,6 +37,7 @@ export const useNotifications = () => {
 
   useEffect(() => {
     setNotifications([]);
+    if (IS_SHOWCASE_MODE) return;
     void fetchNotifications();
     const update = () => {
       if (!document.hidden) void fetchNotifications();
@@ -50,6 +52,7 @@ export const useNotifications = () => {
   }, [fetchNotifications]);
 
   const mark = async (id?: string) => {
+    if (IS_SHOWCASE_MODE || !isSupabaseConfigured) return;
     try {
       const { error: failure } = id
         ? await supabase.rpc('crossfire_mark_notification_read', { p_id: id })
@@ -63,10 +66,10 @@ export const useNotifications = () => {
 
   return {
     notifications,
-    error,
-    unreadCount: notifications.filter(item => !item.read_at).length,
+    unreadCount: notifications.filter(n => !n.read_at).length,
     markAsRead: (id: string) => mark(id),
     markAllAsRead: () => mark(),
     refreshNotifications: fetchNotifications,
+    error,
   };
 };
